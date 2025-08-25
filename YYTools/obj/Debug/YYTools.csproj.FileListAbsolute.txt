@@ -1,0 +1,10 @@
+D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.MatchForm.resources
+D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.Properties.Resources.resources
+D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.csproj.GenerateResource.Cache
+D:\Develop\C#\YYTools\Demo\YYTools\bin\Debug\YYTools.dll.config
+D:\Develop\C#\YYTools\Demo\YYTools\bin\Debug\YYTools.dll
+D:\Develop\C#\YYTools\Demo\YYTools\bin\Debug\YYTools.pdb
+D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.csproj.AssemblyReference.cache
+D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.csproj.CoreCompileInputs.cache
+D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.dll
+D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.pdb

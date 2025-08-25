@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vstov4:customization xmlns:vstov4="urn:schemas-microsoft-com:vsto.v4">
+  <vstov4:appAddIn application="Excel" loadBehavior="3" keyName="YYTools">
+    <vstov4:friendlyName>YY运单匹配工具</vstov4:friendlyName>
+    <vstov4:description>Excel/WPS运单号匹配插件，快速匹配发货明细和账单明细</vstov4:description>
+    <vstov4:formRegions>
+      <vstov4:formRegion name="YYTools.ThisAddIn">
+        <vstov4:messageClass name="IPM.Task.YYTools" />
+      </vstov4:formRegion>
+    </vstov4:formRegions>
+  </vstov4:appAddIn>
+</vstov4:customization> 
