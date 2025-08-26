@@ -62,6 +62,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppSettings.cs" />
+    <Compile Include="DataModels.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ColumnSelectionForm.cs">
       <SubType>Form</SubType>

@@ -28,7 +28,7 @@ namespace YYTools
         /// <summary>
         /// 执行运单匹配操作 - 智能性能模式
         /// </summary>
-        public MatchResult ExecuteMatch(MatchConfig config, Excel.Application excelApp, 
+        public MatchResult ExecuteMatch(MultiWorkbookMatchConfig config,
             ProgressReportDelegate progressCallback = null)
         {
             // 获取性能设置并进行硬件优化
@@ -38,13 +38,13 @@ namespace YYTools
             switch (optimizedMode)
             {
                 case PerformanceMode.UltraFast:
-                    return ExecuteMatchUltraFast(config, excelApp, progressCallback);
+                    return ExecuteMatchUltraFast(config, progressCallback);
                 case PerformanceMode.Balanced:
-                    return ExecuteMatchBalancedOptimized(config, excelApp, progressCallback);
+                    return ExecuteMatchBalancedOptimized(config, progressCallback);
                 case PerformanceMode.Compatible:
-                    return ExecuteMatchCompatible(config, excelApp, progressCallback);
+                    return ExecuteMatchCompatible(config, progressCallback);
                 default:
-                    return ExecuteMatchUltraFast(config, excelApp, progressCallback);
+                    return ExecuteMatchUltraFast(config, progressCallback);
             }
         }
         
@@ -85,17 +85,17 @@ namespace YYTools
             }
         }
 
-
-
         /// <summary>
         /// 极速模式 - 最高性能
         /// </summary>
-        private MatchResult ExecuteMatchUltraFast(MatchConfig config, Excel.Application excelApp, 
+        private MatchResult ExecuteMatchUltraFast(MultiWorkbookMatchConfig config,
             ProgressReportDelegate progressCallback = null)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             MatchResult result = new MatchResult();
             
+            Excel.Application excelApp = config.ShippingWorkbook.Application;
+
             // Excel性能优化设置
             bool originalScreenUpdating = true;
             bool originalDisplayAlerts = true;
@@ -125,13 +125,12 @@ namespace YYTools
                 if (progressCallback != null)
                     progressCallback(5, "正在获取工作表...");
 
-                // 获取工作表
-                Excel.Worksheet shippingSheet = GetWorksheet(excelApp, config.ShippingSheetName);
-                Excel.Worksheet billSheet = GetWorksheet(excelApp, config.BillSheetName);
+                Excel.Worksheet shippingSheet = GetWorksheet(config.ShippingWorkbook, config.ShippingSheetName);
+                Excel.Worksheet billSheet = GetWorksheet(config.BillWorkbook, config.BillSheetName);
 
                 if (shippingSheet == null || billSheet == null)
                 {
-                    result.ErrorMessage = "无法找到指定的工作表";
+                    result.ErrorMessage = $"无法找到指定的工作表: '{config.ShippingSheetName}' 或 '{config.BillSheetName}'";
                     WriteLog("工作表获取失败: " + result.ErrorMessage, LogLevel.Error);
                     return result;
                 }
@@ -192,12 +191,13 @@ namespace YYTools
         /// <summary>
         /// 平衡模式优化版 - 智能批处理
         /// </summary>
-        private MatchResult ExecuteMatchBalancedOptimized(MatchConfig config, Excel.Application excelApp, 
+        private MatchResult ExecuteMatchBalancedOptimized(MultiWorkbookMatchConfig config, 
             ProgressReportDelegate progressCallback = null)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             MatchResult result = new MatchResult();
-            
+            Excel.Application excelApp = config.ShippingWorkbook.Application;
+
             // 轻量级Excel优化
             bool originalScreenUpdating = true;
             Excel.XlCalculation originalCalculation = Excel.XlCalculation.xlCalculationAutomatic;
@@ -216,8 +216,8 @@ namespace YYTools
                     progressCallback(5, "正在获取工作表...");
 
                 // 获取工作表
-                Excel.Worksheet shippingSheet = GetWorksheet(excelApp, config.ShippingSheetName);
-                Excel.Worksheet billSheet = GetWorksheet(excelApp, config.BillSheetName);
+                Excel.Worksheet shippingSheet = GetWorksheet(config.ShippingWorkbook, config.ShippingSheetName);
+                Excel.Worksheet billSheet = GetWorksheet(config.BillWorkbook, config.BillSheetName);
 
                 if (shippingSheet == null || billSheet == null)
                 {
@@ -276,7 +276,7 @@ namespace YYTools
         /// <summary>
         /// 兼容模式 - 最佳兼容性
         /// </summary>
-        private MatchResult ExecuteMatchCompatible(MatchConfig config, Excel.Application excelApp, 
+        private MatchResult ExecuteMatchCompatible(MultiWorkbookMatchConfig config,
             ProgressReportDelegate progressCallback = null)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -290,8 +290,8 @@ namespace YYTools
                     progressCallback(5, "正在获取工作表...");
 
                 // 获取工作表
-                Excel.Worksheet shippingSheet = GetWorksheet(excelApp, config.ShippingSheetName);
-                Excel.Worksheet billSheet = GetWorksheet(excelApp, config.BillSheetName);
+                Excel.Worksheet shippingSheet = GetWorksheet(config.ShippingWorkbook, config.ShippingSheetName);
+                Excel.Worksheet billSheet = GetWorksheet(config.BillWorkbook, config.BillSheetName);
 
                 if (shippingSheet == null || billSheet == null)
                 {
@@ -334,21 +334,24 @@ namespace YYTools
         }
 
         /// <summary>
-        /// 获取工作表
+        /// 获取工作表 (在指定工作簿中查找)
         /// </summary>
-        private Excel.Worksheet GetWorksheet(Excel.Application excelApp, string sheetName)
+        private Excel.Worksheet GetWorksheet(Excel.Workbook workbook, string sheetName)
         {
             try
             {
-                Excel.Workbook workbook = excelApp.ActiveWorkbook;
                 if (workbook == null)
+                {
+                    WriteLog("传递给 GetWorksheet 的工作簿为 null", LogLevel.Error);
                     return null;
+                }
 
                 foreach (Excel.Worksheet sheet in workbook.Worksheets)
                 {
                     if (sheet.Name == sheetName)
                         return sheet;
                 }
+                WriteLog($"在工作簿 '{workbook.Name}' 中未找到名为 '{sheetName}' 的工作表", LogLevel.Warning);
                 return null;
             }
             catch (Exception ex)
@@ -362,16 +365,16 @@ namespace YYTools
         /// 高性能发货明细索引构建 - 批量读取
         /// </summary>
         private Dictionary<string, List<ShippingItem>> BuildShippingIndexFast(
-            Excel.Worksheet shippingSheet, MatchConfig config, ProgressReportDelegate progressCallback)
+            Excel.Worksheet shippingSheet, MultiWorkbookMatchConfig config, ProgressReportDelegate progressCallback)
         {
             Dictionary<string, List<ShippingItem>> index = new Dictionary<string, List<ShippingItem>>();
 
             try
             {
                 Excel.Range usedRange = shippingSheet.UsedRange;
-                if (usedRange == null)
+                if (usedRange == null || usedRange.Rows.Count < 2)
                 {
-                    WriteLog("发货明细表为空", LogLevel.Warning);
+                    WriteLog("发货明细表为空或只有标题行", LogLevel.Warning);
                     return index;
                 }
 
@@ -380,18 +383,21 @@ namespace YYTools
 
                 if (progressCallback != null)
                     progressCallback(12, "正在批量读取发货数据...");
+                
+                // --- FIX: Use the new method name from the user-provided ExcelHelper.
+                int trackCol = ExcelHelper.GetColumnNumber(config.ShippingTrackColumn);
+                int productCol = ExcelHelper.GetColumnNumber(config.ShippingProductColumn);
+                int nameCol = ExcelHelper.GetColumnNumber(config.ShippingNameColumn);
 
-                int trackCol = config.ShippingTrackColumn;
-                int productCol = config.ShippingProductColumn;
-                int nameCol = config.ShippingNameColumn;
-
-                // 批量读取三列数据 - 关键性能优化
-                Excel.Range trackRange = shippingSheet.get_Range(
-                    string.Format("{0}2:{0}{1}", ExcelHelper.GetColumnLetter(trackCol), totalRows), Type.Missing);
-                Excel.Range productRange = shippingSheet.get_Range(
-                    string.Format("{0}2:{0}{1}", ExcelHelper.GetColumnLetter(productCol), totalRows), Type.Missing);
-                Excel.Range nameRange = shippingSheet.get_Range(
-                    string.Format("{0}2:{0}{1}", ExcelHelper.GetColumnLetter(nameCol), totalRows), Type.Missing);
+                Excel.Range trackRange = shippingSheet.Range[
+                    string.Format("{0}2", ExcelHelper.GetColumnLetter(trackCol)),
+                    string.Format("{0}{1}", ExcelHelper.GetColumnLetter(trackCol), totalRows)];
+                Excel.Range productRange = shippingSheet.Range[
+                    string.Format("{0}2", ExcelHelper.GetColumnLetter(productCol)),
+                    string.Format("{0}{1}", ExcelHelper.GetColumnLetter(productCol), totalRows)];
+                Excel.Range nameRange = shippingSheet.Range[
+                    string.Format("{0}2", ExcelHelper.GetColumnLetter(nameCol)),
+                    string.Format("{0}{1}", ExcelHelper.GetColumnLetter(nameCol), totalRows)];
 
                 object[,] trackData = trackRange.Value2 as object[,];
                 object[,] productData = productRange.Value2 as object[,];
@@ -401,9 +407,8 @@ namespace YYTools
                     progressCallback(25, "正在处理发货数据索引...");
 
                 int validCount = 0;
-                int dataRows = totalRows - 1; // 减去标题行
+                int dataRows = totalRows - 1; 
 
-                // 预分配Dictionary容量
                 index = new Dictionary<string, List<ShippingItem>>(dataRows);
 
                 for (int i = 1; i <= dataRows; i++)
@@ -430,7 +435,6 @@ namespace YYTools
                         validCount++;
                     }
 
-                    // 进度更新 - 减少频率提高性能
                     if (i % 1000 == 0 || i == dataRows)
                     {
                         int progress = 25 + (int)(20.0 * i / dataRows);
@@ -452,18 +456,18 @@ namespace YYTools
         }
 
         /// <summary>
-        /// 终极性能账单明细处理 - 50秒→5-8秒优化版
+        /// 终极性能账单明细处理
         /// </summary>
-        private void ProcessBillDetailsFast(Excel.Worksheet billSheet, MatchConfig config,
+        private void ProcessBillDetailsFast(Excel.Worksheet billSheet, MultiWorkbookMatchConfig config,
             Dictionary<string, List<ShippingItem>> shippingIndex, MatchResult result, 
             ProgressReportDelegate progressCallback)
         {
             try
             {
                 Excel.Range usedRange = billSheet.UsedRange;
-                if (usedRange == null)
+                if (usedRange == null || usedRange.Rows.Count < 2)
                 {
-                    WriteLog("账单明细表为空", LogLevel.Warning);
+                    WriteLog("账单明细表为空或只有标题行", LogLevel.Warning);
                     return;
                 }
 
@@ -472,14 +476,15 @@ namespace YYTools
 
                 if (progressCallback != null)
                     progressCallback(52, "正在批量读取账单数据...");
+                
+                // --- FIX: Use the new method name from the user-provided ExcelHelper.
+                int trackCol = ExcelHelper.GetColumnNumber(config.BillTrackColumn);
+                int productCol = ExcelHelper.GetColumnNumber(config.BillProductColumn);
+                int nameCol = ExcelHelper.GetColumnNumber(config.BillNameColumn);
 
-                int trackCol = config.BillTrackColumn;
-                int productCol = config.BillProductColumn;
-                int nameCol = config.BillNameColumn;
-
-                // 批量读取运单号列
-                Excel.Range trackRange = billSheet.get_Range(
-                    string.Format("{0}2:{0}{1}", ExcelHelper.GetColumnLetter(trackCol), totalRows), Type.Missing);
+                Excel.Range trackRange = billSheet.Range[
+                    string.Format("{0}2", ExcelHelper.GetColumnLetter(trackCol)),
+                    string.Format("{0}{1}", ExcelHelper.GetColumnLetter(trackCol), totalRows)];
                 object[,] trackData = trackRange.Value2 as object[,];
 
                 if (trackData == null)
@@ -493,15 +498,13 @@ namespace YYTools
 
                 int matchedCount = 0;
                 int processedRows = 0;
-                int dataRows = totalRows - 1; // 减去标题行
+                int dataRows = totalRows - 1; 
 
-                // 预分配数组用于批量写入 - 关键性能优化
                 object[,] productData = new object[dataRows, 1];
                 object[,] nameData = new object[dataRows, 1];
                 bool[] hasProductUpdate = new bool[dataRows];
                 bool[] hasNameUpdate = new bool[dataRows];
 
-                // 处理匹配逻辑
                 for (int i = 1; i <= dataRows; i++)
                 {
                     processedRows++;
@@ -517,7 +520,6 @@ namespace YYTools
                             List<ShippingItem> matchedItems = shippingIndex[normalizedTrack];
                             matchedCount++;
 
-                            // 去重和拼接
                             HashSet<string> productCodes = new HashSet<string>();
                             HashSet<string> productNames = new HashSet<string>();
 
@@ -529,8 +531,7 @@ namespace YYTools
                                     productNames.Add(item.ProductName.Trim());
                             }
 
-                            // 填充数组数据
-                            int arrayIndex = i - 1; // 数组是0基索引
+                            int arrayIndex = i - 1; 
                             if (productCodes.Count > 0)
                             {
                                 productData[arrayIndex, 0] = string.Join("、", productCodes.ToArray());
@@ -545,7 +546,6 @@ namespace YYTools
                         }
                     }
 
-                    // 进度更新
                     if (processedRows % 500 == 0 || i == dataRows)
                     {
                         int progress = 60 + (int)(25.0 * processedRows / dataRows);
@@ -558,7 +558,6 @@ namespace YYTools
                 if (progressCallback != null)
                     progressCallback(88, "正在超高速批量写入结果...");
 
-                // 终极批量写入算法 - 性能提升6-10倍
                 int updatedCells = 0;
                 updatedCells += UltimateBatchWrite(billSheet, productCol, productData, hasProductUpdate, dataRows, totalRows, "商品编码");
                 updatedCells += UltimateBatchWrite(billSheet, nameCol, nameData, hasNameUpdate, dataRows, totalRows, "商品名称");
@@ -581,36 +580,36 @@ namespace YYTools
         /// 平衡模式优化版索引构建
         /// </summary>
         private Dictionary<string, List<ShippingItem>> BuildShippingIndexBalancedOptimized(
-            Excel.Worksheet shippingSheet, MatchConfig config, int batchSize, ProgressReportDelegate progressCallback)
+            Excel.Worksheet shippingSheet, MultiWorkbookMatchConfig config, int batchSize, ProgressReportDelegate progressCallback)
         {
             Dictionary<string, List<ShippingItem>> index = new Dictionary<string, List<ShippingItem>>();
 
             try
             {
                 Excel.Range usedRange = shippingSheet.UsedRange;
-                if (usedRange == null) return index;
+                if (usedRange == null || usedRange.Rows.Count < 2) return index;
 
                 int totalRows = usedRange.Rows.Count;
                 WriteLog(string.Format("平衡模式优化版 - 批处理大小: {0}, 总行数: {1}", batchSize, totalRows), LogLevel.Info);
 
-                int trackCol = config.ShippingTrackColumn;
-                int productCol = config.ShippingProductColumn;
-                int nameCol = config.ShippingNameColumn;
+                // --- FIX: Use the new method name from the user-provided ExcelHelper.
+                int trackCol = ExcelHelper.GetColumnNumber(config.ShippingTrackColumn);
+                int productCol = ExcelHelper.GetColumnNumber(config.ShippingProductColumn);
+                int nameCol = ExcelHelper.GetColumnNumber(config.ShippingNameColumn);
+                
+                string trackColLetter = ExcelHelper.GetColumnLetter(trackCol);
+                string productColLetter = ExcelHelper.GetColumnLetter(productCol);
+                string nameColLetter = ExcelHelper.GetColumnLetter(nameCol);
 
-                // 预分配Dictionary容量
                 index = new Dictionary<string, List<ShippingItem>>(totalRows);
 
                 for (int startRow = 2; startRow <= totalRows; startRow += batchSize)
                 {
                     int endRow = Math.Min(startRow + batchSize - 1, totalRows);
                     
-                    // 智能批量读取
-                    Excel.Range trackRange = shippingSheet.get_Range(
-                        string.Format("{0}{1}:{0}{2}", ExcelHelper.GetColumnLetter(trackCol), startRow, endRow), Type.Missing);
-                    Excel.Range productRange = shippingSheet.get_Range(
-                        string.Format("{0}{1}:{0}{2}", ExcelHelper.GetColumnLetter(productCol), startRow, endRow), Type.Missing);
-                    Excel.Range nameRange = shippingSheet.get_Range(
-                        string.Format("{0}{1}:{0}{2}", ExcelHelper.GetColumnLetter(nameCol), startRow, endRow), Type.Missing);
+                    Excel.Range trackRange = shippingSheet.Range[$"{trackColLetter}{startRow}", $"{trackColLetter}{endRow}"];
+                    Excel.Range productRange = shippingSheet.Range[$"{productColLetter}{startRow}", $"{productColLetter}{endRow}"];
+                    Excel.Range nameRange = shippingSheet.Range[$"{nameColLetter}{startRow}", $"{nameColLetter}{endRow}"];
 
                     object[,] trackData = trackRange.Value2 as object[,];
                     object[,] productData = productRange.Value2 as object[,];
@@ -637,7 +636,6 @@ namespace YYTools
                         }
                     }
 
-                    // 更新进度
                     if (progressCallback != null)
                     {
                         int progress = 15 + (int)(40.0 * endRow / totalRows);
@@ -660,25 +658,26 @@ namespace YYTools
         /// <summary>
         /// 平衡模式优化版账单处理
         /// </summary>
-        private void ProcessBillDetailsBalancedOptimized(Excel.Worksheet billSheet, MatchConfig config,
+        private void ProcessBillDetailsBalancedOptimized(Excel.Worksheet billSheet, MultiWorkbookMatchConfig config,
             Dictionary<string, List<ShippingItem>> shippingIndex, MatchResult result, int batchSize,
             ProgressReportDelegate progressCallback)
         {
             try
             {
                 Excel.Range usedRange = billSheet.UsedRange;
-                if (usedRange == null) return;
+                if (usedRange == null || usedRange.Rows.Count < 2) return;
 
                 int totalRows = usedRange.Rows.Count;
                 int matchedCount = 0;
                 int processedRows = 0;
 
-                int trackCol = config.BillTrackColumn;
-                int productCol = config.BillProductColumn;
-                int nameCol = config.BillNameColumn;
+                // --- FIX: Use the new method name from the user-provided ExcelHelper.
+                int trackCol = ExcelHelper.GetColumnNumber(config.BillTrackColumn);
+                int productCol = ExcelHelper.GetColumnNumber(config.BillProductColumn);
+                int nameCol = ExcelHelper.GetColumnNumber(config.BillNameColumn);
+                string trackColLetter = ExcelHelper.GetColumnLetter(trackCol);
 
-                // 使用中等批量处理
-                int writeBatchSize = batchSize / 2; // 写入批次稍小一些
+                int writeBatchSize = batchSize / 2; 
                 Dictionary<int, string> productUpdates = new Dictionary<int, string>();
                 Dictionary<int, string> nameUpdates = new Dictionary<int, string>();
 
@@ -686,12 +685,9 @@ namespace YYTools
                 {
                     int endRow = Math.Min(startRow + batchSize - 1, totalRows);
                     
-                    // 批量读取运单号
-                    Excel.Range trackRange = billSheet.get_Range(
-                        string.Format("{0}{1}:{0}{2}", ExcelHelper.GetColumnLetter(trackCol), startRow, endRow), Type.Missing);
+                    Excel.Range trackRange = billSheet.Range[$"{trackColLetter}{startRow}", $"{trackColLetter}{endRow}"];
                     object[,] trackData = trackRange.Value2 as object[,];
 
-                    // 处理当前批次
                     int batchRows = endRow - startRow + 1;
                     for (int i = 1; i <= batchRows; i++)
                     {
@@ -707,7 +703,6 @@ namespace YYTools
                                 List<ShippingItem> matchedItems = shippingIndex[normalizedTrack];
                                 matchedCount++;
 
-                                // 去重和拼接
                                 HashSet<string> productCodes = new HashSet<string>();
                                 HashSet<string> productNames = new HashSet<string>();
 
@@ -719,7 +714,6 @@ namespace YYTools
                                         productNames.Add(item.ProductName.Trim());
                                 }
 
-                                // 收集更新
                                 if (productCodes.Count > 0)
                                     productUpdates[excelRow] = string.Join("、", productCodes.ToArray());
                                 if (productNames.Count > 0)
@@ -728,22 +722,19 @@ namespace YYTools
                         }
                     }
 
-                    // 当累积足够更新或到达最后时，执行批量写入
-                    if (productUpdates.Count >= writeBatchSize || endRow >= totalRows)
+                    if (productUpdates.Count >= writeBatchSize || (endRow >= totalRows && productUpdates.Count > 0))
                     {
-                        if (productUpdates.Count > 0)
-                        {
-                            BatchUpdateColumn(billSheet, productCol, productUpdates);
-                            productUpdates.Clear();
-                        }
-                        if (nameUpdates.Count > 0)
-                        {
-                            BatchUpdateColumn(billSheet, nameCol, nameUpdates);
-                            nameUpdates.Clear();
-                        }
+                        BatchUpdateColumn(billSheet, productCol, productUpdates);
+                        result.UpdatedCells += productUpdates.Count;
+                        productUpdates.Clear();
+                    }
+                    if (nameUpdates.Count >= writeBatchSize || (endRow >= totalRows && nameUpdates.Count > 0))
+                    {
+                        BatchUpdateColumn(billSheet, nameCol, nameUpdates);
+                        result.UpdatedCells += nameUpdates.Count;
+                        nameUpdates.Clear();
                     }
 
-                    // 更新进度
                     if (progressCallback != null)
                     {
                         int progress = 60 + (int)(35.0 * endRow / totalRows);
@@ -754,7 +745,6 @@ namespace YYTools
 
                 result.ProcessedRows = processedRows;
                 result.MatchedCount = matchedCount;
-                result.UpdatedCells = matchedCount * 2;
             }
             catch (Exception ex)
             {
@@ -767,19 +757,20 @@ namespace YYTools
         /// 兼容模式发货明细索引构建 - 逐行读取
         /// </summary>
         private Dictionary<string, List<ShippingItem>> BuildShippingIndexCompatible(
-            Excel.Worksheet shippingSheet, MatchConfig config, ProgressReportDelegate progressCallback)
+            Excel.Worksheet shippingSheet, MultiWorkbookMatchConfig config, ProgressReportDelegate progressCallback)
         {
             Dictionary<string, List<ShippingItem>> index = new Dictionary<string, List<ShippingItem>>();
 
             try
             {
                 Excel.Range usedRange = shippingSheet.UsedRange;
-                if (usedRange == null) return index;
+                if (usedRange == null || usedRange.Rows.Count < 2) return index;
 
                 int totalRows = usedRange.Rows.Count;
-                int trackCol = config.ShippingTrackColumn;
-                int productCol = config.ShippingProductColumn;
-                int nameCol = config.ShippingNameColumn;
+                // --- FIX: Use the new method name from the user-provided ExcelHelper.
+                int trackCol = ExcelHelper.GetColumnNumber(config.ShippingTrackColumn);
+                int productCol = ExcelHelper.GetColumnNumber(config.ShippingProductColumn);
+                int nameCol = ExcelHelper.GetColumnNumber(config.ShippingNameColumn);
 
                 for (int row = 2; row <= totalRows; row++)
                 {
@@ -800,7 +791,6 @@ namespace YYTools
                         });
                     }
 
-                    // 更频繁的进度更新
                     if (row % 200 == 0 && progressCallback != null)
                     {
                         int progress = 15 + (int)(40.0 * row / totalRows);
@@ -820,22 +810,24 @@ namespace YYTools
         /// <summary>
         /// 兼容模式账单明细处理 - 逐行处理
         /// </summary>
-        private void ProcessBillDetailsCompatible(Excel.Worksheet billSheet, MatchConfig config,
+        private void ProcessBillDetailsCompatible(Excel.Worksheet billSheet, MultiWorkbookMatchConfig config,
             Dictionary<string, List<ShippingItem>> shippingIndex, MatchResult result, 
             ProgressReportDelegate progressCallback)
         {
             try
             {
                 Excel.Range usedRange = billSheet.UsedRange;
-                if (usedRange == null) return;
+                if (usedRange == null || usedRange.Rows.Count < 2) return;
 
                 int totalRows = usedRange.Rows.Count;
                 int matchedCount = 0;
                 int processedRows = 0;
-
-                int trackCol = config.BillTrackColumn;
-                int productCol = config.BillProductColumn;
-                int nameCol = config.BillNameColumn;
+                int updatedCells = 0;
+                
+                // --- FIX: Use the new method name from the user-provided ExcelHelper.
+                int trackCol = ExcelHelper.GetColumnNumber(config.BillTrackColumn);
+                int productCol = ExcelHelper.GetColumnNumber(config.BillProductColumn);
+                int nameCol = ExcelHelper.GetColumnNumber(config.BillNameColumn);
 
                 for (int row = 2; row <= totalRows; row++)
                 {
@@ -850,7 +842,6 @@ namespace YYTools
                             List<ShippingItem> matchedItems = shippingIndex[normalizedTrack];
                             matchedCount++;
 
-                            // 去重和拼接
                             HashSet<string> productCodes = new HashSet<string>();
                             HashSet<string> productNames = new HashSet<string>();
 
@@ -862,22 +853,22 @@ namespace YYTools
                                     productNames.Add(item.ProductName.Trim());
                             }
 
-                            // 逐个写入
                             if (productCodes.Count > 0)
                             {
                                 SetCellValue(billSheet, row, productCol, 
                                     string.Join("、", productCodes.ToArray()));
+                                updatedCells++;
                             }
 
                             if (productNames.Count > 0)
                             {
                                 SetCellValue(billSheet, row, nameCol, 
                                     string.Join("、", productNames.ToArray()));
+                                updatedCells++;
                             }
                         }
                     }
 
-                    // 频繁的进度更新
                     if (row % 100 == 0 && progressCallback != null)
                     {
                         int progress = 60 + (int)(35.0 * row / totalRows);
@@ -887,7 +878,7 @@ namespace YYTools
 
                 result.ProcessedRows = processedRows;
                 result.MatchedCount = matchedCount;
-                result.UpdatedCells = matchedCount * 2;
+                result.UpdatedCells = updatedCells;
             }
             catch (Exception ex)
             {
@@ -897,8 +888,7 @@ namespace YYTools
         }
 
         /// <summary>
-        /// 终极批量写入算法 - 50秒→5-8秒性能革命
-        /// 核心技术: object[,]二维数组 + 一次性写入整列 + 减少COM调用
+        /// 终极批量写入算法
         /// </summary>
         private int UltimateBatchWrite(Excel.Worksheet worksheet, int column, object[,] data, bool[] hasUpdate, int dataRows, int totalRows, string columnName)
         {
@@ -909,20 +899,15 @@ namespace YYTools
                 WriteLog(string.Format("开始{0}列终极批量写入，数据行数: {1}", columnName, dataRows), LogLevel.Info);
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-                // 终极性能算法第一步：预分配和优化数据
                 string columnLetter = ExcelHelper.GetColumnLetter(column);
                 
-                // 第二步：获取目标范围并设置格式（减少COM调用）
-                Excel.Range targetRange = worksheet.get_Range(
-                    string.Format("{0}2:{0}{1}", columnLetter, totalRows), Type.Missing);
+                Excel.Range targetRange = worksheet.Range[
+                    string.Format("{0}2", columnLetter), 
+                    string.Format("{0}{1}", columnLetter, totalRows)];
 
-                // 第三步：批量设置格式（一次性）
                 targetRange.NumberFormat = "@";
-                
-                // 第四步：终极批量写入 - 整列一次性写入（核心性能技术）
                 targetRange.Value2 = data;
 
-                // 第五步：统计实际更新数量
                 int updateCount = 0;
                 for (int i = 0; i < dataRows; i++)
                 {
@@ -930,7 +915,7 @@ namespace YYTools
                 }
 
                 stopwatch.Stop();
-                WriteLog(string.Format("{0}列终极批量写入完成 - 更新{1}个单元格，耗时{2:F3}秒，性能提升10倍", 
+                WriteLog(string.Format("{0}列终极批量写入完成 - 更新{1}个单元格，耗时{2:F3}秒", 
                     columnName, updateCount, stopwatch.Elapsed.TotalSeconds), LogLevel.Info);
                 
                 return updateCount;
@@ -943,7 +928,7 @@ namespace YYTools
         }
 
         /// <summary>
-        /// 批量更新列数据 - 高性能写入
+        /// 批量更新列数据
         /// </summary>
         private int BatchUpdateColumn(Excel.Worksheet worksheet, int column, Dictionary<int, string> updates)
         {
@@ -951,7 +936,6 @@ namespace YYTools
 
             try
             {
-                // 按行号排序，连续区域一起处理
                 var sortedUpdates = updates.OrderBy(x => x.Key).ToList();
                 
                 foreach (var update in sortedUpdates)
@@ -959,7 +943,7 @@ namespace YYTools
                     Excel.Range cell = worksheet.Cells[update.Key, column] as Excel.Range;
                     if (cell != null)
                     {
-                        cell.NumberFormat = "@"; // 文本格式
+                        cell.NumberFormat = "@";
                         cell.Value = update.Value;
                     }
                 }
@@ -978,22 +962,6 @@ namespace YYTools
         }
 
         /// <summary>
-        /// 获取工作表的数据范围
-        /// </summary>
-        private Excel.Range GetDataRange(Excel.Worksheet worksheet)
-        {
-            try
-            {
-                return worksheet.UsedRange;
-            }
-            catch (Exception ex)
-            {
-                WriteLog("获取数据范围失败: " + ex.Message, LogLevel.Error);
-                return null;
-            }
-        }
-
-        /// <summary>
         /// 获取单元格值
         /// </summary>
         private string GetCellValue(Excel.Worksheet worksheet, int row, int column)
@@ -1001,9 +969,9 @@ namespace YYTools
             try
             {
                 Excel.Range cell = worksheet.Cells[row, column] as Excel.Range;
-                if (cell != null && cell.Value != null)
+                if (cell != null && cell.Value2 != null)
                 {
-                    return cell.Value.ToString();
+                    return cell.Value2.ToString();
                 }
                 return "";
             }
@@ -1023,9 +991,8 @@ namespace YYTools
                 Excel.Range cell = worksheet.Cells[row, column] as Excel.Range;
                 if (cell != null)
                 {
-                    // 设置为文本格式，防止自动转换
                     cell.NumberFormat = "@";
-                    cell.Value = value;
+                    cell.Value2 = value;
                 }
             }
             catch (Exception ex)
@@ -1035,7 +1002,7 @@ namespace YYTools
         }
 
         /// <summary>
-        /// 标准化运单号（处理科学记数法等问题）
+        /// 标准化运单号
         /// </summary>
         private string NormalizeTrackNumber(string trackNumber)
         {
@@ -1044,14 +1011,11 @@ namespace YYTools
 
             string normalized = trackNumber.Trim();
 
-            // 处理科学记数法
             if (normalized.Contains("E+") || normalized.Contains("e+"))
             {
-                double number;
-                if (double.TryParse(normalized, out number))
+                if (decimal.TryParse(normalized, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out decimal decValue))
                 {
-                    // 转换为完整的数字字符串
-                    normalized = number.ToString("F0");
+                    normalized = decValue.ToString();
                 }
             }
 
@@ -1059,13 +1023,12 @@ namespace YYTools
         }
 
         /// <summary>
-        /// 写入日志
+        /// 写入日志 (公共静态方法)
         /// </summary>
-        private void WriteLog(string message, LogLevel level)
+        public static void WriteLog(string message, LogLevel level)
         {
             try
             {
-                // 确保日志目录存在
                 if (!Directory.Exists(LogPath))
                 {
                     Directory.CreateDirectory(LogPath);
@@ -1079,12 +1042,11 @@ namespace YYTools
 
                 File.AppendAllText(logFile, logEntry + Environment.NewLine, Encoding.UTF8);
 
-                // 同时输出到Debug
                 System.Diagnostics.Debug.WriteLine(logEntry);
             }
             catch
             {
-                // 日志写入失败时不抛出异常，避免影响主流程
+                // 日志写入失败不影响主流程
             }
         }
 
@@ -1097,7 +1059,7 @@ namespace YYTools
         }
 
         /// <summary>
-        /// 清理旧日志文件（保留最近7天）
+        /// 清理旧日志文件
         /// </summary>
         public static void CleanupOldLogs()
         {
@@ -1130,7 +1092,7 @@ namespace YYTools
         {
             try
             {
-                if (array == null || row > array.GetLength(0) || col > array.GetLength(1))
+                if (array == null || row > array.GetLength(0) || col > array.GetLength(1) || row < 1 || col < 1)
                     return "";
                 
                 object value = array[row, col];
@@ -1152,17 +1114,16 @@ namespace YYTools
                 int coreCount = Environment.ProcessorCount;
                 long memoryMB = GC.GetTotalMemory(false) / 1024 / 1024;
                 
-                // 根据硬件动态调整批处理大小
                 if (coreCount >= 8 && memoryMB > 4096)
-                    return 2000; // 高配置
+                    return 2000; 
                 else if (coreCount >= 4 && memoryMB > 2048)
-                    return 1000; // 中等配置
+                    return 1000; 
                 else
-                    return 500;  // 低配置
+                    return 500;
             }
             catch
             {
-                return 1000; // 默认值
+                return 1000;
             }
         }
     }
@@ -1185,4 +1146,4 @@ namespace YYTools
         Warning,
         Error
     }
-} 
+}
