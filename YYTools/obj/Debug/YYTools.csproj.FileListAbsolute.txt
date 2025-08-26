@@ -3,3 +3,9 @@ D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.MatchForm.resources
 D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.Properties.Resources.resources
 D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.csproj.GenerateResource.cache
 D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.csproj.CoreCompileInputs.cache
+D:\Develop\C#\YYTools\Demo\YYTools\bin\Debug\YYTools.pdb
+D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.pdb
+D:\Develop\C#\YYTools\Demo\YYTools\bin\Debug\YYTools.exe.config
+D:\Develop\C#\YYTools\Demo\YYTools\bin\Debug\YYTools.exe
+D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.exe
+D:\Develop\C#\YYTools\Demo\YYTools\obj\Debug\YYTools.exe.config

@@ -14,7 +14,7 @@ namespace YYTools
         private BackgroundWorker backgroundWorker;
         private bool isProcessing = false;
         private List<Excel.Workbook> workbooks;
-
+        
         public MatchForm()
         {
             InitializeComponent();
@@ -40,16 +40,16 @@ namespace YYTools
                 excelApp = ExcelAddin.GetExcelApplication();
                 if (excelApp == null)
                 {
-                    MessageBox.Show("请先打开WPS表格或Excel文件3！", "提示",
+                    MessageBox.Show("请先打开WPS表格或Excel文件！", "提示", 
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 workbooks = ExcelAddin.GetWorkbooks();
-
+                
                 cmbBillWorkbook.Items.Clear();
                 cmbShippingWorkbook.Items.Clear();
-
+                
                 foreach (var workbook in workbooks)
                 {
                     cmbBillWorkbook.Items.Add(workbook.Name);
@@ -64,7 +64,7 @@ namespace YYTools
             }
             catch (Exception ex)
             {
-                MessageBox.Show("加载工作簿失败：" + ex.Message, "错误",
+                MessageBox.Show("加载工作簿失败：" + ex.Message, "错误", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -74,11 +74,11 @@ namespace YYTools
             try
             {
                 var settings = AppSettings.Instance;
-
+                
                 // 应用字体设置
                 Font newFont = new Font("微软雅黑", settings.FontSize, FontStyle.Regular);
                 ApplyFontToAllControls(this, newFont);
-
+                
                 // 应用界面缩放
                 if (settings.AutoScaleUI)
                 {
@@ -107,7 +107,7 @@ namespace YYTools
         {
             if (isProcessing)
             {
-                MessageBox.Show("任务正在进行中，请等待完成！", "提示",
+                MessageBox.Show("任务正在进行中，请等待完成！", "提示", 
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -117,14 +117,14 @@ namespace YYTools
                 // 验证选择
                 if (cmbBillWorkbook.SelectedIndex < 0 || cmbShippingWorkbook.SelectedIndex < 0)
                 {
-                    MessageBox.Show("请选择工作簿！", "提示",
+                    MessageBox.Show("请选择工作簿！", "提示", 
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 if (cmbBillSheet.SelectedIndex < 0 || cmbShippingSheet.SelectedIndex < 0)
                 {
-                    MessageBox.Show("请选择工作表！", "提示",
+                    MessageBox.Show("请选择工作表！", "提示", 
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -155,7 +155,7 @@ namespace YYTools
             }
             catch (Exception ex)
             {
-                MessageBox.Show("启动处理失败：" + ex.Message, "错误",
+                MessageBox.Show("启动处理失败：" + ex.Message, "错误", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 isProcessing = false;
                 btnStart.Enabled = true;
@@ -169,13 +169,12 @@ namespace YYTools
             {
                 var config = (MatchConfig)e.Argument;
                 var service = new MatchService();
-
-                // !!! FIXED HERE: Added the missing 'excelApp' parameter
-                var result = service.ExecuteMatch(config, excelApp, (progress, message) =>
+                
+                var result = service.ExecuteMatch(config, (progress, message) =>
                 {
                     backgroundWorker.ReportProgress(progress, message);
                 });
-
+                
                 e.Result = result;
             }
             catch (Exception ex)
@@ -226,8 +225,8 @@ namespace YYTools
                     result.ElapsedSeconds,
                     result.ProcessedRows / Math.Max(result.ElapsedSeconds, 0.001)
                 );
-
-                MessageBox.Show(message, "成功",
+                
+                MessageBox.Show(message, "成功", 
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
@@ -241,8 +240,8 @@ namespace YYTools
                     "• 文件是否可以正常访问",
                     result.ErrorMessage
                 );
-
-                MessageBox.Show(message, "失败",
+                
+                MessageBox.Show(message, "失败", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -252,9 +251,9 @@ namespace YYTools
             if (isProcessing)
             {
                 DialogResult result = MessageBox.Show(
-                    "确定要停止当前任务吗？", "确认",
+                    "确定要停止当前任务吗？", "确认", 
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
+                
                 if (result == DialogResult.Yes)
                 {
                     backgroundWorker.CancelAsync();
@@ -279,7 +278,7 @@ namespace YYTools
             }
             catch (Exception ex)
             {
-                MessageBox.Show("打开设置失败：" + ex.Message, "错误",
+                MessageBox.Show("打开设置失败：" + ex.Message, "错误", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -302,7 +301,7 @@ namespace YYTools
 
                 var selectedWorkbook = workbooks[workbookCombo.SelectedIndex];
                 var sheetNames = ExcelAddin.GetWorksheetNames(selectedWorkbook);
-
+                
                 sheetCombo.Items.Clear();
                 foreach (string sheetName in sheetNames)
                 {
@@ -320,45 +319,9 @@ namespace YYTools
             }
             catch (Exception ex)
             {
-                MessageBox.Show("加载工作表失败：" + ex.Message, "错误",
+                MessageBox.Show("加载工作表失败：" + ex.Message, "错误", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        // !!! FIXED HERE: Added all missing button click event handlers
-        private void btnSelectTrackCol_Click(object sender, EventArgs e)
-        {
-            // 留空
-        }
-
-        private void btnSelectProductCol_Click(object sender, EventArgs e)
-        {
-            // 留空
-        }
-
-        private void btnSelectNameCol_Click(object sender, EventArgs e)
-        {
-            // 留空
-        }
-
-        private void btnSelectBillTrackCol_Click(object sender, EventArgs e)
-        {
-            // 留空
-        }
-
-        private void btnSelectBillProductCol_Click(object sender, EventArgs e)
-        {
-            // 留空
-        }
-
-        private void btnSelectBillNameCol_Click(object sender, EventArgs e)
-        {
-            // 留空
-        }
-
-        private void btnViewLogs_Click(object sender, EventArgs e)
-        {
-            // 留空
         }
     }
 

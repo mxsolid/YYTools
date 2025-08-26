@@ -381,9 +381,9 @@ namespace YYTools
                 if (progressCallback != null)
                     progressCallback(12, "正在批量读取发货数据...");
 
-                int trackCol = ExcelHelper.GetColumnNumber(config.ShippingTrackColumn);
-                int productCol = ExcelHelper.GetColumnNumber(config.ShippingProductColumn);
-                int nameCol = ExcelHelper.GetColumnNumber(config.ShippingNameColumn);
+                int trackCol = config.ShippingTrackColumn;
+                int productCol = config.ShippingProductColumn;
+                int nameCol = config.ShippingNameColumn;
 
                 // 批量读取三列数据 - 关键性能优化
                 Excel.Range trackRange = shippingSheet.get_Range(
@@ -473,9 +473,9 @@ namespace YYTools
                 if (progressCallback != null)
                     progressCallback(52, "正在批量读取账单数据...");
 
-                int trackCol = ExcelHelper.GetColumnNumber(config.BillTrackColumn);
-                int productCol = ExcelHelper.GetColumnNumber(config.BillProductColumn);
-                int nameCol = ExcelHelper.GetColumnNumber(config.BillNameColumn);
+                int trackCol = config.BillTrackColumn;
+                int productCol = config.BillProductColumn;
+                int nameCol = config.BillNameColumn;
 
                 // 批量读取运单号列
                 Excel.Range trackRange = billSheet.get_Range(
@@ -593,9 +593,9 @@ namespace YYTools
                 int totalRows = usedRange.Rows.Count;
                 WriteLog(string.Format("平衡模式优化版 - 批处理大小: {0}, 总行数: {1}", batchSize, totalRows), LogLevel.Info);
 
-                int trackCol = ExcelHelper.GetColumnNumber(config.ShippingTrackColumn);
-                int productCol = ExcelHelper.GetColumnNumber(config.ShippingProductColumn);
-                int nameCol = ExcelHelper.GetColumnNumber(config.ShippingNameColumn);
+                int trackCol = config.ShippingTrackColumn;
+                int productCol = config.ShippingProductColumn;
+                int nameCol = config.ShippingNameColumn;
 
                 // 预分配Dictionary容量
                 index = new Dictionary<string, List<ShippingItem>>(totalRows);
@@ -673,9 +673,9 @@ namespace YYTools
                 int matchedCount = 0;
                 int processedRows = 0;
 
-                int trackCol = ExcelHelper.GetColumnNumber(config.BillTrackColumn);
-                int productCol = ExcelHelper.GetColumnNumber(config.BillProductColumn);
-                int nameCol = ExcelHelper.GetColumnNumber(config.BillNameColumn);
+                int trackCol = config.BillTrackColumn;
+                int productCol = config.BillProductColumn;
+                int nameCol = config.BillNameColumn;
 
                 // 使用中等批量处理
                 int writeBatchSize = batchSize / 2; // 写入批次稍小一些
@@ -777,9 +777,9 @@ namespace YYTools
                 if (usedRange == null) return index;
 
                 int totalRows = usedRange.Rows.Count;
-                int trackCol = ExcelHelper.GetColumnNumber(config.ShippingTrackColumn);
-                int productCol = ExcelHelper.GetColumnNumber(config.ShippingProductColumn);
-                int nameCol = ExcelHelper.GetColumnNumber(config.ShippingNameColumn);
+                int trackCol = config.ShippingTrackColumn;
+                int productCol = config.ShippingProductColumn;
+                int nameCol = config.ShippingNameColumn;
 
                 for (int row = 2; row <= totalRows; row++)
                 {
@@ -833,9 +833,9 @@ namespace YYTools
                 int matchedCount = 0;
                 int processedRows = 0;
 
-                int trackCol = ExcelHelper.GetColumnNumber(config.BillTrackColumn);
-                int productCol = ExcelHelper.GetColumnNumber(config.BillProductColumn);
-                int nameCol = ExcelHelper.GetColumnNumber(config.BillNameColumn);
+                int trackCol = config.BillTrackColumn;
+                int productCol = config.BillProductColumn;
+                int nameCol = config.BillNameColumn;
 
                 for (int row = 2; row <= totalRows; row++)
                 {

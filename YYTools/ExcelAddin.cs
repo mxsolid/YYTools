@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Office.Interop.Excel;
@@ -14,6 +14,8 @@ namespace YYTools
     [ComVisible(true)]
     public class ExcelAddin
     {
+        // ... (Your other methods like ShowMatchForm, ShowSettings remain the same) ...
+
         /// <summary>
         /// 显示匹配窗体
         /// </summary>
@@ -26,7 +28,7 @@ namespace YYTools
             }
             catch (Exception ex)
             {
-                MessageBox.Show("显示匹配窗体失败：" + ex.Message, "错误", 
+                MessageBox.Show("显示匹配窗体失败：" + ex.Message, "错误",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -43,49 +45,62 @@ namespace YYTools
             }
             catch (Exception ex)
             {
-                MessageBox.Show("显示设置窗体失败：" + ex.Message, "错误", 
+                MessageBox.Show("显示设置窗体失败：" + ex.Message, "错误",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
+        // ====================================================================
+        // ===            IMPROVED METHOD STARTS HERE                       ===
+        // ====================================================================
+
         /// <summary>
-        /// 获取Excel应用程序实例 - WPS优先，简单有效
+        /// 获取Excel应用程序实例 - (新) 更稳定可靠的WPS/Excel检测方法
         /// </summary>
         public static Excel.Application GetExcelApplication()
         {
-            try
+            // NEW: Define ProgIDs for WPS and Excel. We prioritize WPS by putting it first.
+            var progIds = new[] { "Ket.Application","ET.Application", "Excel.Application" };
+
+            foreach (var progId in progIds)
             {
-                // 1. 优先尝试WPS表格 (使用正确的ProgID)
                 try
                 {
-                    var wpsApp = (Excel.Application)Marshal.GetActiveObject("Ket.Application");
-                    if (wpsApp != null && HasOpenWorkbooks(wpsApp))
+                    // Try to get a running instance using its ProgID
+                    var app = (Excel.Application)Marshal.GetActiveObject(progId);
+
+                    // MORE RELIABLE CHECK:
+                    // Ensure the instance is valid, visible to the user, and has open workbooks.
+                    // This prevents connecting to hidden or background Excel processes.
+                    if (app != null && app.Visible && app.Workbooks.Count > 0)
                     {
-                        return wpsApp;
+                        Debug.WriteLine($"Successfully connected to {progId}");
+                        return app; // Found a valid, running instance. Return it immediately.
                     }
                 }
-                catch { }
-
-                // 2. 尝试传统Excel
-                try
+                catch (COMException)
                 {
-                    var excelApp = (Excel.Application)Marshal.GetActiveObject("Excel.Application");
-                    if (excelApp != null && HasOpenWorkbooks(excelApp))
-                    {
-                        return excelApp;
-                    }
+                    // This is expected if an application with the given ProgID is not running.
+                    // We can safely ignore it and try the next one in the list.
+                    Debug.WriteLine($"{progId} not found in Running Object Table. Trying next...");
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    // Catch any other unexpected errors during connection.
+                    MessageBox.Show($"连接到 {progId} 时发生意外错误: {ex.Message}", "连接错误",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
 
-                return null;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("连接应用程序时出错: " + ex.Message, "错误", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return null;
-            }
+            // If the loop completes without finding any suitable instance
+            Debug.WriteLine("No suitable running instance of WPS or Excel found.");
+            return null;
         }
+
+        // ====================================================================
+        // ===            IMPROVED METHOD ENDS HERE                         ===
+        // ====================================================================
+
 
         /// <summary>
         /// 检查是否有打开的工作簿 - 简单检测
@@ -95,10 +110,10 @@ namespace YYTools
             try
             {
                 if (app == null) return false;
-                
+
                 var workbooks = app.Workbooks;
                 if (workbooks == null) return false;
-                
+
                 return workbooks.Count > 0;
             }
             catch
@@ -106,6 +121,7 @@ namespace YYTools
                 return false;
             }
         }
+
 
         /// <summary>
         /// 获取所有工作簿
@@ -126,7 +142,7 @@ namespace YYTools
             }
             catch (Exception ex)
             {
-                MessageBox.Show("获取工作簿列表失败：" + ex.Message, "错误", 
+                MessageBox.Show("获取工作簿列表失败：" + ex.Message, "错误",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return new List<Excel.Workbook>();
             }
@@ -150,7 +166,7 @@ namespace YYTools
             }
             catch (Exception ex)
             {
-                MessageBox.Show("获取工作表列表失败：" + ex.Message, "错误", 
+                MessageBox.Show("获取工作表列表失败：" + ex.Message, "错误",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return new List<string>();
             }
@@ -176,7 +192,7 @@ namespace YYTools
             }
             catch (Exception ex)
             {
-                MessageBox.Show("获取工作表失败：" + ex.Message, "错误", 
+                MessageBox.Show("获取工作表失败：" + ex.Message, "错误",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return null;
             }
@@ -207,7 +223,7 @@ namespace YYTools
             }
             catch (Exception ex)
             {
-                MessageBox.Show("获取列标题失败：" + ex.Message, "错误", 
+                MessageBox.Show("获取列标题失败：" + ex.Message, "错误",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return new List<string>();
             }
