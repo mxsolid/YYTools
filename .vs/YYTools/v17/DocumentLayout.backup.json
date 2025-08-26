@@ -6,7 +6,7 @@
       "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|YYTools||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|YYTools\\YYTools.csproj|d:\\develop\\c#\\yytools\\demo\\yytools\\exceladdin.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|YYTools\\YYTools.csproj|D:\\Develop\\C#\\YYTools\\Demo\\yytools\\exceladdin.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|YYTools\\YYTools.csproj|solutionrelative:yytools\\exceladdin.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
@@ -36,8 +36,8 @@
               "Title": "YYTools",
               "DocumentMoniker": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\YYTools.csproj",
               "RelativeDocumentMoniker": "YYTools\\YYTools.csproj",
-              "ToolTip": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\YYTools.csproj*",
-              "RelativeToolTip": "YYTools\\YYTools.csproj*",
+              "ToolTip": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\YYTools.csproj",
+              "RelativeToolTip": "YYTools\\YYTools.csproj",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2025-08-22T10:13:33.296Z",
               "EditorCaption": ""
@@ -56,8 +56,7 @@
               "RelativeToolTip": "YYTools\\ExcelAddin.cs",
               "ViewState": "AgIAADYAAAAAAAAAAAAIwDoAAAAiAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-22T03:05:31.515Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-08-22T03:05:31.515Z"
             },
             {
               "$type": "Document",

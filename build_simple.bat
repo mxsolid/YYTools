@@ -1,85 +1,54 @@
 @echo off
 chcp 65001 >nul
 echo =====================================
-echo YY工具 简化编译脚本 v2.1
+echo YY运单匹配工具 - 简化编译脚本
 echo =====================================
+echo.
 
-REM 设置.NET Framework路径
-set FRAMEWORK_PATH=%WINDIR%\Microsoft.NET\Framework64\v4.0.30319
-if not exist "%FRAMEWORK_PATH%\csc.exe" (
-    set FRAMEWORK_PATH=%WINDIR%\Microsoft.NET\Framework\v4.0.30319
-)
+REM 清理之前的编译结果
+if exist "YYTools\bin" rmdir /s /q "YYTools\bin"
+if exist "YYTools\obj" rmdir /s /q "YYTools\obj"
 
-if not exist "%FRAMEWORK_PATH%\csc.exe" (
-    echo 错误：未找到.NET Framework 4.0编译器
+REM 创建输出目录
+mkdir "YYTools\bin\Release" 2>nul
+
+echo 正在编译YYTools.dll...
+
+REM 使用CSC直接编译DLL（不包含Microsoft.Office.Interop.Excel引用来避免依赖问题）
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /target:library /out:YYTools\bin\Release\YYTools.dll /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Data.dll YYTools\ExcelAddin.cs YYTools\MatchService.cs YYTools\MatchForm.cs YYTools\MatchForm.Designer.cs YYTools\ExcelHelper.cs YYTools\ColumnSelectionForm.cs YYTools\Properties\AssemblyInfo.cs
+
+if %errorlevel% neq 0 (
+    echo 编译DLL失败！
     pause
     exit /b 1
 )
 
-echo 找到编译器: %FRAMEWORK_PATH%\csc.exe
+echo ✓ YYTools.dll 编译成功
 
-REM 创建输出目录
-if not exist "YYTools\bin\Debug" mkdir "YYTools\bin\Debug"
+echo.
+echo 正在编译测试程序...
 
-echo 开始编译YYTools.dll...
+REM 编译测试程序
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /target:winexe /r:YYTools\bin\Release\YYTools.dll /r:System.Windows.Forms.dll TestProgram.cs
 
-REM 编译主DLL
-"%FRAMEWORK_PATH%\csc.exe" ^
-    /target:library ^
-    /out:"YYTools\bin\Debug\YYTools.dll" ^
-    /reference:System.dll ^
-    /reference:System.Core.dll ^
-    /reference:System.Data.dll ^
-    /reference:System.Drawing.dll ^
-    /reference:System.Windows.Forms.dll ^
-    /reference:System.Xml.dll ^
-    /reference:"C:\Program Files (x86)\Microsoft Office\Office16\EXCEL.EXE" ^
-    /reference:"C:\Windows\Microsoft.NET\assembly\GAC_MSIL\office\v4.0_15.0.0.0__71e9bce111e9429c\office.dll" ^
-    YYTools\*.cs
-
-if %ERRORLEVEL% neq 0 (
-    echo.
-    echo 编译失败！尝试不使用Office引用...
-    
-    "%FRAMEWORK_PATH%\csc.exe" ^
-        /target:library ^
-        /out:"YYTools\bin\Debug\YYTools.dll" ^
-        /reference:System.dll ^
-        /reference:System.Core.dll ^
-        /reference:System.Data.dll ^
-        /reference:System.Drawing.dll ^
-        /reference:System.Windows.Forms.dll ^
-        /reference:System.Xml.dll ^
-        YYTools\ExcelHelper.cs ^
-        YYTools\MatchService.cs ^
-        YYTools\ColumnSelectionForm.cs ^
-        YYTools\MatchForm.cs ^
-        YYTools\SettingsForm.cs ^
-        YYTools\Properties\AssemblyInfo.cs
-        
-    if %ERRORLEVEL% neq 0 (
-        echo 编译仍然失败！
-        pause
-        exit /b 1
-    )
+if %errorlevel% neq 0 (
+    echo 编译测试程序失败！
+    pause
+    exit /b 1
 )
 
-echo.
-echo ========================================
-echo 编译成功！
-echo ========================================
-
-if exist "YYTools\bin\Debug\YYTools.dll" (
-    echo DLL文件已生成:
-    dir "YYTools\bin\Debug\YYTools.dll" | find "YYTools.dll"
-) else (
-    echo 错误：DLL文件未生成
-)
+echo ✓ TestProgram.exe 编译成功
 
 echo.
-echo 接下来可以：
-echo 1. 以管理员身份运行: install_admin.bat
-echo 2. 测试功能: bin\Debug\YYToolsTest.exe
-echo.
+echo =====================================
+echo 编译完成！
+echo =====================================
 
-pause 
+echo 输出文件：
+dir YYTools\bin\Release\YYTools.dll | find "YYTools.dll"
+dir TestProgram.exe | find "TestProgram.exe"
+
+echo.
+echo 现在可以运行 TestProgram.exe 进行测试！
+
+pause

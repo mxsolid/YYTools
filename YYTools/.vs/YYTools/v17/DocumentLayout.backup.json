@@ -3,12 +3,10 @@
   "WorkspaceRootPath": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\ThisAddIn.Designer.xml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:ThisAddIn.Designer.xml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+      "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|YYTools||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\YYTools.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:YYTools.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|YYTools.csproj|d:\\develop\\c#\\yytools\\demo\\yytools\\||{B270807C-D8C6-49EB-8EBE-8E8D566637A1}|5e9a8ac2-4f34-4521-858f-4c248ba31532"
     }
   ],
   "DocumentGroupContainers": [
@@ -23,27 +21,13 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "ThisAddIn.Designer.xml",
-              "DocumentMoniker": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\ThisAddIn.Designer.xml",
-              "RelativeDocumentMoniker": "ThisAddIn.Designer.xml",
-              "ToolTip": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\ThisAddIn.Designer.xml",
-              "RelativeToolTip": "ThisAddIn.Designer.xml",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003576|",
-              "WhenOpened": "2025-08-22T06:28:18.565Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "YYTools.csproj",
+              "Title": "YYTools",
               "DocumentMoniker": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\YYTools.csproj",
               "RelativeDocumentMoniker": "YYTools.csproj",
               "ToolTip": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\YYTools.csproj",
               "RelativeToolTip": "YYTools.csproj",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-08-22T06:28:09.665Z",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2025-08-26T02:44:59.939Z",
               "EditorCaption": ""
             },
             {

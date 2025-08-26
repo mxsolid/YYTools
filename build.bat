@@ -39,14 +39,14 @@ if exist "YYTools\obj" rmdir /s /q "YYTools\obj"
 echo 清理完成
 echo.
 
-REM 编译Debug版本
-echo 正在编译Debug版本...
-%MSBUILD_PATH% YYTools\YYTools.csproj /p:Configuration=Debug /p:Platform="Any CPU" /v:minimal
+REM 编译Release版本
+echo 正在编译Release版本...
+%MSBUILD_PATH% YYTools\YYTools.csproj /p:Configuration=Release /p:Platform="Any CPU" /v:minimal
 if %errorlevel% neq 0 (
-    echo 编译Debug版本失败！
+    echo 编译Release版本失败！
     echo 尝试使用解决方案文件...
     if exist "YYTools.sln" (
-        %MSBUILD_PATH% YYTools.sln /p:Configuration=Debug /p:Platform="Any CPU" /v:minimal
+        %MSBUILD_PATH% YYTools.sln /p:Configuration=Release /p:Platform="Any CPU" /v:minimal
         if %errorlevel% neq 0 (
             echo 解决方案编译也失败！请检查项目配置。
             pause
@@ -65,19 +65,30 @@ echo 编译成功！
 echo =====================================
 
 REM 检查输出文件
-if exist "YYTools\bin\Debug\YYTools.dll" (
-    echo Debug版本编译完成
-    echo 输出路径: YYTools\bin\Debug\YYTools.dll
-    dir "YYTools\bin\Debug\YYTools.dll" | find "YYTools.dll"
+if exist "YYTools\bin\Release\YYTools.dll" (
+    echo Release版本编译完成
+    echo 输出路径: YYTools\bin\Release\YYTools.dll
+    dir "YYTools\bin\Release\YYTools.dll" | find "YYTools.dll"
 ) else (
     echo 警告：找不到输出的DLL文件
 )
 
 echo.
 echo 编译后续步骤：
-echo 1. 注册COM组件: 以管理员身份运行 install_admin.bat
-echo 2. 测试功能: 运行 bin\Debug\YYToolsTest.exe
-echo 3. 在WPS/Excel中调用: CreateObject("YYTools.ExcelAddin").InstallMenu()
+echo 1. 编译测试程序: build_test.bat
+echo 2. 运行测试: TestProgram.exe
+echo 3. 在WPS/Excel中调用: CreateObject("YYTools.ExcelAddin").ShowMatchForm()
+echo.
+
+REM 自动编译测试程序
+echo 正在编译测试程序...
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /target:winexe /r:YYTools\bin\Release\YYTools.dll /r:System.Windows.Forms.dll TestProgram.cs
+if %errorlevel% equ 0 (
+    echo 测试程序编译成功！
+    echo 可以运行 TestProgram.exe 进行测试
+) else (
+    echo 测试程序编译失败！
+)
 echo.
 
 pause 

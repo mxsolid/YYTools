@@ -1,12 +1,11 @@
 using System;
 using System.Drawing;
-using System.IO;
 using System.Windows.Forms;
 
 namespace YYTools
 {
     /// <summary>
-    /// 设置窗体 - 支持性能模式、字体、默认值配置
+    /// 设置窗体 - WPS优先配置
     /// </summary>
     public partial class SettingsForm : Form
     {
@@ -15,101 +14,155 @@ namespace YYTools
         public SettingsForm()
         {
             InitializeComponent();
+            
+            // 高分辨率显示优化
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+            this.AutoScaleDimensions = new SizeF(6F, 12F);
+            
+            // 适配高清屏幕
+            if (Environment.OSVersion.Version.Major >= 6) // Vista及以上
+            {
+                SetProcessDPIAware(); // 启用DPI感知
+            }
+            
             settings = AppSettings.Instance;
             LoadSettings();
+            
+            // 应用当前字体设置到设置窗体
+            ApplyCurrentFontSettings();
         }
-
+        
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool SetProcessDPIAware();
+        
         /// <summary>
-        /// 加载当前设置
+        /// 应用当前字体设置到设置窗体
         /// </summary>
-        private void LoadSettings()
-        {
-            // 性能模式
-            cmbPerformanceMode.SelectedIndex = (int)settings.PerformanceMode;
-            
-            // 字体设置
-            nudFontSize.Value = (decimal)settings.FontSize;
-            chkAutoScale.Checked = settings.AutoScaleUI;
-            
-            // 默认值设置
-            txtDefaultShippingTrack.Text = settings.DefaultShippingTrackColumn;
-            txtDefaultShippingProduct.Text = settings.DefaultShippingProductColumn;
-            txtDefaultShippingName.Text = settings.DefaultShippingNameColumn;
-            txtDefaultBillTrack.Text = settings.DefaultBillTrackColumn;
-            txtDefaultBillProduct.Text = settings.DefaultBillProductColumn;
-            txtDefaultBillName.Text = settings.DefaultBillNameColumn;
-            
-            // 其他设置
-            txtLogDirectory.Text = settings.LogDirectory;
-            chkAutoSelectSheets.Checked = settings.AutoSelectSheets;
-            nudProgressUpdateInterval.Value = settings.ProgressUpdateInterval;
-        }
-
-        /// <summary>
-        /// 保存设置按钮
-        /// </summary>
-        private void btnSave_Click(object sender, EventArgs e)
+        private void ApplyCurrentFontSettings()
         {
             try
             {
-                // 性能模式
-                settings.PerformanceMode = (PerformanceMode)cmbPerformanceMode.SelectedIndex;
-                
+                Font currentFont = new Font("微软雅黑", settings.FontSize, FontStyle.Regular);
+                ApplyFontToAllControls(this, currentFont);
+            }
+            catch
+            {
+                // 字体应用失败时使用默认字体
+            }
+        }
+        
+        /// <summary>
+        /// 递归应用字体到所有控件
+        /// </summary>
+        private void ApplyFontToAllControls(Control parent, Font font)
+        {
+            foreach (Control control in parent.Controls)
+            {
+                control.Font = font;
+                if (control.HasChildren)
+                {
+                    ApplyFontToAllControls(control, font);
+                }
+            }
+        }
+        
+        private void LoadSettings()
+        {
+            try
+            {
                 // 字体设置
-                settings.FontSize = (float)nudFontSize.Value;
-                settings.AutoScaleUI = chkAutoScale.Checked;
+                numFontSize.Value = settings.FontSize;
+                chkAutoScale.Checked = settings.AutoScaleUI;
                 
-                // 默认值设置
-                settings.DefaultShippingTrackColumn = txtDefaultShippingTrack.Text.Trim();
-                settings.DefaultShippingProductColumn = txtDefaultShippingProduct.Text.Trim();
-                settings.DefaultShippingNameColumn = txtDefaultShippingName.Text.Trim();
-                settings.DefaultBillTrackColumn = txtDefaultBillTrack.Text.Trim();
-                settings.DefaultBillProductColumn = txtDefaultBillProduct.Text.Trim();
-                settings.DefaultBillNameColumn = txtDefaultBillName.Text.Trim();
+                // 性能模式
+                cmbPerformanceMode.SelectedIndex = (int)settings.PerformanceMode;
                 
-                // 其他设置
-                settings.LogDirectory = txtLogDirectory.Text.Trim();
-                settings.AutoSelectSheets = chkAutoSelectSheets.Checked;
-                settings.ProgressUpdateInterval = (int)nudProgressUpdateInterval.Value;
+                // WPS优先设置
+                chkWPSPriority.Checked = settings.WPSPriority;
+                chkEnableDebugLog.Checked = settings.EnableDebugLog;
                 
-                // 保存到文件
-                settings.Save();
+                // 默认列设置
+                txtShippingTrack.Text = settings.DefaultShippingTrackColumn;
+                txtShippingProduct.Text = settings.DefaultShippingProductColumn;
+                txtShippingName.Text = settings.DefaultShippingNameColumn;
+                txtBillTrack.Text = settings.DefaultBillTrackColumn;
+                txtBillProduct.Text = settings.DefaultBillProductColumn;
+                txtBillName.Text = settings.DefaultBillNameColumn;
                 
-                MessageBox.Show("设置保存成功！", "提示", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                
-                this.DialogResult = DialogResult.OK;
+                // 高级设置
+                numProgressFreq.Value = settings.ProgressUpdateFrequency;
+                txtLogDirectory.Text = settings.LogDirectory;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format("保存设置失败：{0}", ex.Message), "错误", 
+                MessageBox.Show("加载设置失败：" + ex.Message, "错误", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
-        /// <summary>
-        /// 重置默认设置
-        /// </summary>
-        private void btnReset_Click(object sender, EventArgs e)
+        
+        private void SaveSettings()
         {
-            DialogResult result = MessageBox.Show("确定要重置为默认设置吗？", "确认", 
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                
-            if (result == DialogResult.Yes)
+            try
             {
-                settings.ResetToDefaults();
-                LoadSettings();
+                // 字体设置
+                settings.FontSize = (int)numFontSize.Value;
+                settings.AutoScaleUI = chkAutoScale.Checked;
+                
+                // 性能模式
+                settings.PerformanceMode = (PerformanceMode)cmbPerformanceMode.SelectedIndex;
+                
+                // WPS优先设置
+                settings.WPSPriority = chkWPSPriority.Checked;
+                settings.EnableDebugLog = chkEnableDebugLog.Checked;
+                
+                // 默认列设置
+                settings.DefaultShippingTrackColumn = txtShippingTrack.Text.Trim();
+                settings.DefaultShippingProductColumn = txtShippingProduct.Text.Trim();
+                settings.DefaultShippingNameColumn = txtShippingName.Text.Trim();
+                settings.DefaultBillTrackColumn = txtBillTrack.Text.Trim();
+                settings.DefaultBillProductColumn = txtBillProduct.Text.Trim();
+                settings.DefaultBillNameColumn = txtBillName.Text.Trim();
+                
+                // 高级设置
+                settings.ProgressUpdateFrequency = (int)numProgressFreq.Value;
+                settings.LogDirectory = txtLogDirectory.Text.Trim();
+                
+                // 保存到配置文件
+                settings.Save();
+                
+                MessageBox.Show("设置已保存！", "成功", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("保存设置失败：" + ex.Message, "错误", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
-        /// <summary>
-        /// 浏览日志目录
-        /// </summary>
+        
+        private void btnOK_Click(object sender, EventArgs e)
+        {
+            SaveSettings();
+            this.DialogResult = DialogResult.OK;
+            this.Close();
+        }
+        
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            this.DialogResult = DialogResult.Cancel;
+            this.Close();
+        }
+        
+        private void btnApply_Click(object sender, EventArgs e)
+        {
+            SaveSettings();
+        }
+        
         private void btnBrowseLog_Click(object sender, EventArgs e)
         {
             using (FolderBrowserDialog dialog = new FolderBrowserDialog())
             {
-                dialog.Description = "选择日志存储目录";
+                dialog.Description = "选择日志目录";
                 dialog.SelectedPath = txtLogDirectory.Text;
                 
                 if (dialog.ShowDialog() == DialogResult.OK)
@@ -118,54 +171,45 @@ namespace YYTools
                 }
             }
         }
-
-        /// <summary>
-        /// 取消按钮
-        /// </summary>
-        private void btnCancel_Click(object sender, EventArgs e)
+        
+        private void btnResetDefaults_Click(object sender, EventArgs e)
         {
-            this.DialogResult = DialogResult.Cancel;
-        }
-
-        /// <summary>
-        /// 性能模式改变事件
-        /// </summary>
-        private void cmbPerformanceMode_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            PerformanceMode mode = (PerformanceMode)cmbPerformanceMode.SelectedIndex;
-            
-            switch (mode)
+            if (MessageBox.Show("确定要重置为默认设置吗？", "确认", 
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                case PerformanceMode.UltraFast:
-                    lblPerformanceDesc.Text = "极速模式：最高性能，适用于高配置机器（推荐）";
-                    break;
-                case PerformanceMode.Balanced:
-                    lblPerformanceDesc.Text = "平衡模式：兼顾性能和兼容性，适用于大多数机器";
-                    break;
-                case PerformanceMode.Compatible:
-                    lblPerformanceDesc.Text = "兼容模式：最佳兼容性，适用于低配置或老旧机器";
-                    break;
+                settings.ResetToDefaults();
+                LoadSettings();
+                MessageBox.Show("已重置为默认设置！", "提示", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
     }
-
+    
     /// <summary>
-    /// 性能模式枚举
-    /// </summary>
-    public enum PerformanceMode
-    {
-        UltraFast = 0,      // 极速模式
-        Balanced = 1,       // 平衡模式  
-        Compatible = 2      // 兼容模式
-    }
-
-    /// <summary>
-    /// 应用设置类 - 单例模式
+    /// 应用程序设置类 - WPS优先
     /// </summary>
     public class AppSettings
     {
         private static AppSettings instance;
         private static readonly object lockObject = new object();
+        
+        private AppSettings()
+        {
+            // 初始化默认值
+            FontSize = 9;
+            AutoScaleUI = true;
+            PerformanceMode = PerformanceMode.UltraFast;
+            WPSPriority = true;
+            EnableDebugLog = true;
+            DefaultShippingTrackColumn = "B";
+            DefaultShippingProductColumn = "J";
+            DefaultShippingNameColumn = "I";
+            DefaultBillTrackColumn = "C";
+            DefaultBillProductColumn = "Y";
+            DefaultBillNameColumn = "Z";
+            ProgressUpdateFrequency = 100;
+            LogDirectory = "";
+        }
         
         public static AppSettings Instance
         {
@@ -185,28 +229,17 @@ namespace YYTools
                 return instance;
             }
         }
-
-        private string settingsPath;
-
-        private AppSettings()
-        {
-            string appDataPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "YYTools");
-            
-            if (!Directory.Exists(appDataPath))
-                Directory.CreateDirectory(appDataPath);
-                
-            settingsPath = Path.Combine(appDataPath, "settings.ini");
-            ResetToDefaults();
-        }
-
-        // 性能设置
+        
+        // 界面设置
+        public int FontSize { get; set; }
+        public bool AutoScaleUI { get; set; }
+        
+        // 性能模式
         public PerformanceMode PerformanceMode { get; set; }
         
-        // UI设置
-        public float FontSize { get; set; }
-        public bool AutoScaleUI { get; set; }
+        // WPS优先设置
+        public bool WPSPriority { get; set; }
+        public bool EnableDebugLog { get; set; }
         
         // 默认列设置
         public string DefaultShippingTrackColumn { get; set; }
@@ -216,134 +249,178 @@ namespace YYTools
         public string DefaultBillProductColumn { get; set; }
         public string DefaultBillNameColumn { get; set; }
         
-        // 其他设置
+        // 高级设置
+        public int ProgressUpdateFrequency { get; set; }
         public string LogDirectory { get; set; }
-        public bool AutoSelectSheets { get; set; }
-        public int ProgressUpdateInterval { get; set; }
-
-        /// <summary>
-        /// 重置为默认值
-        /// </summary>
+        
+        private string ConfigPath
+        {
+            get
+            {
+                string folder = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "YYTools");
+                
+                if (!System.IO.Directory.Exists(folder))
+                    System.IO.Directory.CreateDirectory(folder);
+                
+                return System.IO.Path.Combine(folder, "settings.ini");
+            }
+        }
+        
+        public void Load()
+        {
+            try
+            {
+                if (!System.IO.File.Exists(ConfigPath))
+                {
+                    ResetToDefaults();
+                    Save();
+                    return;
+                }
+                
+                string[] lines = System.IO.File.ReadAllLines(ConfigPath, System.Text.Encoding.UTF8);
+                foreach (string line in lines)
+                {
+                    if (string.IsNullOrEmpty(line) || line.StartsWith("#")) continue;
+                    
+                    string[] parts = line.Split('=');
+                    if (parts.Length != 2) continue;
+                    
+                    string key = parts[0].Trim();
+                    string value = parts[1].Trim();
+                    
+                    switch (key)
+                    {
+                        case "FontSize":
+                            int fontSize;
+                            int.TryParse(value, out fontSize);
+                            FontSize = fontSize > 0 ? fontSize : 9;
+                            break;
+                        case "AutoScaleUI":
+                            bool autoScale;
+                            bool.TryParse(value, out autoScale);
+                            AutoScaleUI = autoScale;
+                            break;
+                        case "PerformanceMode":
+                            try
+                            {
+                                PerformanceMode = (PerformanceMode)Enum.Parse(typeof(PerformanceMode), value);
+                            }
+                            catch
+                            {
+                                PerformanceMode = PerformanceMode.UltraFast;
+                            }
+                            break;
+                        case "WPSPriority":
+                            bool wpsPriority;
+                            bool.TryParse(value, out wpsPriority);
+                            WPSPriority = wpsPriority;
+                            break;
+                        case "EnableDebugLog":
+                            bool enableLog;
+                            bool.TryParse(value, out enableLog);
+                            EnableDebugLog = enableLog;
+                            break;
+                        case "DefaultShippingTrackColumn":
+                            DefaultShippingTrackColumn = value;
+                            break;
+                        case "DefaultShippingProductColumn":
+                            DefaultShippingProductColumn = value;
+                            break;
+                        case "DefaultShippingNameColumn":
+                            DefaultShippingNameColumn = value;
+                            break;
+                        case "DefaultBillTrackColumn":
+                            DefaultBillTrackColumn = value;
+                            break;
+                        case "DefaultBillProductColumn":
+                            DefaultBillProductColumn = value;
+                            break;
+                        case "DefaultBillNameColumn":
+                            DefaultBillNameColumn = value;
+                            break;
+                        case "ProgressUpdateFrequency":
+                            int freq;
+                            int.TryParse(value, out freq);
+                            ProgressUpdateFrequency = freq > 0 ? freq : 100;
+                            break;
+                        case "LogDirectory":
+                            LogDirectory = value;
+                            break;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                ResetToDefaults();
+            }
+        }
+        
+        public void Save()
+        {
+            try
+            {
+                var lines = new string[]
+                {
+                    "# YY运单匹配工具设置文件",
+                    "# 界面设置",
+                    "FontSize=" + FontSize,
+                    "AutoScaleUI=" + AutoScaleUI,
+                    "",
+                    "# 性能设置",
+                    "PerformanceMode=" + PerformanceMode,
+                    "",
+                    "# WPS设置",
+                    "WPSPriority=" + WPSPriority,
+                    "EnableDebugLog=" + EnableDebugLog,
+                    "",
+                    "# 默认列设置",
+                    "DefaultShippingTrackColumn=" + DefaultShippingTrackColumn,
+                    "DefaultShippingProductColumn=" + DefaultShippingProductColumn,
+                    "DefaultShippingNameColumn=" + DefaultShippingNameColumn,
+                    "DefaultBillTrackColumn=" + DefaultBillTrackColumn,
+                    "DefaultBillProductColumn=" + DefaultBillProductColumn,
+                    "DefaultBillNameColumn=" + DefaultBillNameColumn,
+                    "",
+                    "# 高级设置",
+                    "ProgressUpdateFrequency=" + ProgressUpdateFrequency,
+                    "LogDirectory=" + LogDirectory
+                };
+                
+                System.IO.File.WriteAllLines(ConfigPath, lines, System.Text.Encoding.UTF8);
+            }
+            catch (Exception)
+            {
+                // 保存失败不抛异常
+            }
+        }
+        
         public void ResetToDefaults()
         {
-            PerformanceMode = PerformanceMode.UltraFast;
-            FontSize = 9F;
+            FontSize = 9;
             AutoScaleUI = true;
-            
+            PerformanceMode = PerformanceMode.UltraFast;
+            WPSPriority = true;
+            EnableDebugLog = true;
             DefaultShippingTrackColumn = "B";
             DefaultShippingProductColumn = "J";
             DefaultShippingNameColumn = "I";
             DefaultBillTrackColumn = "C";
             DefaultBillProductColumn = "Y";
             DefaultBillNameColumn = "Z";
-            
-            LogDirectory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "YYTools", "Logs");
-            AutoSelectSheets = true;
-            ProgressUpdateInterval = 500;
-        }
-
-        /// <summary>
-        /// 从文件加载设置
-        /// </summary>
-        public void Load()
-        {
-            try
-            {
-                if (File.Exists(settingsPath))
-                {
-                    string[] lines = File.ReadAllLines(settingsPath);
-                    foreach (string line in lines)
-                    {
-                        if (line.Contains("="))
-                        {
-                            string[] parts = line.Split('=');
-                            if (parts.Length == 2)
-                            {
-                                string key = parts[0].Trim();
-                                string value = parts[1].Trim();
-                                
-                                switch (key)
-                                {
-                                    case "PerformanceMode":
-                                        PerformanceMode = (PerformanceMode)int.Parse(value);
-                                        break;
-                                    case "FontSize":
-                                        FontSize = float.Parse(value);
-                                        break;
-                                    case "AutoScaleUI":
-                                        AutoScaleUI = bool.Parse(value);
-                                        break;
-                                    case "DefaultShippingTrackColumn":
-                                        DefaultShippingTrackColumn = value;
-                                        break;
-                                    case "DefaultShippingProductColumn":
-                                        DefaultShippingProductColumn = value;
-                                        break;
-                                    case "DefaultShippingNameColumn":
-                                        DefaultShippingNameColumn = value;
-                                        break;
-                                    case "DefaultBillTrackColumn":
-                                        DefaultBillTrackColumn = value;
-                                        break;
-                                    case "DefaultBillProductColumn":
-                                        DefaultBillProductColumn = value;
-                                        break;
-                                    case "DefaultBillNameColumn":
-                                        DefaultBillNameColumn = value;
-                                        break;
-                                    case "LogDirectory":
-                                        LogDirectory = value;
-                                        break;
-                                    case "AutoSelectSheets":
-                                        AutoSelectSheets = bool.Parse(value);
-                                        break;
-                                    case "ProgressUpdateInterval":
-                                        ProgressUpdateInterval = int.Parse(value);
-                                        break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // 加载失败则使用默认值
-                ResetToDefaults();
-            }
-        }
-
-        /// <summary>
-        /// 保存设置到文件
-        /// </summary>
-        public void Save()
-        {
-            try
-            {
-                string[] lines = new string[]
-                {
-                    string.Format("PerformanceMode={0}", (int)PerformanceMode),
-                    string.Format("FontSize={0}", FontSize),
-                    string.Format("AutoScaleUI={0}", AutoScaleUI),
-                    string.Format("DefaultShippingTrackColumn={0}", DefaultShippingTrackColumn),
-                    string.Format("DefaultShippingProductColumn={0}", DefaultShippingProductColumn),
-                    string.Format("DefaultShippingNameColumn={0}", DefaultShippingNameColumn),
-                    string.Format("DefaultBillTrackColumn={0}", DefaultBillTrackColumn),
-                    string.Format("DefaultBillProductColumn={0}", DefaultBillProductColumn),
-                    string.Format("DefaultBillNameColumn={0}", DefaultBillNameColumn),
-                    string.Format("LogDirectory={0}", LogDirectory),
-                    string.Format("AutoSelectSheets={0}", AutoSelectSheets),
-                    string.Format("ProgressUpdateInterval={0}", ProgressUpdateInterval)
-                };
-                
-                File.WriteAllLines(settingsPath, lines);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("保存设置文件失败: " + ex.Message);
-            }
+            ProgressUpdateFrequency = 100;
+            LogDirectory = "";
         }
     }
-} 
+    
+    /// <summary>
+    /// 性能模式枚举
+    /// </summary>
+    public enum PerformanceMode
+    {
+        UltraFast = 0,    // 极速模式
+        Balanced = 1,     // 平衡模式
+        Compatible = 2    // 兼容模式
+    }
+}

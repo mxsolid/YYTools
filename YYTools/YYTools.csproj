@@ -4,7 +4,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{12345678-1234-5678-9ABC-123456789ABC}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>YYTools</RootNamespace>
     <AssemblyName>YYTools</AssemblyName>
@@ -20,6 +20,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <RegisterForComInterop>false</RegisterForComInterop>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,8 +30,19 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|Any CPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>YYProgram.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
@@ -92,6 +104,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="YYProgram.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

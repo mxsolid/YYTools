@@ -3,15 +3,11 @@
   "WorkspaceRootPath": "D:\\Develop\\C#\\YYTools\\Demo\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|YYTools\\YYTools.csproj|d:\\develop\\c#\\yytools\\demo\\yytools\\excelhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|YYTools\\YYTools.csproj|solutionrelative:yytools\\excelhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|YYTools||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|YYTools\\YYTools.csproj|D:\\Develop\\C#\\YYTools\\Demo\\yytools\\exceladdin.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|YYTools\\YYTools.csproj|solutionrelative:yytools\\exceladdin.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|YYTools\\YYTools.csproj|D:\\Develop\\C#\\YYTools\\Demo\\yytools\\matchform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
-      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|YYTools\\YYTools.csproj|solutionrelative:yytools\\matchform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
       "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|YYTools\\YYTools.csproj|D:\\Develop\\C#\\YYTools\\Demo\\yytools\\app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
@@ -33,6 +29,19 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "ExcelHelper.cs",
+              "DocumentMoniker": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\ExcelHelper.cs",
+              "RelativeDocumentMoniker": "YYTools\\ExcelHelper.cs",
+              "ToolTip": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\ExcelHelper.cs",
+              "RelativeToolTip": "YYTools\\ExcelHelper.cs",
+              "ViewState": "AgIAAJIAAAAAAAAAAAAcwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-26T02:36:41.701Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "YYTools",
               "DocumentMoniker": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\YYTools.csproj",
               "RelativeDocumentMoniker": "YYTools\\YYTools.csproj",
@@ -48,32 +57,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "ExcelAddin.cs",
-              "DocumentMoniker": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\ExcelAddin.cs",
-              "RelativeDocumentMoniker": "YYTools\\ExcelAddin.cs",
-              "ToolTip": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\ExcelAddin.cs",
-              "RelativeToolTip": "YYTools\\ExcelAddin.cs",
-              "ViewState": "AgIAADYAAAAAAAAAAAAIwDoAAAAiAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-22T03:05:31.515Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 2,
-              "Title": "MatchForm.cs [\u8BBE\u8BA1]",
-              "DocumentMoniker": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\MatchForm.cs",
-              "RelativeDocumentMoniker": "YYTools\\MatchForm.cs",
-              "ToolTip": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\MatchForm.cs [\u8BBE\u8BA1]",
-              "RelativeToolTip": "YYTools\\MatchForm.cs [\u8BBE\u8BA1]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-22T03:05:17.583Z",
-              "EditorCaption": " [\u8BBE\u8BA1]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
               "Title": "app.config",
               "DocumentMoniker": "D:\\Develop\\C#\\YYTools\\Demo\\YYTools\\app.config",
               "RelativeDocumentMoniker": "YYTools\\app.config",
@@ -81,8 +65,7 @@
               "RelativeToolTip": "YYTools\\app.config",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000601|",
-              "WhenOpened": "2025-08-22T03:05:13.159Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-08-22T03:05:13.159Z"
             }
           ]
         }
