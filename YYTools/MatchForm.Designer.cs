@@ -3,7 +3,7 @@ namespace YYTools
 {
     partial class MatchForm
     {
-        private System.ComponentModel.IContainer components = null;
+        private System.ComponentModel.IContainer components = new System.ComponentModel.Container();
 
         protected override void Dispose(bool disposing)
         {
