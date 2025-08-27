@@ -25,6 +25,7 @@ namespace YYTools
     {
         public Excel.Workbook ShippingWorkbook { get; set; }
         public Excel.Workbook BillWorkbook { get; set; }
+        public SortOption SortOption { get; set; }
     }
 
     /// <summary>
@@ -38,6 +39,13 @@ namespace YYTools
         public int MatchedCount { get; set; }
         public int UpdatedCells { get; set; }
         public double ElapsedSeconds { get; set; }
+    }
+
+    public enum SortOption
+    {
+        None = 0,
+        Asc = 1,
+        Desc = 2
     }
 
     /// <summary>

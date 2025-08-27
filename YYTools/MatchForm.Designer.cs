@@ -65,6 +65,8 @@ namespace YYTools
             this.chkRemoveDuplicates = new System.Windows.Forms.CheckBox();
             this.label12 = new System.Windows.Forms.Label();
             this.txtDelimiter = new System.Windows.Forms.TextBox();
+            this.labelSort = new System.Windows.Forms.Label();
+            this.cmbSort = new System.Windows.Forms.ComboBox();
             this.tabPageFuture = new System.Windows.Forms.TabPage();
             this.gbShipping.SuspendLayout();
             this.gbBill.SuspendLayout();
@@ -431,10 +433,10 @@ namespace YYTools
             this.bottomPanel.Controls.Add(this.progressBar);
             this.bottomPanel.Controls.Add(this.lblStatus);
             this.bottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.bottomPanel.Location = new System.Drawing.Point(0, 320);
+            this.bottomPanel.Location = new System.Drawing.Point(0, 360);
             this.bottomPanel.Name = "bottomPanel";
-            this.bottomPanel.Padding = new System.Windows.Forms.Padding(8, 8, 8, 8);
-            this.bottomPanel.Size = new System.Drawing.Size(800, 81);
+            this.bottomPanel.Padding = new System.Windows.Forms.Padding(12, 12, 12, 12);
+            this.bottomPanel.Size = new System.Drawing.Size(800, 100);
             this.bottomPanel.TabIndex = 10;
             // 
             // flowLayoutPanel1
@@ -443,7 +445,7 @@ namespace YYTools
             this.flowLayoutPanel1.Controls.Add(this.btnStart);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(8, 43);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(12, 56);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Padding = new System.Windows.Forms.Padding(0, 5, 0, 0);
             this.flowLayoutPanel1.Size = new System.Drawing.Size(784, 30);
@@ -485,7 +487,7 @@ namespace YYTools
             this.tabControlMain.Location = new System.Drawing.Point(0, 25);
             this.tabControlMain.Name = "tabControlMain";
             this.tabControlMain.SelectedIndex = 0;
-            this.tabControlMain.Size = new System.Drawing.Size(800, 295);
+            this.tabControlMain.Size = new System.Drawing.Size(800, 335);
             this.tabControlMain.TabIndex = 11;
             // 
             // tabPageMatcher
@@ -497,7 +499,7 @@ namespace YYTools
             this.tabPageMatcher.Location = new System.Drawing.Point(4, 26);
             this.tabPageMatcher.Name = "tabPageMatcher";
             this.tabPageMatcher.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageMatcher.Size = new System.Drawing.Size(792, 265);
+            this.tabPageMatcher.Size = new System.Drawing.Size(792, 305);
             this.tabPageMatcher.TabIndex = 0;
             this.tabPageMatcher.Text = "运单匹配";
             // 
@@ -505,6 +507,8 @@ namespace YYTools
             // 
             this.groupBox3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox3.Controls.Add(this.cmbSort);
+            this.groupBox3.Controls.Add(this.labelSort);
             this.groupBox3.Controls.Add(this.chkRemoveDuplicates);
             this.groupBox3.Controls.Add(this.label12);
             this.groupBox3.Controls.Add(this.txtDelimiter);
@@ -541,6 +545,28 @@ namespace YYTools
             this.txtDelimiter.Size = new System.Drawing.Size(80, 23);
             this.txtDelimiter.TabIndex = 0;
             // 
+            // labelSort
+            // 
+            this.labelSort.AutoSize = true;
+            this.labelSort.Location = new System.Drawing.Point(310, 27);
+            this.labelSort.Name = "labelSort";
+            this.labelSort.Size = new System.Drawing.Size(35, 17);
+            this.labelSort.TabIndex = 3;
+            this.labelSort.Text = "排序:";
+            // 
+            // cmbSort
+            // 
+            this.cmbSort.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbSort.FormattingEnabled = true;
+            this.cmbSort.Items.AddRange(new object[] {
+            "默认",
+            "升序",
+            "降序"});
+            this.cmbSort.Location = new System.Drawing.Point(351, 24);
+            this.cmbSort.Name = "cmbSort";
+            this.cmbSort.Size = new System.Drawing.Size(100, 25);
+            this.cmbSort.TabIndex = 4;
+            // 
             // tabPageFuture
             // 
             this.tabPageFuture.BackColor = System.Drawing.SystemColors.Control;
@@ -556,13 +582,13 @@ namespace YYTools
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
-            this.ClientSize = new System.Drawing.Size(800, 401);
+            this.ClientSize = new System.Drawing.Size(800, 460);
             this.Controls.Add(this.tabControlMain);
             this.Controls.Add(this.bottomPanel);
             this.Controls.Add(this.menuStrip1);
             this.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.MainMenuStrip = this.menuStrip1;
-            this.MinimumSize = new System.Drawing.Size(816, 440);
+            this.MinimumSize = new System.Drawing.Size(840, 520);
             this.Name = "MatchForm";
             this.Text = "YY 运单匹配工具 v2.6";
             this.gbShipping.ResumeLayout(false);

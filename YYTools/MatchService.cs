@@ -247,6 +247,18 @@ namespace YYTools
                                 
                                 var productCodes = matchedItems.Select(item => item.ProductCode.Trim()).Where(c => !string.IsNullOrEmpty(c));
                                 var productNames = matchedItems.Select(item => item.ProductName.Trim()).Where(n => !string.IsNullOrEmpty(n));
+
+                                // 排序选项
+                                if (config.SortOption == SortOption.Asc)
+                                {
+                                    productCodes = productCodes.OrderBy(x => x, StringComparer.Ordinal);
+                                    productNames = productNames.OrderBy(x => x, StringComparer.Ordinal);
+                                }
+                                else if (config.SortOption == SortOption.Desc)
+                                {
+                                    productCodes = productCodes.OrderByDescending(x => x, StringComparer.Ordinal);
+                                    productNames = productNames.OrderByDescending(x => x, StringComparer.Ordinal);
+                                }
                                 
                                 if (settings.RemoveDuplicateItems)
                                 {

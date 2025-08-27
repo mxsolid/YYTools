@@ -205,13 +205,19 @@ namespace YYTools
                 if (ws == null) return;
 
                 // 使用智能列选择服务获取列信息
-                var columns = SmartColumnService.GetColumnInfos(ws, settings.MaxRowsForPreview);
+                ShowLoading(true, infoLabel);
+                var columns = SmartColumnService.GetColumnInfos(ws, 50);
                 var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
                 columnCache[cacheKey] = columns;
 
                 // 显示工作表信息
-                var stats = ExcelHelper.GetWorksheetStats(ws);
-                infoLabel.Text = $"总行数: {stats.rows:N0} | 总列数: {stats.columns:N0} | 估算大小: {(double)stats.dataSize / (1024 * 1024):F2} MB";
+                try
+                {
+                    var fileInfo = new FileInfo(wbInfo.Workbook.FullName);
+                    infoLabel.ForeColor = Color.FromArgb(120, 120, 120);
+                    infoLabel.Text = $"总行数: {ws.UsedRange.Rows.Count:N0} | 总列数: {ws.UsedRange.Columns.Count:N0} | 文件大小: {(double)fileInfo.Length / (1024 * 1024):F2} MB";
+                }
+                catch { infoLabel.Text = $"总行数: {ws.UsedRange.Rows.Count:N0} | 总列数: {ws.UsedRange.Columns.Count:N0}"; }
 
                 // 填充列下拉框，并开启可输入搜索
                 foreach (var combo in columnCombos)
@@ -242,6 +248,21 @@ namespace YYTools
             {
                  WriteLog("填充列下拉框失败: " + ex.Message, LogLevel.Error);
             }
+            finally
+            {
+                ShowLoading(false, infoLabel);
+            }
+        }
+
+        private void ShowLoading(bool loading, Label infoLabel)
+        {
+            try
+            {
+                progressBar.Style = loading ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
+                progressBar.Visible = loading || isProcessing;
+                if (loading) infoLabel.Text = "正在解析列信息，请稍候...";
+            }
+            catch { }
         }
 
         private void ApplySmartColumnSelection(ComboBox[] columnCombos, Dictionary<string, ColumnInfo> matchedColumns, string cacheKey)
@@ -426,8 +447,21 @@ namespace YYTools
                 ShippingNameColumn = GetSelectedColumn(cmbShippingNameColumn),
                 BillTrackColumn = GetSelectedColumn(cmbBillTrackColumn),
                 BillProductColumn = GetSelectedColumn(cmbBillProductColumn),
-                BillNameColumn = GetSelectedColumn(cmbBillNameColumn)
+                BillNameColumn = GetSelectedColumn(cmbBillNameColumn),
+                SortOption = GetSortOption()
             };
+        }
+
+        private SortOption GetSortOption()
+        {
+            try
+            {
+                var text = cmbSort?.SelectedItem?.ToString() ?? "默认";
+                if (text == "升序") return SortOption.Asc;
+                if (text == "降序") return SortOption.Desc;
+                return SortOption.None;
+            }
+            catch { return SortOption.None; }
         }
 
         private void BackgroundWorker_DoWork(object sender, DoWorkEventArgs e)

@@ -56,15 +56,23 @@ namespace YYTools
                     string headerText = "";
                     string previewData = "";
                     int found = 0;
-                    for (int row = 1; row <= Math.Min(usedRange.Rows.Count, rowCount); row++)
+                    int maxScan = Math.Min(usedRange.Rows.Count, rowCount);
+                    bool firstFiveAllEmpty = true;
+                    for (int row = 1; row <= maxScan; row++)
                     {
                         var cell = worksheet.Cells[row, i] as Excel.Range;
                         string value = cell?.Value2?.ToString().Trim() ?? "";
+                        if (row <= 5 && !string.IsNullOrWhiteSpace(value)) firstFiveAllEmpty = false;
                         if (!string.IsNullOrWhiteSpace(value))
                         {
                             found++;
                             if (found == 1) headerText = value;
                             else if (found == 2) { previewData = value.Length > 50 ? value.Substring(0, 50) + "..." : value; break; }
+                        }
+                        if (row == 5 && firstFiveAllEmpty)
+                        {
+                            // 前5行都为空，直接放弃深入解析，避免卡顿
+                            break;
                         }
                     }
                     bool isValid = !string.IsNullOrWhiteSpace(headerText) || !string.IsNullOrWhiteSpace(previewData);
