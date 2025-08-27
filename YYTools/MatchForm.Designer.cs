@@ -20,6 +20,8 @@ namespace YYTools
         {
             this.gbShipping = new System.Windows.Forms.GroupBox();
             this.lblShippingInfo = new System.Windows.Forms.Label();
+            this.label11 = new System.Windows.Forms.Label();
+            this.txtShippingPreview = new System.Windows.Forms.TextBox();
             this.cmbShippingNameColumn = new System.Windows.Forms.ComboBox();
             this.cmbShippingProductColumn = new System.Windows.Forms.ComboBox();
             this.cmbShippingTrackColumn = new System.Windows.Forms.ComboBox();
@@ -32,6 +34,8 @@ namespace YYTools
             this.label1 = new System.Windows.Forms.Label();
             this.gbBill = new System.Windows.Forms.GroupBox();
             this.lblBillInfo = new System.Windows.Forms.Label();
+            this.label13 = new System.Windows.Forms.Label();
+            this.txtBillPreview = new System.Windows.Forms.TextBox();
             this.cmbBillNameColumn = new System.Windows.Forms.ComboBox();
             this.cmbBillProductColumn = new System.Windows.Forms.ComboBox();
             this.cmbBillTrackColumn = new System.Windows.Forms.ComboBox();
@@ -67,6 +71,7 @@ namespace YYTools
             this.txtDelimiter = new System.Windows.Forms.TextBox();
             this.labelSort = new System.Windows.Forms.Label();
             this.cmbSort = new System.Windows.Forms.ComboBox();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.tabPageFuture = new System.Windows.Forms.TabPage();
             this.gbShipping.SuspendLayout();
             this.gbBill.SuspendLayout();
@@ -81,6 +86,8 @@ namespace YYTools
             // gbShipping
             // 
             this.gbShipping.Controls.Add(this.lblShippingInfo);
+            this.gbShipping.Controls.Add(this.label11);
+            this.gbShipping.Controls.Add(this.txtShippingPreview);
             this.gbShipping.Controls.Add(this.cmbShippingNameColumn);
             this.gbShipping.Controls.Add(this.cmbShippingProductColumn);
             this.gbShipping.Controls.Add(this.cmbShippingTrackColumn);
@@ -105,6 +112,23 @@ namespace YYTools
             this.lblShippingInfo.Name = "lblShippingInfo";
             this.lblShippingInfo.Size = new System.Drawing.Size(0, 17);
             this.lblShippingInfo.TabIndex = 10;
+            // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(15, 210);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(35, 17);
+            this.label11.TabIndex = 11;
+            this.label11.Text = "预览:";
+            // 
+            // txtShippingPreview
+            // 
+            this.txtShippingPreview.Location = new System.Drawing.Point(56, 207);
+            this.txtShippingPreview.Name = "txtShippingPreview";
+            this.txtShippingPreview.ReadOnly = true;
+            this.txtShippingPreview.Size = new System.Drawing.Size(304, 23);
+            this.txtShippingPreview.TabIndex = 12;
             // 
             // cmbShippingNameColumn
             // 
@@ -204,6 +228,8 @@ namespace YYTools
             // gbBill
             // 
             this.gbBill.Controls.Add(this.lblBillInfo);
+            this.gbBill.Controls.Add(this.label13);
+            this.gbBill.Controls.Add(this.txtBillPreview);
             this.gbBill.Controls.Add(this.cmbBillNameColumn);
             this.gbBill.Controls.Add(this.cmbBillProductColumn);
             this.gbBill.Controls.Add(this.cmbBillTrackColumn);
@@ -228,6 +254,23 @@ namespace YYTools
             this.lblBillInfo.Name = "lblBillInfo";
             this.lblBillInfo.Size = new System.Drawing.Size(0, 17);
             this.lblBillInfo.TabIndex = 10;
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(15, 210);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(35, 17);
+            this.label13.TabIndex = 11;
+            this.label13.Text = "预览:";
+            // 
+            // txtBillPreview
+            // 
+            this.txtBillPreview.Location = new System.Drawing.Point(56, 207);
+            this.txtBillPreview.Name = "txtBillPreview";
+            this.txtBillPreview.ReadOnly = true;
+            this.txtBillPreview.Size = new System.Drawing.Size(304, 23);
+            this.txtBillPreview.TabIndex = 12;
             // 
             // cmbBillNameColumn
             // 
@@ -652,11 +695,18 @@ namespace YYTools
         private System.Windows.Forms.CheckBox chkRemoveDuplicates;
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.TextBox txtDelimiter;
+        private System.Windows.Forms.Label labelSort;
+        private System.Windows.Forms.ComboBox cmbSort;
         private System.Windows.Forms.ComboBox cmbShippingTrackColumn;
         private System.Windows.Forms.ComboBox cmbShippingNameColumn;
         private System.Windows.Forms.ComboBox cmbShippingProductColumn;
         private System.Windows.Forms.ComboBox cmbBillNameColumn;
         private System.Windows.Forms.ComboBox cmbBillProductColumn;
         private System.Windows.Forms.ComboBox cmbBillTrackColumn;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.TextBox txtShippingPreview;
+        private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.TextBox txtBillPreview;
+        private System.Windows.Forms.ToolTip toolTip1;
     }
 }

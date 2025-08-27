@@ -661,6 +661,18 @@ namespace YYTools
                 {
                     bool isValid = SmartColumnService.ValidateColumnSelection(columnInfo, expectedType);
                     
+                    // 小型预览只读框联动
+                    if (combo == cmbShippingTrackColumn || combo == cmbShippingProductColumn || combo == cmbShippingNameColumn)
+                    {
+                        txtShippingPreview.Text = $"{columnInfo.HeaderText} | {columnInfo.PreviewData}";
+                        toolTip1.SetToolTip(txtShippingPreview, txtShippingPreview.Text);
+                    }
+                    else if (combo == cmbBillTrackColumn || combo == cmbBillProductColumn || combo == cmbBillNameColumn)
+                    {
+                        txtBillPreview.Text = $"{columnInfo.HeaderText} | {columnInfo.PreviewData}";
+                        toolTip1.SetToolTip(txtBillPreview, txtBillPreview.Text);
+                    }
+
                     // 根据验证结果更新UI状态
                     if (!isValid)
                     {
@@ -670,6 +682,7 @@ namespace YYTools
                     else
                     {
                         combo.BackColor = SystemColors.Window;
+                        combo.ForeColor = SystemColors.WindowText;
                     }
                 }
             }
