@@ -211,29 +211,150 @@ namespace YYTools
                 var headerRow = FindHeaderRow(usedRange);
                 var headers = headerRow?.Value2 as object[,];
 
-                var columnItems = new List<Tuple<string, string>>();
+                var columnItems = new List<ColumnInfo>();
                 if (headers != null)
                 {
                     for (int i = 1; i <= colCount; i++)
                     {
                         string colLetter = ExcelHelper.GetColumnLetter(i);
                         string headerText = headers[1, i]?.ToString().Trim() ?? "";
-                        if (headerText.Length > 10) headerText = headerText.Substring(0, 10) + "...";
-                        columnItems.Add(new Tuple<string, string>($"{colLetter} ({headerText})", headerText));
+                        string previewData = GetColumnPreviewData(ws, i, usedRange.Rows.Count);
+                        
+                        if (headerText.Length > 15) headerText = headerText.Substring(0, 15) + "...";
+                        if (previewData.Length > 20) previewData = previewData.Substring(0, 20) + "...";
+                        
+                        columnItems.Add(new ColumnInfo
+                        {
+                            DisplayText = $"{colLetter} ({headerText})",
+                            ColumnLetter = colLetter,
+                            HeaderText = headerText,
+                            PreviewData = previewData,
+                            SearchKeywords = $"{colLetter} {headerText} {previewData}"
+                        });
                     }
                 }
                 
                 foreach (var combo in columnCombos)
                 {
-                    combo.DisplayMember = "Item1";
-                    combo.ValueMember = "Item2";
+                    combo.DisplayMember = "DisplayText";
+                    combo.ValueMember = "ColumnLetter";
                     combo.DataSource = new BindingSource(columnItems, null);
                     combo.SelectedIndex = -1;
+                    
+                    // 启用自动完成和搜索功能
+                    combo.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                    combo.AutoCompleteSource = AutoCompleteSource.ListItems;
+                    
+                    // 添加搜索功能
+                    combo.TextChanged += (s, e) => FilterComboBoxItems(combo, columnItems);
                 }
+                
+                // 智能选择默认列
+                AutoSelectDefaultColumns(columnCombos, columnItems);
             }
             catch (Exception ex)
             {
                  WriteLog("填充列下拉框失败: " + ex.Message, LogLevel.Error);
+            }
+        }
+        
+        private string GetColumnPreviewData(Excel.Worksheet ws, int columnIndex, int totalRows)
+        {
+            try
+            {
+                // 从第二行开始查找非空数据作为预览
+                for (int row = 2; row <= Math.Min(totalRows, 100); row++)
+                {
+                    var cell = ws.Cells[row, columnIndex] as Excel.Range;
+                    if (cell != null && cell.Value2 != null)
+                    {
+                        string value = cell.Value2.ToString().Trim();
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            return value;
+                        }
+                    }
+                }
+                return "无数据";
+            }
+            catch
+            {
+                return "无数据";
+            }
+        }
+        
+        private void FilterComboBoxItems(ComboBox combo, List<ColumnInfo> allItems)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(combo.Text))
+                {
+                    combo.DataSource = new BindingSource(allItems, null);
+                    return;
+                }
+                
+                string searchText = combo.Text.ToLower();
+                var filteredItems = allItems.Where(item => 
+                    item.SearchKeywords.ToLower().Contains(searchText) ||
+                    item.ColumnLetter.ToLower().Contains(searchText) ||
+                    item.HeaderText.ToLower().Contains(searchText) ||
+                    item.PreviewData.ToLower().Contains(searchText)
+                ).ToList();
+                
+                combo.DataSource = new BindingSource(filteredItems, null);
+            }
+            catch (Exception ex)
+            {
+                WriteLog("过滤列项目失败: " + ex.Message, LogLevel.Warning);
+            }
+        }
+        
+        private void AutoSelectDefaultColumns(ComboBox[] columnCombos, List<ColumnInfo> columnItems)
+        {
+            try
+            {
+                // 运单号列智能选择
+                var trackColumn = columnItems.FirstOrDefault(item => 
+                    item.HeaderText.Contains("运单") || 
+                    item.HeaderText.Contains("快递") || 
+                    item.HeaderText.Contains("单号") ||
+                    item.HeaderText.Contains("track") ||
+                    item.HeaderText.Contains("tracking"));
+                    
+                if (trackColumn != null && columnCombos.Length > 0)
+                {
+                    columnCombos[0].SelectedValue = trackColumn.ColumnLetter;
+                }
+                
+                // 商品编码列智能选择
+                if (columnCombos.Length > 1)
+                {
+                    var productCodeColumn = columnItems.FirstOrDefault(item => 
+                        item.HeaderText.Contains("商品") && 
+                        (item.HeaderText.Contains("编码") || item.HeaderText.Contains("代码") || item.HeaderText.Contains("code")));
+                        
+                    if (productCodeColumn != null)
+                    {
+                        columnCombos[1].SelectedValue = productCodeColumn.ColumnLetter;
+                    }
+                }
+                
+                // 商品名称列智能选择
+                if (columnCombos.Length > 2)
+                {
+                    var productNameColumn = columnItems.FirstOrDefault(item => 
+                        item.HeaderText.Contains("商品") && 
+                        (item.HeaderText.Contains("名称") || item.HeaderText.Contains("品名") || item.HeaderText.Contains("name")));
+                        
+                    if (productNameColumn != null)
+                    {
+                        columnCombos[2].SelectedValue = productNameColumn.ColumnLetter;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteLog("自动选择默认列失败: " + ex.Message, LogLevel.Warning);
             }
         }
         
@@ -342,11 +463,7 @@ namespace YYTools
             }
         }
         
-        private string GetSelectedColumn(ComboBox combo)
-        {
-            if (string.IsNullOrWhiteSpace(combo.Text)) return "";
-            return combo.Text.Split(' ')[0].Trim().ToUpper();
-        }
+
 
         private bool AreColumnsValid(Excel.Workbook wb, string sheetName, string type, params ComboBox[] columnCombos)
         {
@@ -354,13 +471,25 @@ namespace YYTools
             {
                 foreach (var cb in columnCombos)
                 {
-                    string colLetter = GetSelectedColumn(cb);
-                    bool isValid = !string.IsNullOrEmpty(colLetter) && ExcelHelper.IsValidColumnLetter(colLetter);
-                    bool existsInList = cb.Items.Cast<Tuple<string, string>>().Any(item => item.Item1.StartsWith(colLetter + " ", StringComparison.OrdinalIgnoreCase));
-
-                    if (!isValid || !existsInList)
+                    if (cb.SelectedItem == null)
                     {
-                        MessageBox.Show($"您为“{type}”表选择的列“{cb.Text}”无效或不存在。", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show($"请为\"{type}\"表选择列！", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        cb.Focus();
+                        return false;
+                    }
+                    
+                    var selectedItem = cb.SelectedItem as ColumnInfo;
+                    if (selectedItem == null)
+                    {
+                        MessageBox.Show($"您为\"{type}\"表选择的列无效。", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        cb.Focus();
+                        return false;
+                    }
+                    
+                    // 验证列是否存在于工作表中
+                    if (!ExcelHelper.IsValidColumnLetter(selectedItem.ColumnLetter))
+                    {
+                        MessageBox.Show($"您为\"{type}\"表选择的列\"{selectedItem.DisplayText}\"无效。", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         cb.Focus();
                         return false;
                     }
@@ -378,12 +507,12 @@ namespace YYTools
                 BillWorkbook = workbooks[cmbBillWorkbook.SelectedIndex].Workbook,
                 ShippingSheetName = cmbShippingSheet.SelectedItem.ToString(),
                 BillSheetName = cmbBillSheet.SelectedItem.ToString(),
-                ShippingTrackColumn = GetSelectedColumn(cmbShippingTrackColumn),
-                ShippingProductColumn = GetSelectedColumn(cmbShippingProductColumn),
-                ShippingNameColumn = GetSelectedColumn(cmbShippingNameColumn),
-                BillTrackColumn = GetSelectedColumn(cmbBillTrackColumn),
-                BillProductColumn = GetSelectedColumn(cmbBillProductColumn),
-                BillNameColumn = GetSelectedColumn(cmbBillNameColumn)
+                ShippingTrackColumn = (cmbShippingTrackColumn.SelectedItem as ColumnInfo)?.ColumnLetter ?? "",
+                ShippingProductColumn = (cmbShippingProductColumn.SelectedItem as ColumnInfo)?.ColumnLetter ?? "",
+                ShippingNameColumn = (cmbShippingNameColumn.SelectedItem as ColumnInfo)?.ColumnLetter ?? "",
+                BillTrackColumn = (cmbBillTrackColumn.SelectedItem as ColumnInfo)?.ColumnLetter ?? "",
+                BillProductColumn = (cmbBillProductColumn.SelectedItem as ColumnInfo)?.ColumnLetter ?? "",
+                BillNameColumn = (cmbBillNameColumn.SelectedItem as ColumnInfo)?.ColumnLetter ?? ""
             };
         }
 
@@ -518,11 +647,13 @@ namespace YYTools
         }
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string aboutInfo = "YY 运单匹配工具 v2.5 (最终版)\n\n" +
+            string aboutInfo = "YY 运单匹配工具 v3.0 (智能版)\n\n" +
                              "功能特点：\n" +
                              "• 智能运单匹配，支持灵活拼接\n" +
                              "• 支持多工作簿操作与动态加载\n" +
-                             "• 高级列选择(带预览和搜索)\n\n" +
+                             "• 高级列选择(带预览和智能搜索)\n" +
+                             "• 智能默认列选择\n" +
+                             "• 优化的用户界面和性能\n\n" +
                              "作者: 皮皮熊\n" +
                              "邮箱: oyxo@qq.com";
             MessageBox.Show(aboutInfo, "关于 YY工具", MessageBoxButtons.OK, MessageBoxIcon.Information);

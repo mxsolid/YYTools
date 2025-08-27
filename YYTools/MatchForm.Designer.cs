@@ -89,21 +89,22 @@ namespace YYTools
             this.gbShipping.Controls.Add(this.label2);
             this.gbShipping.Controls.Add(this.cmbShippingWorkbook);
             this.gbShipping.Controls.Add(this.label1);
-            this.gbShipping.Location = new System.Drawing.Point(6, 6);
+            this.gbShipping.Location = new System.Drawing.Point(10, 10);
             this.gbShipping.Name = "gbShipping";
-            this.gbShipping.Size = new System.Drawing.Size(370, 205);
+            this.gbShipping.Size = new System.Drawing.Size(370, 220);
             this.gbShipping.TabIndex = 0;
             this.gbShipping.TabStop = false;
             this.gbShipping.Text = "🚚 发货明细配置";
+            this.gbShipping.Padding = new System.Windows.Forms.Padding(15, 10, 15, 15);
             // 
             // lblShippingInfo
             // 
             this.lblShippingInfo.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.lblShippingInfo.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.lblShippingInfo.Location = new System.Drawing.Point(15, 185);
+            this.lblShippingInfo.Location = new System.Drawing.Point(15, 195);
             this.lblShippingInfo.Name = "lblShippingInfo";
-            this.lblShippingInfo.Size = new System.Drawing.Size(340, 17);
+            this.lblShippingInfo.Size = new System.Drawing.Size(340, 20);
             this.lblShippingInfo.TabIndex = 17;
             // 
             // cmbShippingNameColumn
@@ -113,7 +114,7 @@ namespace YYTools
             this.cmbShippingNameColumn.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
             this.cmbShippingNameColumn.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.cmbShippingNameColumn.FormattingEnabled = true;
-            this.cmbShippingNameColumn.Location = new System.Drawing.Point(90, 150);
+            this.cmbShippingNameColumn.Location = new System.Drawing.Point(90, 160);
             this.cmbShippingNameColumn.Name = "cmbShippingNameColumn";
             this.cmbShippingNameColumn.Size = new System.Drawing.Size(265, 25);
             this.cmbShippingNameColumn.TabIndex = 16;
@@ -125,7 +126,7 @@ namespace YYTools
             this.cmbShippingProductColumn.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
             this.cmbShippingProductColumn.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.cmbShippingProductColumn.FormattingEnabled = true;
-            this.cmbShippingProductColumn.Location = new System.Drawing.Point(90, 117);
+            this.cmbShippingProductColumn.Location = new System.Drawing.Point(90, 127);
             this.cmbShippingProductColumn.Name = "cmbShippingProductColumn";
             this.cmbShippingProductColumn.Size = new System.Drawing.Size(265, 25);
             this.cmbShippingProductColumn.TabIndex = 15;
@@ -137,7 +138,7 @@ namespace YYTools
             this.cmbShippingTrackColumn.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
             this.cmbShippingTrackColumn.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.cmbShippingTrackColumn.FormattingEnabled = true;
-            this.cmbShippingTrackColumn.Location = new System.Drawing.Point(90, 84);
+            this.cmbShippingTrackColumn.Location = new System.Drawing.Point(90, 94);
             this.cmbShippingTrackColumn.Name = "cmbShippingTrackColumn";
             this.cmbShippingTrackColumn.Size = new System.Drawing.Size(265, 25);
             this.cmbShippingTrackColumn.TabIndex = 14;
@@ -145,7 +146,7 @@ namespace YYTools
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(15, 153);
+            this.label5.Location = new System.Drawing.Point(15, 163);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(71, 17);
             this.label5.TabIndex = 8;
@@ -154,7 +155,7 @@ namespace YYTools
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(15, 120);
+            this.label4.Location = new System.Drawing.Point(15, 130);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(71, 17);
             this.label4.TabIndex = 6;
@@ -163,7 +164,7 @@ namespace YYTools
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(15, 87);
+            this.label3.Location = new System.Drawing.Point(15, 97);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(59, 17);
             this.label3.TabIndex = 4;
@@ -175,7 +176,7 @@ namespace YYTools
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbShippingSheet.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbShippingSheet.FormattingEnabled = true;
-            this.cmbShippingSheet.Location = new System.Drawing.Point(90, 51);
+            this.cmbShippingSheet.Location = new System.Drawing.Point(90, 61);
             this.cmbShippingSheet.Name = "cmbShippingSheet";
             this.cmbShippingSheet.Size = new System.Drawing.Size(265, 25);
             this.cmbShippingSheet.TabIndex = 3;
@@ -184,7 +185,7 @@ namespace YYTools
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(15, 54);
+            this.label2.Location = new System.Drawing.Point(15, 64);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(47, 17);
             this.label2.TabIndex = 2;
@@ -196,7 +197,7 @@ namespace YYTools
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbShippingWorkbook.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbShippingWorkbook.FormattingEnabled = true;
-            this.cmbShippingWorkbook.Location = new System.Drawing.Point(90, 18);
+            this.cmbShippingWorkbook.Location = new System.Drawing.Point(90, 28);
             this.cmbShippingWorkbook.Name = "cmbShippingWorkbook";
             this.cmbShippingWorkbook.Size = new System.Drawing.Size(265, 25);
             this.cmbShippingWorkbook.TabIndex = 1;
@@ -205,7 +206,7 @@ namespace YYTools
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(15, 21);
+            this.label1.Location = new System.Drawing.Point(15, 28);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(47, 17);
             this.label1.TabIndex = 0;
@@ -213,7 +214,6 @@ namespace YYTools
             // 
             // gbBill
             // 
-            this.gbBill.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.gbBill.Controls.Add(this.lblBillInfo);
             this.gbBill.Controls.Add(this.cmbBillNameColumn);
             this.gbBill.Controls.Add(this.cmbBillProductColumn);
@@ -225,12 +225,13 @@ namespace YYTools
             this.gbBill.Controls.Add(this.label9);
             this.gbBill.Controls.Add(this.cmbBillWorkbook);
             this.gbBill.Controls.Add(this.label10);
-            this.gbBill.Location = new System.Drawing.Point(382, 6);
+            this.gbBill.Location = new System.Drawing.Point(400, 10);
             this.gbBill.Name = "gbBill";
-            this.gbBill.Size = new System.Drawing.Size(370, 205);
+            this.gbBill.Size = new System.Drawing.Size(370, 220);
             this.gbBill.TabIndex = 1;
             this.gbBill.TabStop = false;
-            this.gbBill.Text = "💰 账单明细配置";
+            this.gbBill.Text = "📋 账单明细配置";
+            this.gbBill.Padding = new System.Windows.Forms.Padding(15, 10, 15, 15);
             // 
             // lblBillInfo
             // 
@@ -539,17 +540,18 @@ namespace YYTools
             this.groupBox3.Controls.Add(this.txtDelimiter);
             this.groupBox3.Location = new System.Drawing.Point(6, 217);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(746, 50);
+            this.groupBox3.Size = new System.Drawing.Size(764, 80);
             this.groupBox3.TabIndex = 2;
             this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "匹配选项";
+            this.groupBox3.Text = "⚙️ 匹配选项设置";
+            this.groupBox3.Padding = new System.Windows.Forms.Padding(15, 10, 15, 15);
             // 
             // chkRemoveDuplicates
             // 
             this.chkRemoveDuplicates.AutoSize = true;
-            this.chkRemoveDuplicates.Location = new System.Drawing.Point(176, 22);
+            this.chkRemoveDuplicates.Location = new System.Drawing.Point(200, 30);
             this.chkRemoveDuplicates.Name = "chkRemoveDuplicates";
-            this.chkRemoveDuplicates.Size = new System.Drawing.Size(87, 21);
+            this.chkRemoveDuplicates.Size = new System.Drawing.Size(120, 21);
             this.chkRemoveDuplicates.TabIndex = 2;
             this.chkRemoveDuplicates.Text = "拼接时去重";
             this.chkRemoveDuplicates.UseVisualStyleBackColor = true;
@@ -557,18 +559,19 @@ namespace YYTools
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(15, 24);
+            this.label12.Location = new System.Drawing.Point(20, 32);
             this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(47, 17);
+            this.label12.Size = new System.Drawing.Size(60, 17);
             this.label12.TabIndex = 1;
             this.label12.Text = "拼接符:";
             // 
             // txtDelimiter
             // 
-            this.txtDelimiter.Location = new System.Drawing.Point(68, 21);
+            this.txtDelimiter.Location = new System.Drawing.Point(85, 29);
             this.txtDelimiter.Name = "txtDelimiter";
-            this.txtDelimiter.Size = new System.Drawing.Size(80, 23);
+            this.txtDelimiter.Size = new System.Drawing.Size(100, 23);
             this.txtDelimiter.TabIndex = 0;
+            this.txtDelimiter.Text = "、";
             // 
             // tabPageFuture
             // 
@@ -593,7 +596,7 @@ namespace YYTools
             this.MainMenuStrip = this.menuStrip1;
             this.MinimumSize = new System.Drawing.Size(800, 420);
             this.Name = "MatchForm";
-            this.Text = "YY 运单匹配工具 v2.5";
+            this.Text = "YY 运单匹配工具 v3.0";
             this.gbShipping.ResumeLayout(false);
             this.gbShipping.PerformLayout();
             this.gbBill.ResumeLayout(false);

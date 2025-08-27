@@ -28,13 +28,18 @@ namespace YYTools
 
             bool originalScreenUpdating = excelApp.ScreenUpdating;
             Excel.XlCalculation originalCalculation = excelApp.Calculation;
+            bool originalEnableEvents = excelApp.EnableEvents;
             
             try
             {
-                WriteLog("开始执行运单匹配 - 极速模式", LogLevel.Info);
+                WriteLog("开始执行运单匹配 - 极速模式 v3.0", LogLevel.Info);
                 progressCallback?.Invoke(1, "正在优化Excel性能...");
+                
+                // 性能优化设置
                 excelApp.ScreenUpdating = false;
                 excelApp.Calculation = Excel.XlCalculation.xlCalculationManual;
+                excelApp.EnableEvents = false;
+                excelApp.DisplayStatusBar = false;
 
                 progressCallback?.Invoke(5, "正在获取工作表...");
                 Excel.Worksheet shippingSheet = GetWorksheet(config.ShippingWorkbook, config.ShippingSheetName);
@@ -43,13 +48,27 @@ namespace YYTools
                 if (shippingSheet == null || billSheet == null)
                 {
                     result.ErrorMessage = $"无法找到指定的工作表: '{config.ShippingSheetName}' 或 '{config.BillSheetName}'";
+                    WriteLog($"工作表获取失败: {result.ErrorMessage}", LogLevel.Error);
                     return result;
+                }
+
+                // 检查数据量，给出性能警告
+                var shippingRange = shippingSheet.UsedRange;
+                var billRange = billSheet.UsedRange;
+                int shippingRows = shippingRange.Rows.Count;
+                int billRows = billRange.Rows.Count;
+                
+                WriteLog($"数据量统计 - 发货表: {shippingRows:N0} 行, 账单表: {billRows:N0} 行", LogLevel.Info);
+                
+                if (shippingRows > 100000 || billRows > 100000)
+                {
+                    WriteLog("检测到大数据量，启用高性能模式", LogLevel.Warning);
+                    progressCallback?.Invoke(8, "检测到大数据量，正在启用高性能模式...");
                 }
 
                 progressCallback?.Invoke(10, "正在构建发货明细索引...");
                 Dictionary<string, List<ShippingItem>> shippingIndex = BuildShippingIndexFast(shippingSheet, config, progressCallback);
                 if (CancellationCheck?.Invoke() == true) { result.ErrorMessage = "任务被用户取消"; return result; }
-
 
                 progressCallback?.Invoke(50, "正在处理账单明细...");
                 ProcessBillDetailsFast(billSheet, config, shippingIndex, result, progressCallback);
@@ -58,6 +77,8 @@ namespace YYTools
                 stopwatch.Stop();
                 result.Success = true;
                 result.ElapsedSeconds = stopwatch.Elapsed.TotalSeconds;
+                
+                WriteLog($"匹配完成 - 处理行数: {result.ProcessedRows:N0}, 匹配成功: {result.MatchedCount:N0}, 耗时: {result.ElapsedSeconds:F2}秒", LogLevel.Info);
                 progressCallback?.Invoke(100, "匹配完成！");
             }
             catch (Exception ex)
@@ -66,12 +87,37 @@ namespace YYTools
                 result.Success = false;
                 result.ErrorMessage = ex.Message;
                 result.ElapsedSeconds = stopwatch.Elapsed.TotalSeconds;
-                WriteLog("匹配过程中发生错误: " + ex.ToString(), LogLevel.Error);
+                
+                WriteLog($"匹配过程中发生严重错误: {ex.ToString()}", LogLevel.Error);
+                
+                // 用户友好的错误提示
+                if (ex.Message.Contains("内存") || ex.Message.Contains("内存不足"))
+                {
+                    result.ErrorMessage = "处理数据量过大，内存不足。建议分批处理或关闭其他程序释放内存。";
+                }
+                else if (ex.Message.Contains("COM") || ex.Message.Contains("Excel"))
+                {
+                    result.ErrorMessage = "Excel连接异常，请检查Excel是否正常运行，或尝试重新打开文件。";
+                }
+                else
+                {
+                    result.ErrorMessage = $"处理过程中发生错误：{ex.Message}\n\n请查看日志获取详细信息。";
+                }
             }
             finally
             {
-                excelApp.ScreenUpdating = originalScreenUpdating;
-                excelApp.Calculation = originalCalculation;
+                try
+                {
+                    // 恢复Excel设置
+                    excelApp.ScreenUpdating = originalScreenUpdating;
+                    excelApp.Calculation = originalCalculation;
+                    excelApp.EnableEvents = originalEnableEvents;
+                    excelApp.DisplayStatusBar = true;
+                }
+                catch (Exception ex)
+                {
+                    WriteLog($"恢复Excel设置失败: {ex.Message}", LogLevel.Warning);
+                }
             }
             return result;
         }
@@ -103,42 +149,88 @@ namespace YYTools
                 int productCol = ExcelHelper.GetColumnNumber(config.ShippingProductColumn);
                 int nameCol = ExcelHelper.GetColumnNumber(config.ShippingNameColumn);
 
-                Excel.Range trackRange = shippingSheet.Range[$"{ExcelHelper.GetColumnLetter(trackCol)}2", $"{ExcelHelper.GetColumnLetter(trackCol)}{totalRows}"];
-                Excel.Range productRange = shippingSheet.Range[$"{ExcelHelper.GetColumnLetter(productCol)}2", $"{ExcelHelper.GetColumnLetter(productCol)}{totalRows}"];
-                Excel.Range nameRange = shippingSheet.Range[$"{ExcelHelper.GetColumnLetter(nameCol)}2", $"{ExcelHelper.GetColumnLetter(nameCol)}{totalRows}"];
+                WriteLog($"开始构建发货索引 - 总行数: {totalRows:N0}", LogLevel.Info);
 
-                object[,] trackData = trackRange.Value2 as object[,];
-                object[,] productData = productRange.Value2 as object[,];
-                object[,] nameData = nameRange.Value2 as object[,];
-
-                int dataRows = totalRows - 1;
-                for (int i = 1; i <= dataRows; i++)
+                // 大数据量优化：分批处理
+                const int batchSize = 10000;
+                int processedRows = 0;
+                
+                for (int startRow = 2; startRow <= totalRows; startRow += batchSize)
                 {
-                    if (i % 500 == 0 && CancellationCheck?.Invoke() == true) return index;
-
-                    string trackNumber = GetArrayValue(trackData, i, 1);
-                    if (!string.IsNullOrWhiteSpace(trackNumber))
+                    if (CancellationCheck?.Invoke() == true) return index;
+                    
+                    int endRow = Math.Min(startRow + batchSize - 1, totalRows);
+                    int currentBatchSize = endRow - startRow + 1;
+                    
+                    try
                     {
-                        string normalizedTrack = NormalizeTrackNumber(trackNumber);
-                        if (!index.ContainsKey(normalizedTrack))
+                        // 分批获取数据，减少内存占用
+                        Excel.Range trackRange = shippingSheet.Range[$"{ExcelHelper.GetColumnLetter(trackCol)}{startRow}", $"{ExcelHelper.GetColumnLetter(trackCol)}{endRow}"];
+                        Excel.Range productRange = shippingSheet.Range[$"{ExcelHelper.GetColumnLetter(productCol)}{startRow}", $"{ExcelHelper.GetColumnLetter(productCol)}{endRow}"];
+                        Excel.Range nameRange = shippingSheet.Range[$"{ExcelHelper.GetColumnLetter(nameCol)}{startRow}", $"{ExcelHelper.GetColumnLetter(nameCol)}{endRow}"];
+
+                        object[,] trackData = trackRange.Value2 as object[,];
+                        object[,] productData = productRange.Value2 as object[,];
+                        object[,] nameData = nameRange.Value2 as object[,];
+
+                        // 处理当前批次
+                        for (int i = 1; i <= currentBatchSize; i++)
                         {
-                            index[normalizedTrack] = new List<ShippingItem>();
+                            string trackNumber = GetArrayValue(trackData, i, 1);
+                            if (!string.IsNullOrWhiteSpace(trackNumber))
+                            {
+                                string normalizedTrack = NormalizeTrackNumber(trackNumber);
+                                if (!index.ContainsKey(normalizedTrack))
+                                {
+                                    index[normalizedTrack] = new List<ShippingItem>();
+                                }
+                                
+                                // 限制每个运单号的最大商品数量，防止内存溢出
+                                if (index[normalizedTrack].Count < 100)
+                                {
+                                    index[normalizedTrack].Add(new ShippingItem
+                                    {
+                                        ProductCode = GetArrayValue(productData, i, 1),
+                                        ProductName = GetArrayValue(nameData, i, 1)
+                                    });
+                                }
+                            }
                         }
-                        index[normalizedTrack].Add(new ShippingItem
+                        
+                        processedRows += currentBatchSize;
+                        
+                        // 进度报告
+                        int progress = 10 + (int)(40.0 * processedRows / (totalRows - 1));
+                        progressCallback?.Invoke(progress, $"构建索引: {processedRows:N0}/{totalRows - 1:N0} 行");
+                        
+                        // 强制垃圾回收，释放内存
+                        if (processedRows % 50000 == 0)
                         {
-                            ProductCode = GetArrayValue(productData, i, 1),
-                            ProductName = GetArrayValue(nameData, i, 1)
-                        });
+                            GC.Collect();
+                            GC.WaitForPendingFinalizers();
+                            WriteLog($"内存清理完成 - 已处理 {processedRows:N0} 行", LogLevel.Info);
+                        }
+                        
+                        // 释放Excel对象引用
+                        if (trackRange != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(trackRange);
+                        if (productRange != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(productRange);
+                        if (nameRange != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(nameRange);
                     }
-
-                    if (i % 1000 == 0 || i == dataRows)
+                    catch (Exception ex)
                     {
-                        int progress = 10 + (int)(40.0 * i / dataRows);
-                        progressCallback?.Invoke(progress, $"构建索引: {i}/{dataRows} 行");
+                        WriteLog($"处理批次 {startRow}-{endRow} 时发生错误: {ex.Message}", LogLevel.Warning);
+                        // 继续处理下一批次
+                        continue;
                     }
                 }
+                
+                WriteLog($"发货索引构建完成 - 运单数量: {index.Count:N0}", LogLevel.Info);
             }
-            catch (Exception ex) { WriteLog("构建索引失败: " + ex.ToString(), LogLevel.Error); throw; }
+            catch (Exception ex) 
+            { 
+                WriteLog("构建索引失败: " + ex.ToString(), LogLevel.Error); 
+                throw; 
+            }
             return index;
         }
 

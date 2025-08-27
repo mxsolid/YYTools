@@ -20,5 +20,5 @@ using System.Runtime.InteropServices;
 [assembly: Guid("12345678-1234-5678-9ABC-123456789ABC")]
 
 // 程序集的版本信息由下面四个值组成:
-[assembly: AssemblyVersion("1.5.0.0")]
-[assembly: AssemblyFileVersion("1.5.0.0")] 
+[assembly: AssemblyVersion("3.0.0.0")]
+[assembly: AssemblyFileVersion("3.0.0.0")] 

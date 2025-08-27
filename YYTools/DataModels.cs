@@ -68,4 +68,16 @@ namespace YYTools
         Warning,
         Error
     }
+    
+    /// <summary>
+    /// 列信息类
+    /// </summary>
+    public class ColumnInfo
+    {
+        public string DisplayText { get; set; }
+        public string ColumnLetter { get; set; }
+        public string HeaderText { get; set; }
+        public string PreviewData { get; set; }
+        public string SearchKeywords { get; set; }
+    }
 }
