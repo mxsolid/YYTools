@@ -38,4 +38,16 @@ namespace YYTools
         public int UpdatedCells { get; set; }
         public double ElapsedSeconds { get; set; }
     }
+
+
+    /// <summary>
+    /// 工作簿信息类 (最终定义位置)
+    /// </summary>
+    public class WorkbookInfo
+    {
+        public string Name { get; set; }
+        public Excel.Workbook Workbook { get; set; }
+        public bool IsActive { get; set; }
+    }
+
 }

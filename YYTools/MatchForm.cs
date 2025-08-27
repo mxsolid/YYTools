@@ -2,41 +2,33 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using Excel = Microsoft.Office.Interop.Excel;
 
 namespace YYTools
 {
-    /// <summary>
-    /// 运单匹配配置窗体 - 支持多工作簿
-    /// </summary>
     public partial class MatchForm : Form
     {
         private Excel.Application excelApp;
         private BackgroundWorker backgroundWorker;
-        private bool isProcessing = false;
-        private List<WorkbookInfo> workbooks;
+        private List<WorkbookInfo> workbooks = new List<WorkbookInfo>();
+        private bool isProcessing = false; // <<< --- 修复: 重新声明缺失的字段
 
         public MatchForm()
         {
             InitializeComponent();
             InitializeCustomComponents();
             InitializeBackgroundWorker();
-            
             InitializeForm();
         }
 
-        /// <summary>
-        /// 初始化自定义组件和窗体属性
-        /// </summary>
         private void InitializeCustomComponents()
         {
             this.StartPosition = FormStartPosition.CenterScreen;
             this.ShowInTaskbar = true;
-
-            this.Shown += (s, e) => {
-                this.Activate(); // 确保窗体显示时获得焦点
-            };
+            this.Shown += (s, e) => { this.Activate(); };
         }
 
         private void InitializeBackgroundWorker()
@@ -54,12 +46,8 @@ namespace YYTools
             try
             {
                 ApplySettings();
-                
-                excelApp = ExcelAddin.GetExcelApplication();
-                
-                LoadWorkbooks(); // LoadWorkbooks现在会处理没有Excel实例的情况
-                
                 SetDefaultValues();
+                RefreshWorkbookList();
                 MatchService.CleanupOldLogs();
             }
             catch (Exception ex)
@@ -68,186 +56,150 @@ namespace YYTools
                 MessageBox.Show("初始化失败：" + ex.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        
-        /// <summary>
-        /// 应用设置到窗体，并强制重新缩放以适应字体
-        /// </summary>
+
         private void ApplySettings()
         {
             try
             {
                 AppSettings settings = AppSettings.Instance;
                 Font newFont = new Font("微软雅黑", settings.FontSize, FontStyle.Regular);
-                
-                // 将AutoScaleMode设置为Font是实现字体动态缩放的关键
                 this.AutoScaleMode = AutoScaleMode.Font;
-                this.Font = newFont; // 应用基础字体
-                ApplyFontToControls(this, newFont);
-
-                // 强制窗体根据新字体重新计算布局，解决控件内容被截断的问题
-                this.PerformAutoScale(); 
+                this.Font = newFont;
+                this.PerformAutoScale();
             }
             catch (Exception ex)
             {
                 WriteLog("应用设置失败: " + ex.Message, LogLevel.Warning);
             }
         }
-        
-        private void ApplyFontToControls(Control parent, Font font)
-        {
-            foreach (Control control in parent.Controls)
-            {
-                control.Font = font;
-                if (control.HasChildren)
-                {
-                    ApplyFontToControls(control, font);
-                }
-            }
-        }
-        
-        /// <summary>
-        /// 加载工作簿列表 - 已修改为不退出程序
-        /// </summary>
-        private void LoadWorkbooks()
+
+        private void RefreshWorkbookList()
         {
             try
             {
                 WriteLog("开始加载工作簿列表", LogLevel.Info);
-                
                 excelApp = ExcelAddin.GetExcelApplication();
+
                 if (excelApp == null || !ExcelAddin.HasOpenWorkbooks(excelApp))
                 {
                     WriteLog("没有检测到Excel/WPS进程或打开的工作簿", LogLevel.Warning);
-                    SetUIForNoWorkbooksState(); // 进入无工作簿状态
+                    UpdateUIForNoWorkbooks();
                     return;
                 }
 
                 workbooks = ExcelAddin.GetOpenWorkbooks();
-                
-                if (workbooks == null || workbooks.Count == 0)
+
+                if (workbooks.Count == 0)
                 {
-                    WriteLog("再次确认没有检测到打开的工作簿", LogLevel.Warning);
-                    SetUIForNoWorkbooksState(); // 确认无工作簿，进入相应状态
+                    UpdateUIForNoWorkbooks();
                     return;
                 }
-                
-                // 如果成功加载，恢复UI
-                RestoreUIState();
-                
-                cmbShippingWorkbook.Items.Clear();
-                cmbBillWorkbook.Items.Clear();
-                
-                WriteLog("检测到 " + workbooks.Count + " 个工作簿", LogLevel.Info);
-                
-                int activeIndex = workbooks.FindIndex(wb => wb.IsActive);
-                
-                for (int i = 0; i < workbooks.Count; i++)
-                {
-                    var workbookInfo = workbooks[i];
-                    string displayName = workbookInfo.Name;
-                    
-                    if (workbookInfo.IsActive)
-                    {
-                        displayName += " [当前活动]";
-                    }
-                    
-                    cmbShippingWorkbook.Items.Add(displayName);
-                    cmbBillWorkbook.Items.Add(displayName);
-                }
-                
-                if (activeIndex >= 0)
-                {
-                    cmbShippingWorkbook.SelectedIndex = activeIndex;
-                    cmbBillWorkbook.SelectedIndex = activeIndex;
-                }
-                else if (workbooks.Count > 0)
-                {
-                    cmbShippingWorkbook.SelectedIndex = 0;
-                    cmbBillWorkbook.SelectedIndex = 0;
-                }
-                
-                lblStatus.Text = $"已加载 {workbooks.Count} 个工作簿。";
-                WriteLog("工作簿加载完成", LogLevel.Info);
+
+                UpdateUIWithWorkbooks();
+                PopulateComboBoxes();
             }
             catch (Exception ex)
             {
                 WriteLog("加载工作簿失败: " + ex.Message, LogLevel.Error);
                 MessageBox.Show("加载工作簿失败：" + ex.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                SetUIForNoWorkbooksState();
+                UpdateUIForNoWorkbooks();
             }
         }
 
-        /// <summary>
-        /// 当没有工作簿时，设置UI状态
-        /// </summary>
-        private void SetUIForNoWorkbooksState()
+        private void PopulateComboBoxes()
         {
+            string prevShippingWb = cmbShippingWorkbook.Text;
+            string prevBillWb = cmbBillWorkbook.Text;
+
             cmbShippingWorkbook.Items.Clear();
             cmbBillWorkbook.Items.Clear();
-            cmbShippingSheet.Items.Clear();
-            cmbBillSheet.Items.Clear();
 
-            // 禁用大部分控件
+            var displayNames = workbooks.Select(wb => wb.IsActive ? $"{wb.Name} [当前活动]" : wb.Name).ToArray();
+            cmbShippingWorkbook.Items.AddRange(displayNames);
+            cmbBillWorkbook.Items.AddRange(displayNames);
+            
+            int activeIndex = workbooks.FindIndex(wb => wb.IsActive);
+            if (activeIndex != -1)
+            {
+                cmbShippingWorkbook.SelectedIndex = activeIndex;
+                cmbBillWorkbook.SelectedIndex = activeIndex;
+            }
+            else if (workbooks.Count > 0)
+            {
+                cmbShippingWorkbook.SelectedIndex = 0;
+                cmbBillWorkbook.SelectedIndex = 0;
+            }
+        }
+
+        private void UpdateUIForNoWorkbooks()
+        {
             gbShipping.Enabled = false;
             gbBill.Enabled = false;
             btnStart.Enabled = false;
-            
-            lblStatus.Text = "未检测到打开的Excel/WPS文件。请打开文件后点击“刷新列表”。";
+            lblStatus.Text = "未检测到打开的Excel/WPS文件。请打开文件或从菜单栏选择文件。";
         }
 
-        /// <summary>
-        /// 当成功加载工作簿后，恢复UI状态
-        /// </summary>
-        private void RestoreUIState()
+        private void UpdateUIWithWorkbooks()
         {
             gbShipping.Enabled = true;
             gbBill.Enabled = true;
             btnStart.Enabled = true;
+            lblStatus.Text = $"已加载 {workbooks.Count} 个工作簿。请配置并开始任务。";
         }
-
-
+        
         private void cmbShippingWorkbook_SelectedIndexChanged(object sender, EventArgs e)
         {
             LoadSheetsForWorkbook(cmbShippingWorkbook, cmbShippingSheet);
+            UpdateWorkbookInfo(cmbShippingWorkbook, lblShippingInfo);
         }
 
         private void cmbBillWorkbook_SelectedIndexChanged(object sender, EventArgs e)
         {
             LoadSheetsForWorkbook(cmbBillWorkbook, cmbBillSheet);
+            UpdateWorkbookInfo(cmbBillWorkbook, lblBillInfo);
         }
 
         private void LoadSheetsForWorkbook(ComboBox workbookCombo, ComboBox sheetCombo)
         {
+            sheetCombo.Items.Clear();
+            if (workbookCombo.SelectedIndex < 0 || workbookCombo.SelectedIndex >= workbooks.Count) return;
+
             try
             {
-                if (workbooks == null || workbooks.Count == 0 || workbookCombo.SelectedIndex < 0)
-                {
-                    sheetCombo.Items.Clear();
-                    return;
-                }
-
-                WorkbookInfo selectedWorkbookInfo = workbooks[workbookCombo.SelectedIndex];
-                Excel.Workbook selectedWorkbook = selectedWorkbookInfo.Workbook;
-                sheetCombo.Items.Clear();
-                
+                Excel.Workbook selectedWorkbook = workbooks[workbookCombo.SelectedIndex].Workbook;
                 List<string> sheetNames = ExcelAddin.GetWorksheetNames(selectedWorkbook);
                 sheetCombo.Items.AddRange(sheetNames.ToArray());
-                
-                if (sheetCombo == cmbShippingSheet)
-                {
-                    SetDefaultSheet(sheetCombo, new string[] { "发货明细", "发货", "shipping", "ship" });
-                }
-                else if (sheetCombo == cmbBillSheet)
-                {
-                    SetDefaultSheet(sheetCombo, new string[] { "账单明细", "账单", "bill", "bills" });
-                }
-                
-                lblStatus.Text = $"工作簿: {selectedWorkbook.Name} | 工作表: {sheetNames.Count} 个";
+
+                string[] keywords = sheetCombo == cmbShippingSheet
+                    ? new[] { "发货明细", "发货" }
+                    : new[] { "账单明细", "账单" };
+                SetDefaultSheet(sheetCombo, keywords);
             }
             catch (Exception ex)
             {
                 WriteLog("加载工作表失败: " + ex.Message, LogLevel.Error);
-                MessageBox.Show($"加载工作表失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void UpdateWorkbookInfo(ComboBox workbookCombo, Label infoLabel)
+        {
+            infoLabel.Text = "总行数: - | 文件大小: -";
+            if (workbookCombo.SelectedIndex < 0 || workbookCombo.SelectedIndex >= workbooks.Count) return;
+
+            try
+            {
+                WorkbookInfo wbInfo = workbooks[workbookCombo.SelectedIndex];
+                Excel.Worksheet activeSheet = (Excel.Worksheet)wbInfo.Workbook.ActiveSheet;
+                int rowCount = activeSheet.UsedRange.Rows.Count;
+
+                var fileInfo = new FileInfo(wbInfo.Workbook.FullName);
+                double fileSizeMB = (double)fileInfo.Length / (1024 * 1024);
+
+                infoLabel.Text = $"总行数: {rowCount:N0} | 文件大小: {fileSizeMB:F2} MB";
+            }
+            catch (Exception ex)
+            {
+                 WriteLog("更新工作簿信息失败: " + ex.Message, LogLevel.Warning);
             }
         }
 
@@ -268,68 +220,56 @@ namespace YYTools
                 WriteLog("设置默认值失败: " + ex.Message, LogLevel.Warning);
             }
         }
-        
+
         private void SetDefaultSheet(ComboBox combo, string[] keywords)
         {
             if (combo.Items.Count == 0) return;
-
             foreach (string item in combo.Items)
             {
-                string itemLower = item.ToLower();
-                foreach (string keyword in keywords)
+                if (keywords.Any(k => item.IndexOf(k, StringComparison.OrdinalIgnoreCase) >= 0))
                 {
-                    if (itemLower.Contains(keyword.ToLower()))
-                    {
-                        combo.SelectedItem = item;
-                        return;
-                    }
+                    combo.SelectedItem = item;
+                    return;
                 }
             }
-            
-            if (combo.Items.Count > 0)
-            {
-                combo.SelectedIndex = 0;
-            }
-        }
-
-        /// <summary>
-        /// 新增的刷新按钮点击事件
-        /// </summary>
-        private void btnRefresh_Click(object sender, EventArgs e)
-        {
-            lblStatus.Text = "正在刷新工作簿列表...";
-            Application.DoEvents(); // Give UI feedback immediately
-            LoadWorkbooks();
+            if (combo.Items.Count > 0) combo.SelectedIndex = 0;
         }
 
         private void btnStart_Click(object sender, EventArgs e)
         {
-            if (isProcessing)
-            {
-                MessageBox.Show("正在处理中，请稍候...", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
+            if (!ValidateInput() || !ValidateColumns()) return;
 
             try
             {
-                if (!ValidateInput())
-                    return;
-
                 MultiWorkbookMatchConfig config = CreateMatchConfig();
-                
-                SetUIEnabled(false);
-                isProcessing = true;
-                progressBar.Visible = true;
-                progressBar.Value = 0;
-                lblStatus.Text = "正在初始化匹配任务...";
-
+                SetUiProcessingState(true);
                 backgroundWorker.RunWorkerAsync(config);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"启动匹配失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                SetUIEnabled(true);
-                isProcessing = false;
+                SetUiProcessingState(false);
+            }
+        }
+
+        private void SetUiProcessingState(bool processing)
+        {
+            this.isProcessing = processing; // 修复: 使用 this.isProcessing 访问字段
+            menuStrip1.Enabled = !processing;
+            gbShipping.Enabled = !processing;
+            gbBill.Enabled = !processing;
+            btnStart.Enabled = !processing;
+            progressBar.Visible = processing;
+
+            if (processing)
+            {
+                progressBar.Value = 0;
+                lblStatus.Text = "正在初始化匹配任务...";
+                btnClose.Text = "⏹️ 停止任务";
+            }
+            else
+            {
+                btnClose.Text = "关闭";
             }
         }
 
@@ -340,13 +280,53 @@ namespace YYTools
                 MessageBox.Show("请选择工作簿！", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-
             if (cmbShippingSheet.SelectedIndex < 0 || cmbBillSheet.SelectedIndex < 0)
             {
                 MessageBox.Show("请选择工作表！", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
+            return true;
+        }
 
+        private bool ValidateColumns()
+        {
+            try
+            {
+                var shippingWb = workbooks[cmbShippingWorkbook.SelectedIndex];
+                var billWb = workbooks[cmbBillWorkbook.SelectedIndex];
+
+                if (!AreColumnsValid(shippingWb.Workbook, cmbShippingSheet.Text, "发货", txtShippingTrackColumn, txtShippingProductColumn, txtShippingNameColumn)) return false;
+                if (!AreColumnsValid(billWb.Workbook, cmbBillSheet.Text, "账单", txtBillTrackColumn, txtBillProductColumn, txtBillNameColumn)) return false;
+                
+                return true;
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show($"验证列时发生错误: {ex.Message}", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+        }
+
+        private bool AreColumnsValid(Excel.Workbook wb, string sheetName, string type, params TextBox[] columnTextBoxes)
+        {
+            Excel.Worksheet ws = wb.Worksheets[sheetName] as Excel.Worksheet;
+            if (ws == null) return false;
+            int maxCols = ws.UsedRange.Columns.Count;
+
+            foreach (var tb in columnTextBoxes)
+            {
+                if (!ExcelHelper.IsValidColumnLetter(tb.Text))
+                {
+                     MessageBox.Show($"您为“{type}”表输入的列名“{tb.Text}”格式无效。", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                     return false;
+                }
+                int colIndex = ExcelHelper.GetColumnNumber(tb.Text);
+                if (colIndex > maxCols)
+                {
+                    MessageBox.Show($"您为“{type}”表指定的列“{tb.Text}”超出了工作表的最大列范围({ExcelHelper.GetColumnLetter(maxCols)})。", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+            }
             return true;
         }
 
@@ -358,54 +338,47 @@ namespace YYTools
                 BillWorkbook = workbooks[cmbBillWorkbook.SelectedIndex].Workbook,
                 ShippingSheetName = cmbShippingSheet.SelectedItem.ToString(),
                 BillSheetName = cmbBillSheet.SelectedItem.ToString(),
-                ShippingTrackColumn = txtShippingTrackColumn.Text.Trim().ToUpper(),
-                ShippingProductColumn = txtShippingProductColumn.Text.Trim().ToUpper(),
-                ShippingNameColumn = txtShippingNameColumn.Text.Trim().ToUpper(),
-                BillTrackColumn = txtBillTrackColumn.Text.Trim().ToUpper(),
-                BillProductColumn = txtBillProductColumn.Text.Trim().ToUpper(),
-                BillNameColumn = txtBillNameColumn.Text.Trim().ToUpper()
+                ShippingTrackColumn = txtShippingTrackColumn.Text,
+                ShippingProductColumn = txtShippingProductColumn.Text,
+                ShippingNameColumn = txtShippingNameColumn.Text,
+                BillTrackColumn = txtBillTrackColumn.Text,
+                BillProductColumn = txtBillProductColumn.Text,
+                BillNameColumn = txtBillNameColumn.Text
             };
         }
 
         private void BackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-            try
-            {
-                MultiWorkbookMatchConfig config = e.Argument as MultiWorkbookMatchConfig;
-                
-                MatchService.ProgressReportDelegate progressCallback = (progress, message) =>
+            var config = e.Argument as MultiWorkbookMatchConfig;
+            var service = new MatchService();
+            e.Result = service.ExecuteMatch(config, (progress, message) => {
+                if (backgroundWorker.CancellationPending)
                 {
-                    backgroundWorker.ReportProgress(progress, message);
-                };
-
-                MatchService service = new MatchService();
-                e.Result = service.ExecuteMatch(config, progressCallback);
-            }
-            catch (Exception ex)
-            {
-                e.Result = new MatchResult { Success = false, ErrorMessage = ex.Message };
-            }
+                    e.Cancel = true;
+                    return;
+                }
+                backgroundWorker.ReportProgress(progress, message);
+            });
         }
 
         private void BackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             progressBar.Value = Math.Min(e.ProgressPercentage, 100);
-            if (e.UserState != null)
-            {
-                lblStatus.Text = e.UserState.ToString();
-            }
+            lblStatus.Text = e.UserState?.ToString();
         }
 
         private void BackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            SetUIEnabled(true);
-            isProcessing = false;
-            progressBar.Visible = false;
-
+            SetUiProcessingState(false);
+            if (e.Cancelled)
+            {
+                lblStatus.Text = "任务已由用户停止。";
+                return;
+            }
             if (e.Error != null)
             {
-                MessageBox.Show($"处理过程中发生错误：{e.Error.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 lblStatus.Text = "处理出错！";
+                MessageBox.Show($"处理过程中发生错误：{e.Error.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -413,82 +386,119 @@ namespace YYTools
             {
                 if (!result.Success)
                 {
-                    MessageBox.Show($"匹配失败：{result.ErrorMessage}\n\n请查看日志获取详细信息。", "匹配失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     lblStatus.Text = "匹配失败！";
-                }
-                else if (result.MatchedCount == 0)
-                {
-                    MessageBox.Show($"匹配完成，但没有找到匹配的运单！\n\n处理的账单行数：{result.ProcessedRows}\n处理耗时：{result.ElapsedSeconds:F2} 秒", "未找到匹配项", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    lblStatus.Text = "完成，但未找到匹配。";
+                    MessageBox.Show($"匹配失败：{result.ErrorMessage}\n\n请查看日志获取详细信息。", "匹配失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 else
                 {
-                    ShowResult(result);
+                    lblStatus.Text = $"🎉 任务完成！耗时 {result.ElapsedSeconds:F2} 秒";
+                    ShowResultDialog(result);
                 }
             }
         }
-
-        private void SetUIEnabled(bool enabled)
+        
+        private void ShowResultDialog(MatchResult result)
         {
-            gbShipping.Enabled = enabled;
-            gbBill.Enabled = enabled;
-            btnRefresh.Enabled = enabled;
-            btnStart.Enabled = enabled;
-            btnSettings.Enabled = enabled;
-            btnViewLogs.Enabled = enabled;
-            
-            if (enabled)
-            {
-                btnStart.Text = "🚀 开始匹配";
-                btnStart.BackColor = Color.FromArgb(0, 123, 255);
-            }
-            else
-            {
-                btnStart.Text = "🔄 处理中...";
-                btnStart.BackColor = Color.Gray;
-            }
-        }
-
-        private void ShowResult(MatchResult result)
-        {
-            lblStatus.Text = $"🎉 任务完成！耗时 {result.ElapsedSeconds:F2} 秒";
-
-            double rowsPerSecond = result.ProcessedRows > 0 && result.ElapsedSeconds > 0 ? result.ProcessedRows / result.ElapsedSeconds : 0;
-            
-            string summary = $"🎉 运单匹配任务完成！\n" +
-                             $"================================\n\n" +
-                             $"📊 处理统计：\n" +
-                             $"  • 处理账单行数：{result.ProcessedRows:N0} 行\n" +
-                             $"  • 成功匹配运单：{result.MatchedCount:N0} 个\n" +
-                             $"  • 填充数据单元格：{result.UpdatedCells:N0} 个\n\n" +
-                             $"⚡ 性能表现：\n" +
-                             $"  • 总处理时间：{result.ElapsedSeconds:F2} 秒\n" +
-                             $"  • 处理速度：{rowsPerSecond:F0} 行/秒\n\n" +
-                             $"✅ 任务结果：\n" +
-                             $"  • 数据已成功写入到账单明细表。";
+             string summary = result.MatchedCount == 0
+                ? $"匹配完成，但没有找到匹配的运单！\n\n处理的账单行数：{result.ProcessedRows:N0}\n处理耗时：{result.ElapsedSeconds:F2} 秒"
+                : $"🎉 运单匹配任务完成！\n================================\n\n" +
+                  $"📊 处理统计：\n" +
+                  $"  • 处理账单行数：{result.ProcessedRows:N0} 行\n" +
+                  $"  • 成功匹配运单：{result.MatchedCount:N0} 个\n" +
+                  $"  • 填充数据单元格：{result.UpdatedCells:N0} 个\n\n" +
+                  $"⚡ 性能表现：\n" +
+                  $"  • 总处理时间：{result.ElapsedSeconds:F2} 秒";
 
             MessageBox.Show(summary, "任务完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        // --- Menu Click Handlers ---
+        private void openFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Excel 工作簿 (*.xlsx;*.xls)|*.xlsx;*.xls|所有文件 (*.*)|*.*";
+                ofd.Title = "请选择一个Excel文件";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        var openedWb = ExcelAddin.LoadWorkbookFromFile(ofd.FileName);
+                        if (openedWb != null) RefreshWorkbookList();
+                        else MessageBox.Show("无法打开指定的文件。", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"打开文件时出错: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+        private void refreshListToolStripMenuItem_Click(object sender, EventArgs e) => RefreshWorkbookList();
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e) => this.Close();
+        private void settingsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+             try
+            {
+                using (SettingsForm settingsForm = new SettingsForm())
+                {
+                    if (settingsForm.ShowDialog() == DialogResult.OK)
+                    {
+                        ApplySettings();
+                        SetDefaultValues();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"打开设置窗口失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        private void viewLogsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string logPath = MatchService.GetLogFolderPath();
+                if (Directory.Exists(logPath))
+                {
+                    System.Diagnostics.Process.Start("explorer.exe", logPath);
+                }
+                else
+                {
+                    MessageBox.Show("日志文件夹不存在。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"打开日志文件夹时发生错误：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string aboutInfo = "YY 运单匹配工具 v2.3\n\n" +
+                             "功能特点：\n" +
+                             "• 智能运单匹配，支持多性能模式\n" +
+                             "• 支持多工作簿操作与动态加载\n" +
+                             "• 自动列选择和有效性验证\n\n" +
+                             "适用于：WPS表格、Microsoft Excel";
+            MessageBox.Show(aboutInfo, "关于 YY工具", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+
+        // --- Column Selection Button Handlers ---
         private void btnSelectTrackCol_Click(object sender, EventArgs e) => SelectColumnForWorkbook(cmbShippingWorkbook, txtShippingTrackColumn, "发货明细运单号列");
         private void btnSelectProductCol_Click(object sender, EventArgs e) => SelectColumnForWorkbook(cmbShippingWorkbook, txtShippingProductColumn, "发货明细商品编码列");
         private void btnSelectNameCol_Click(object sender, EventArgs e) => SelectColumnForWorkbook(cmbShippingWorkbook, txtShippingNameColumn, "发货明细商品名称列");
         private void btnSelectBillTrackCol_Click(object sender, EventArgs e) => SelectColumnForWorkbook(cmbBillWorkbook, txtBillTrackColumn, "账单明细运单号列");
         private void btnSelectBillProductCol_Click(object sender, EventArgs e) => SelectColumnForWorkbook(cmbBillWorkbook, txtBillProductColumn, "账单明细商品编码列");
         private void btnSelectBillNameCol_Click(object sender, EventArgs e) => SelectColumnForWorkbook(cmbBillWorkbook, txtBillNameColumn, "账单明细商品名称列");
-
+        
         private void SelectColumnForWorkbook(ComboBox workbookCombo, TextBox targetTextBox, string title)
         {
-            if (workbookCombo.SelectedIndex < 0)
-            {
-                MessageBox.Show("请先选择工作簿！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
+            if (workbookCombo.SelectedIndex < 0) return;
             try
             {
                 this.Visible = false;
-
                 Excel.Workbook selectedWorkbook = workbooks[workbookCombo.SelectedIndex].Workbook;
                 selectedWorkbook.Activate();
                 
@@ -510,61 +520,34 @@ namespace YYTools
             }
         }
         
-        private void btnSettings_Click(object sender, EventArgs e)
+        private void btnClose_Click(object sender, EventArgs e)
         {
-            try
+            if (isProcessing) // 修复: 使用 isProcessing 字段
             {
-                using (SettingsForm settingsForm = new SettingsForm())
+                if (backgroundWorker.IsBusy)
                 {
-                    if (settingsForm.ShowDialog() == DialogResult.OK)
-                    {
-                        ApplySettings();
-                        SetDefaultValues();
-                        MessageBox.Show("设置已应用！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
+                    backgroundWorker.CancelAsync();
                 }
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show($"打开设置窗口失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close();
             }
         }
-
-        private void btnViewLogs_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                string logPath = MatchService.GetLogFolderPath();
-                if (System.IO.Directory.Exists(logPath))
-                {
-                    System.Diagnostics.Process.Start("explorer.exe", logPath);
-                }
-                else
-                {
-                    MessageBox.Show("日志文件夹不存在。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"打开日志文件夹时发生错误：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void btnCancel_Click(object sender, EventArgs e) => this.Close();
 
         private void WriteLog(string message, LogLevel level) => MatchService.WriteLog($"[MatchForm] {message}", level);
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            if (isProcessing)
+            if (isProcessing) // 修复: 使用 isProcessing 字段
             {
-                if (MessageBox.Show("正在处理中，确定要退出吗？", "确认", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+                if (MessageBox.Show("任务正在处理中，确定要强制退出吗？", "确认退出", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
                 {
                     e.Cancel = true;
                 }
                 else
                 {
-                    backgroundWorker.CancelAsync();
+                    if (backgroundWorker.IsBusy) backgroundWorker.CancelAsync();
                 }
             }
             base.OnFormClosing(e);
