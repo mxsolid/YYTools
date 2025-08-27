@@ -45,6 +45,7 @@
   <PropertyGroup>
     <ApplicationIcon>YYProgram.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup />
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Office.Interop.Excel">

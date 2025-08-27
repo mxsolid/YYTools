@@ -578,7 +578,7 @@ namespace YYTools
             this.tabPageFuture.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageFuture.Size = new System.Drawing.Size(776, 277);
             this.tabPageFuture.TabIndex = 1;
-            this.tabPageFuture.Text = "（未来工具）";
+            this.tabPageFuture.Text = "（待开发）";
             // 
             // MatchForm
             // 
