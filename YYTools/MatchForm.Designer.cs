@@ -548,16 +548,17 @@ namespace YYTools
             // 
             // groupBox3
             // 
-            this.groupBox3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox3.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.groupBox3.Controls.Add(this.cmbSort);
             this.groupBox3.Controls.Add(this.labelSort);
             this.groupBox3.Controls.Add(this.chkRemoveDuplicates);
             this.groupBox3.Controls.Add(this.label12);
             this.groupBox3.Controls.Add(this.txtDelimiter);
-            this.groupBox3.Location = new System.Drawing.Point(12, 240);
+            this.groupBox3.Controls.Add(this.txtWritePreview);
+            this.groupBox3.Controls.Add(this.labelWritePreview);
+            this.groupBox3.Location = new System.Drawing.Point(3, 260);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(776, 70);
+            this.groupBox3.Size = new System.Drawing.Size(786, 80);
             this.groupBox3.TabIndex = 2;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "⚙️ 匹配选项";
@@ -609,6 +610,23 @@ namespace YYTools
             this.cmbSort.Name = "cmbSort";
             this.cmbSort.Size = new System.Drawing.Size(100, 25);
             this.cmbSort.TabIndex = 4;
+            // 
+            // labelWritePreview
+            // 
+            this.labelWritePreview.AutoSize = true;
+            this.labelWritePreview.Location = new System.Drawing.Point(15, 52);
+            this.labelWritePreview.Name = "labelWritePreview";
+            this.labelWritePreview.Size = new System.Drawing.Size(59, 17);
+            this.labelWritePreview.TabIndex = 5;
+            this.labelWritePreview.Text = "写入预览:";
+            // 
+            // txtWritePreview
+            // 
+            this.txtWritePreview.Location = new System.Drawing.Point(80, 49);
+            this.txtWritePreview.Name = "txtWritePreview";
+            this.txtWritePreview.ReadOnly = true;
+            this.txtWritePreview.Size = new System.Drawing.Size(690, 23);
+            this.txtWritePreview.TabIndex = 6;
             // 
             // tabPageFuture
             // 
@@ -697,6 +715,8 @@ namespace YYTools
         private System.Windows.Forms.TextBox txtDelimiter;
         private System.Windows.Forms.Label labelSort;
         private System.Windows.Forms.ComboBox cmbSort;
+        private System.Windows.Forms.Label labelWritePreview;
+        private System.Windows.Forms.TextBox txtWritePreview;
         private System.Windows.Forms.ComboBox cmbShippingTrackColumn;
         private System.Windows.Forms.ComboBox cmbShippingNameColumn;
         private System.Windows.Forms.ComboBox cmbShippingProductColumn;

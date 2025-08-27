@@ -297,6 +297,16 @@ namespace YYTools
                     var nameColumn = matchedColumns["NameColumn"];
                     SetColumnSelection(columnCombos[2], nameColumn, "NameColumn");
                 }
+
+                // 智能选择后清理可能残留的红色背景
+                foreach (var cb in columnCombos)
+                {
+                    if (cb.SelectedIndex >= 0)
+                    {
+                        cb.BackColor = SystemColors.Window;
+                        cb.ForeColor = SystemColors.WindowText;
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -681,6 +691,9 @@ namespace YYTools
                         toolTip1.SetToolTip(txtBillPreview, txtBillPreview.Text);
                     }
 
+                    // 动态刷新写入预览（示例预览，仅少量数据）
+                    RefreshWritePreview();
+
                     // 根据验证结果更新UI状态
                     if (!isValid)
                     {
@@ -697,6 +710,52 @@ namespace YYTools
             catch (Exception ex)
             {
                 WriteLog($"验证列信息失败: {ex.Message}", LogLevel.Warning);
+            }
+        }
+
+        private void RefreshWritePreview()
+        {
+            try
+            {
+                if (cmbBillWorkbook.SelectedIndex < 0 || cmbBillSheet.SelectedIndex < 0) return;
+                var wbInfo = workbooks[cmbBillWorkbook.SelectedIndex];
+                var ws = wbInfo.Workbook.Worksheets[cmbBillSheet.SelectedItem.ToString()] as Excel.Worksheet;
+                if (ws == null) return;
+
+                string trackCol = GetSelectedColumn(cmbBillTrackColumn);
+                string prodCol = GetSelectedColumn(cmbBillProductColumn);
+                string nameCol = GetSelectedColumn(cmbBillNameColumn);
+                if (string.IsNullOrEmpty(trackCol) && string.IsNullOrEmpty(prodCol) && string.IsNullOrEmpty(nameCol)) return;
+
+                int first = 2; int last = Math.Min(6, ws.UsedRange.Rows.Count);
+                List<string> samples = new List<string>();
+                for (int r = first; r <= last; r++)
+                {
+                    var parts = new List<string>();
+                    if (!string.IsNullOrEmpty(prodCol)) parts.Add(ExcelHelper.GetCellValue(ws.Cells[r, ExcelHelper.GetColumnNumber(prodCol)]));
+                    if (!string.IsNullOrEmpty(nameCol)) parts.Add(ExcelHelper.GetCellValue(ws.Cells[r, ExcelHelper.GetColumnNumber(nameCol)]));
+                    parts = parts.Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
+                    if (parts.Count == 0) continue;
+
+                    IEnumerable<string> seq = parts;
+                    // 去重
+                    if (chkRemoveDuplicates.Checked) seq = seq.Distinct();
+                    // 排序
+                    var opt = GetSortOption();
+                    if (opt == SortOption.Asc) seq = seq.OrderBy(x => x, StringComparer.Ordinal);
+                    else if (opt == SortOption.Desc) seq = seq.OrderByDescending(x => x, StringComparer.Ordinal);
+
+                    string joined = string.Join(txtDelimiter.Text, seq);
+                    if (!string.IsNullOrWhiteSpace(joined)) samples.Add(joined);
+                    if (samples.Count >= 2) break; // 仅展示两条示例
+                }
+                string preview = string.Join("  |  ", samples);
+                txtWritePreview.Text = preview;
+                toolTip1.SetToolTip(txtWritePreview, preview);
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"刷新写入预览失败: {ex.Message}", LogLevel.Warning);
             }
         }
 
