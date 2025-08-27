@@ -72,7 +72,11 @@ namespace YYTools
         
         public override string ToString()
         {
-            return $"{ColumnLetter} ({HeaderText})";
+            string title = string.IsNullOrWhiteSpace(HeaderText) ? "" : HeaderText;
+            string preview = string.IsNullOrWhiteSpace(PreviewData) ? "" : $" | 示例: {PreviewData}";
+            return string.IsNullOrWhiteSpace(title)
+                ? ColumnLetter
+                : $"{ColumnLetter} ({title}){preview}";
         }
     }
 

@@ -508,7 +508,7 @@ namespace YYTools
             this.groupBox3.Controls.Add(this.chkRemoveDuplicates);
             this.groupBox3.Controls.Add(this.label12);
             this.groupBox3.Controls.Add(this.txtDelimiter);
-            this.groupBox3.Location = new System.Drawing.Point(12, 275);
+            this.groupBox3.Location = new System.Drawing.Point(12, 200);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(776, 60);
             this.groupBox3.TabIndex = 2;

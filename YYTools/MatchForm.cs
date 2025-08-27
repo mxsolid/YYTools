@@ -136,7 +136,7 @@ namespace YYTools
                 cmbShippingWorkbook.SelectedIndex = 0;
             
             if (!string.IsNullOrEmpty(prevBill) && cmbBillWorkbook.Items.Contains(prevBill))
-                cmbBillWorkbook.SelectedIndex = prevBill;
+                cmbBillWorkbook.SelectedItem = prevBill;
             else if (workbooks.Any(w => w.IsActive))
                 cmbBillWorkbook.SelectedIndex = workbooks.FindIndex(w => w.IsActive);
             else if (cmbBillWorkbook.Items.Count > 0)
@@ -213,20 +213,29 @@ namespace YYTools
                 var stats = ExcelHelper.GetWorksheetStats(ws);
                 infoLabel.Text = $"总行数: {stats.rows:N0} | 总列数: {stats.columns:N0} | 估算大小: {(double)stats.dataSize / (1024 * 1024):F2} MB";
 
-                // 智能匹配默认列
-                if (settings.EnableSmartColumnSelection)
-                {
-                    var matchedColumns = SmartColumnService.SmartMatchColumns(columns);
-                    ApplySmartColumnSelection(columnCombos, matchedColumns, cacheKey);
-                }
-
-                // 填充列下拉框
+                // 填充列下拉框，并开启可输入搜索
                 foreach (var combo in columnCombos)
                 {
                     combo.DisplayMember = "ToString";
                     combo.ValueMember = "ColumnLetter";
+                    combo.DropDownStyle = ComboBoxStyle.DropDown; // 允许手动输入
+                    combo.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                    combo.AutoCompleteSource = AutoCompleteSource.ListItems;
                     combo.DataSource = new BindingSource(columns, null);
                     combo.SelectedIndex = -1;
+
+                    // 输入过滤：当文本变化时根据关键字过滤
+                    combo.TextChanged -= Combo_TextChanged;
+                    combo.TextChanged += Combo_TextChanged;
+                    combo.Validating -= Combo_Validating;
+                    combo.Validating += Combo_Validating;
+                }
+
+                // 智能匹配默认列（在绑定数据源之后设置SelectedValue，避免被覆盖）
+                if (settings.EnableSmartColumnSelection)
+                {
+                    var matchedColumns = SmartColumnService.SmartMatchColumns(columns);
+                    ApplySmartColumnSelection(columnCombos, matchedColumns, cacheKey);
                 }
             }
             catch (Exception ex)
@@ -633,6 +642,56 @@ namespace YYTools
             catch (Exception ex)
             {
                 WriteLog($"验证列信息失败: {ex.Message}", LogLevel.Warning);
+            }
+        }
+
+        // 文本输入过滤逻辑：支持多关键字如 "B(快递单号)" -> B 快递单号
+        private void Combo_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                var combo = sender as ComboBox;
+                if (combo == null) return;
+                var wbCombo = combo == cmbShippingTrackColumn || combo == cmbShippingProductColumn || combo == cmbShippingNameColumn ? cmbShippingWorkbook : cmbBillWorkbook;
+                var wsCombo = combo == cmbShippingTrackColumn || combo == cmbShippingProductColumn || combo == cmbShippingNameColumn ? cmbShippingSheet : cmbBillSheet;
+                if (wbCombo.SelectedIndex < 0 || wsCombo.SelectedIndex < 0) return;
+
+                var wbInfo = workbooks[wbCombo.SelectedIndex];
+                string cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
+                if (!columnCache.ContainsKey(cacheKey)) return;
+
+                string text = combo.Text;
+                var filtered = SmartColumnService.SearchColumns(columnCache[cacheKey], text);
+                var previous = combo.SelectedValue;
+
+                combo.DataSource = new BindingSource(filtered, null);
+                combo.DisplayMember = "ToString";
+                combo.ValueMember = "ColumnLetter";
+                combo.DroppedDown = true;
+                combo.IntegralHeight = true;
+                combo.SelectedIndex = -1;
+                combo.Text = text; // 保留用户输入
+                combo.SelectionStart = combo.Text.Length;
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"下拉框过滤失败: {ex.Message}", LogLevel.Warning);
+            }
+        }
+
+        // 验证：必须选择列表中的项，否则清空
+        private void Combo_Validating(object sender, CancelEventArgs e)
+        {
+            var combo = sender as ComboBox;
+            if (combo == null) return;
+            if (combo.SelectedIndex < 0)
+            {
+                combo.Text = string.Empty;
+                combo.BackColor = Color.LightPink;
+            }
+            else
+            {
+                combo.BackColor = SystemColors.Window;
             }
         }
 

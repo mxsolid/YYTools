@@ -49,15 +49,24 @@ namespace YYTools
                 int colCount = usedRange.Columns.Count;
                 int rowCount = Math.Min(usedRange.Rows.Count, maxRowsForPreview);
 
-                // 查找标题行
-                var headerRow = FindHeaderRow(usedRange);
-                var headers = headerRow?.Value2 as object[,];
-
                 for (int i = 1; i <= colCount; i++)
                 {
                     string colLetter = ExcelHelper.GetColumnLetter(i);
-                    string headerText = GetHeaderText(headers, i);
-                    string previewData = GetPreviewData(worksheet, i, headerRow, rowCount);
+                    // 按列扫描：第一条非空作为标题，第二条非空作为预览
+                    string headerText = "";
+                    string previewData = "";
+                    int found = 0;
+                    for (int row = 1; row <= Math.Min(usedRange.Rows.Count, rowCount); row++)
+                    {
+                        var cell = worksheet.Cells[row, i] as Excel.Range;
+                        string value = cell?.Value2?.ToString().Trim() ?? "";
+                        if (!string.IsNullOrWhiteSpace(value))
+                        {
+                            found++;
+                            if (found == 1) headerText = value;
+                            else if (found == 2) { previewData = value.Length > 50 ? value.Substring(0, 50) + "..." : value; break; }
+                        }
+                    }
                     bool isValid = !string.IsNullOrWhiteSpace(headerText) || !string.IsNullOrWhiteSpace(previewData);
 
                     columns.Add(new ColumnInfo
