@@ -1,3 +1,4 @@
+// --- 文件 1: DataModels.cs ---
 using Excel = Microsoft.Office.Interop.Excel;
 
 namespace YYTools
@@ -39,6 +40,14 @@ namespace YYTools
         public double ElapsedSeconds { get; set; }
     }
 
+    /// <summary>
+    /// 发货明细项
+    /// </summary>
+    public class ShippingItem
+    {
+        public string ProductCode { get; set; }
+        public string ProductName { get; set; }
+    }
 
     /// <summary>
     /// 工作簿信息类 (最终定义位置)
@@ -50,4 +59,13 @@ namespace YYTools
         public bool IsActive { get; set; }
     }
 
+    /// <summary>
+    /// 日志级别
+    /// </summary>
+    public enum LogLevel
+    {
+        Info,
+        Warning,
+        Error
+    }
 }

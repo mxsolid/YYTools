@@ -1,19 +1,14 @@
+// --- 文件 3: ExcelAddin.cs ---
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
-using System.Reflection;
 using Excel = Microsoft.Office.Interop.Excel;
-using Microsoft.Office.Core;
 
 namespace YYTools
 {
-    /// <summary>
-    /// Excel/WPS COM加载项 - 增强版本，支持独立菜单和直接调用
-    /// </summary>
     [ComVisible(true)]
     [Guid("12345678-1234-5678-9ABC-123456789ABC")]
     [ProgId("YYTools.ExcelAddin")]
@@ -21,7 +16,6 @@ namespace YYTools
     public class ExcelAddin
     {
         private static Excel.Application application;
-
         public static Excel.Application Application => application;
 
         [ComVisible(true)]
@@ -35,20 +29,6 @@ namespace YYTools
             catch (Exception ex)
             {
                 MessageBox.Show("启动运单匹配工具失败：" + ex.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        [ComVisible(true)]
-        public static void ShowSettings()
-        {
-            try
-            {
-                var settingsForm = new SettingsForm();
-                settingsForm.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("显示设置窗体失败：" + ex.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -176,7 +156,7 @@ namespace YYTools
                 if (!IsApplicationValid(app)) return result;
 
                 Excel.Workbook activeWorkbook = null;
-                try { activeWorkbook = app.ActiveWorkbook; } catch { /* ignore */ }
+                try { activeWorkbook = app.ActiveWorkbook; } catch { }
 
                 foreach (Excel.Workbook wb in app.Workbooks)
                 {
@@ -186,7 +166,7 @@ namespace YYTools
                         result.Add(new WorkbookInfo { Name = wb.Name, Workbook = wb, IsActive = isActive });
                     }
                 }
-                if (result.Count > 0 && result.FindIndex(r => r.IsActive) == -1)
+                if (result.Count > 0 && result.All(r => !r.IsActive))
                 {
                     result[0].IsActive = true;
                 }

@@ -1,76 +1,50 @@
+// --- 文件 2: AppSettings.cs ---
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace YYTools
 {
-    /// <summary>
-    /// 应用程序设置类 - WPS优先
-    /// </summary>
     public class AppSettings
     {
         private static AppSettings instance;
         private static readonly object lockObject = new object();
 
-        private AppSettings()
-        {
-            // 初始化默认值
-            ResetToDefaults();
-        }
+        private AppSettings() { ResetToDefaults(); }
 
         public static AppSettings Instance
         {
             get
             {
-                if (instance == null)
+                lock (lockObject)
                 {
-                    lock (lockObject)
+                    if (instance == null)
                     {
-                        if (instance == null)
-                        {
-                            instance = new AppSettings();
-                            instance.Load();
-                        }
+                        instance = new AppSettings();
+                        instance.Load();
                     }
+                    return instance;
                 }
-                return instance;
             }
         }
 
-        // 界面设置
+        // 通用设置
         public int FontSize { get; set; }
         public bool AutoScaleUI { get; set; }
-
-        // 性能模式
-        public PerformanceMode PerformanceMode { get; set; }
-
-        // WPS优先设置
-        public bool WPSPriority { get; set; }
-        public bool EnableDebugLog { get; set; }
-
-        // 默认列设置
-        public string DefaultShippingTrackColumn { get; set; }
-        public string DefaultShippingProductColumn { get; set; }
-        public string DefaultShippingNameColumn { get; set; }
-        public string DefaultBillTrackColumn { get; set; }
-        public string DefaultBillProductColumn { get; set; }
-        public string DefaultBillNameColumn { get; set; }
-
-        // 高级设置
-        public int ProgressUpdateFrequency { get; set; }
         public string LogDirectory { get; set; }
+
+        // 运单匹配工具的独立设置
+        public string ConcatenationDelimiter { get; set; }
+        public bool RemoveDuplicateItems { get; set; }
+        public int MaxThreads { get; set; }
 
         private string ConfigPath
         {
             get
             {
-                string folder = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "YYTools");
-
-                if (!Directory.Exists(folder))
-                    Directory.CreateDirectory(folder);
-
+                string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "YYTools");
+                if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
                 return Path.Combine(folder, "settings.ini");
             }
         }
@@ -81,55 +55,36 @@ namespace YYTools
             {
                 if (!File.Exists(ConfigPath))
                 {
-                    Save(); // Save default settings if file doesn't exist
+                    Save();
                     return;
                 }
 
-                string[] lines = File.ReadAllLines(ConfigPath, System.Text.Encoding.UTF8);
-                foreach (string line in lines)
-                {
-                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
+                var settingsDict = File.ReadAllLines(ConfigPath)
+                    .Where(line => !string.IsNullOrWhiteSpace(line) && !line.StartsWith("#") && line.Contains("="))
+                    .Select(line => line.Split(new[] { '=' }, 2))
+                    .ToDictionary(parts => parts[0].Trim(), parts => parts[1].Trim(), StringComparer.OrdinalIgnoreCase);
 
-                    string[] parts = line.Split(new[] { '=' }, 2);
-                    if (parts.Length != 2) continue;
+                // 安全地加载每个设置
+                GetValue(settingsDict, "FontSize", v => FontSize = int.Parse(v));
+                GetValue(settingsDict, "AutoScaleUI", v => AutoScaleUI = bool.Parse(v));
+                GetValue(settingsDict, "LogDirectory", v => LogDirectory = v);
+                GetValue(settingsDict, "ConcatenationDelimiter", v => ConcatenationDelimiter = v);
+                GetValue(settingsDict, "RemoveDuplicateItems", v => RemoveDuplicateItems = bool.Parse(v));
+                GetValue(settingsDict, "MaxThreads", v => MaxThreads = int.Parse(v));
 
-                    string key = parts[0].Trim();
-                    string value = parts[1].Trim();
-
-                    switch (key)
-                    {
-                        case "FontSize":
-                            if (int.TryParse(value, out int fontSize)) FontSize = fontSize > 0 ? fontSize : 9;
-                            break;
-                        case "AutoScaleUI":
-                            if (bool.TryParse(value, out bool autoScale)) AutoScaleUI = autoScale;
-                            break;
-                        case "PerformanceMode":
-                            try { PerformanceMode = (PerformanceMode)Enum.Parse(typeof(PerformanceMode), value); }
-                            catch { PerformanceMode = PerformanceMode.UltraFast; }
-                            break;
-                        case "WPSPriority":
-                            if (bool.TryParse(value, out bool wpsPriority)) WPSPriority = wpsPriority;
-                            break;
-                        case "EnableDebugLog":
-                            if (bool.TryParse(value, out bool enableLog)) EnableDebugLog = enableLog;
-                            break;
-                        case "DefaultShippingTrackColumn": DefaultShippingTrackColumn = value; break;
-                        case "DefaultShippingProductColumn": DefaultShippingProductColumn = value; break;
-                        case "DefaultShippingNameColumn": DefaultShippingNameColumn = value; break;
-                        case "DefaultBillTrackColumn": DefaultBillTrackColumn = value; break;
-                        case "DefaultBillProductColumn": DefaultBillProductColumn = value; break;
-                        case "DefaultBillNameColumn": DefaultBillNameColumn = value; break;
-                        case "ProgressUpdateFrequency":
-                            if (int.TryParse(value, out int freq)) ProgressUpdateFrequency = freq > 0 ? freq : 100;
-                            break;
-                        case "LogDirectory": LogDirectory = value; break;
-                    }
-                }
             }
             catch (Exception)
             {
                 ResetToDefaults();
+                Save();
+            }
+        }
+
+        private void GetValue(Dictionary<string, string> dict, string key, Action<string> assign)
+        {
+            if (dict.ContainsKey(key))
+            {
+                assign(dict[key]);
             }
         }
 
@@ -139,64 +94,29 @@ namespace YYTools
             {
                 var lines = new List<string>
                 {
-                    "# YY运单匹配工具设置文件",
-                    "# 界面设置",
+                    "# YY工具通用设置",
                     $"FontSize={FontSize}",
                     $"AutoScaleUI={AutoScaleUI}",
+                    $"LogDirectory={LogDirectory}",
                     "",
-                    "# 性能设置",
-                    $"PerformanceMode={PerformanceMode}",
-                    "",
-                    "# WPS设置",
-                    $"WPSPriority={WPSPriority}",
-                    $"EnableDebugLog={EnableDebugLog}",
-                    "",
-                    "# 默认列设置",
-                    $"DefaultShippingTrackColumn={DefaultShippingTrackColumn}",
-                    $"DefaultShippingProductColumn={DefaultShippingProductColumn}",
-                    $"DefaultShippingNameColumn={DefaultShippingNameColumn}",
-                    $"DefaultBillTrackColumn={DefaultBillTrackColumn}",
-                    $"DefaultBillProductColumn={DefaultBillProductColumn}",
-                    $"DefaultBillNameColumn={DefaultBillNameColumn}",
-                    "",
-                    "# 高级设置",
-                    $"ProgressUpdateFrequency={ProgressUpdateFrequency}",
-                    $"LogDirectory={LogDirectory}"
+                    "# 运单匹配工具设置",
+                    $"ConcatenationDelimiter={ConcatenationDelimiter}",
+                    $"RemoveDuplicateItems={RemoveDuplicateItems}",
+                    $"MaxThreads={MaxThreads}",
                 };
-
                 File.WriteAllLines(ConfigPath, lines, System.Text.Encoding.UTF8);
             }
-            catch (Exception)
-            {
-                // 保存失败不抛异常
-            }
+            catch { }
         }
 
         public void ResetToDefaults()
         {
             FontSize = 9;
             AutoScaleUI = true;
-            PerformanceMode = PerformanceMode.UltraFast;
-            WPSPriority = true;
-            EnableDebugLog = true;
-            DefaultShippingTrackColumn = "B";
-            DefaultShippingProductColumn = "J";
-            DefaultShippingNameColumn = "I";
-            DefaultBillTrackColumn = "C";
-            DefaultBillProductColumn = "Y";
-            DefaultBillNameColumn = "Z";
-            ProgressUpdateFrequency = 100;
-            LogDirectory = "";
+            LogDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "YYTools", "Logs");
+            MaxThreads = Environment.ProcessorCount;
+            ConcatenationDelimiter = "、";
+            RemoveDuplicateItems = true;
         }
-    }
-
-    /// <summary>
-    /// 性能模式枚举
-    /// </summary>
-    public enum PerformanceMode
-    {
-        UltraFast = 0,    // 极速模式
-        Balanced = 1,     // 平衡模式
-        Compatible = 2    // 兼容模式
     }
 }
