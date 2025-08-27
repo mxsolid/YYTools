@@ -28,13 +28,17 @@ namespace YYTools
 
             bool originalScreenUpdating = excelApp.ScreenUpdating;
             Excel.XlCalculation originalCalculation = excelApp.Calculation;
+            bool originalEnableEvents = excelApp.EnableEvents;
+            bool originalDisplayStatusBar = excelApp.DisplayStatusBar;
+            bool originalDisplayAlerts = excelApp.DisplayAlerts;
             
             try
             {
                 WriteLog("开始执行运单匹配 - 极速模式", LogLevel.Info);
                 progressCallback?.Invoke(1, "正在优化Excel性能...");
-                excelApp.ScreenUpdating = false;
-                excelApp.Calculation = Excel.XlCalculation.xlCalculationManual;
+                
+                // 性能优化
+                ExcelHelper.OptimizeExcelPerformance(excelApp);
 
                 progressCallback?.Invoke(5, "正在获取工作表...");
                 Excel.Worksheet shippingSheet = GetWorksheet(config.ShippingWorkbook, config.ShippingSheetName);
@@ -46,10 +50,13 @@ namespace YYTools
                     return result;
                 }
 
+                // 检查工作表大小，给出性能警告
+                CheckWorksheetSize(shippingSheet, "发货明细", progressCallback);
+                CheckWorksheetSize(billSheet, "账单明细", progressCallback);
+
                 progressCallback?.Invoke(10, "正在构建发货明细索引...");
                 Dictionary<string, List<ShippingItem>> shippingIndex = BuildShippingIndexFast(shippingSheet, config, progressCallback);
                 if (CancellationCheck?.Invoke() == true) { result.ErrorMessage = "任务被用户取消"; return result; }
-
 
                 progressCallback?.Invoke(50, "正在处理账单明细...");
                 ProcessBillDetailsFast(billSheet, config, shippingIndex, result, progressCallback);
@@ -59,6 +66,8 @@ namespace YYTools
                 result.Success = true;
                 result.ElapsedSeconds = stopwatch.Elapsed.TotalSeconds;
                 progressCallback?.Invoke(100, "匹配完成！");
+                
+                WriteLog($"匹配完成，处理 {result.ProcessedRows:N0} 行，匹配 {result.MatchedCount:N0} 个运单，耗时 {result.ElapsedSeconds:F2} 秒", LogLevel.Info);
             }
             catch (Exception ex)
             {
@@ -66,14 +75,46 @@ namespace YYTools
                 result.Success = false;
                 result.ErrorMessage = ex.Message;
                 result.ElapsedSeconds = stopwatch.Elapsed.TotalSeconds;
-                WriteLog("匹配过程中发生错误: " + ex.ToString(), LogLevel.Error);
+                WriteLog($"匹配过程中发生错误: {ex.ToString()}", LogLevel.Error);
             }
             finally
             {
-                excelApp.ScreenUpdating = originalScreenUpdating;
-                excelApp.Calculation = originalCalculation;
+                // 恢复Excel设置
+                ExcelHelper.RestoreExcelPerformance(excelApp, originalScreenUpdating, originalCalculation);
+                try
+                {
+                    excelApp.EnableEvents = originalEnableEvents;
+                    excelApp.DisplayStatusBar = originalDisplayStatusBar;
+                    excelApp.DisplayAlerts = originalDisplayAlerts;
+                }
+                catch { }
             }
             return result;
+        }
+
+        private void CheckWorksheetSize(Excel.Worksheet worksheet, string sheetName, ProgressReportDelegate progressCallback)
+        {
+            try
+            {
+                var stats = ExcelHelper.GetWorksheetStats(worksheet);
+                if (stats.rows > 100000)
+                {
+                    string warning = $"⚠️ 警告：{sheetName}工作表包含 {stats.rows:N0} 行数据，处理时间可能较长。";
+                    progressCallback?.Invoke(0, warning);
+                    WriteLog(warning, LogLevel.Warning);
+                }
+                
+                if (stats.rows > 500000)
+                {
+                    string criticalWarning = $"🚨 严重警告：{sheetName}工作表数据量过大 ({stats.rows:N0} 行)，建议分批处理或优化数据结构。";
+                    progressCallback?.Invoke(0, criticalWarning);
+                    WriteLog(criticalWarning, LogLevel.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"检查工作表大小时发生错误: {ex.Message}", LogLevel.Warning);
+            }
         }
 
         private Excel.Worksheet GetWorksheet(Excel.Workbook workbook, string sheetName)
@@ -87,7 +128,11 @@ namespace YYTools
                 }
                 return null;
             }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                WriteLog($"获取工作表失败: {ex.Message}", LogLevel.Error);
+                return null;
+            }
         }
 
         private Dictionary<string, List<ShippingItem>> BuildShippingIndexFast(Excel.Worksheet shippingSheet, MultiWorkbookMatchConfig config, ProgressReportDelegate progressCallback)
@@ -103,20 +148,31 @@ namespace YYTools
                 int productCol = ExcelHelper.GetColumnNumber(config.ShippingProductColumn);
                 int nameCol = ExcelHelper.GetColumnNumber(config.ShippingNameColumn);
 
-                Excel.Range trackRange = shippingSheet.Range[$"{ExcelHelper.GetColumnLetter(trackCol)}2", $"{ExcelHelper.GetColumnLetter(trackCol)}{totalRows}"];
-                Excel.Range productRange = shippingSheet.Range[$"{ExcelHelper.GetColumnLetter(productCol)}2", $"{ExcelHelper.GetColumnLetter(productCol)}{totalRows}"];
-                Excel.Range nameRange = shippingSheet.Range[$"{ExcelHelper.GetColumnLetter(nameCol)}2", $"{ExcelHelper.GetColumnLetter(nameCol)}{totalRows}"];
+                // 使用批量读取优化性能
+                var batchSize = AppSettings.Instance.BatchSize;
+                var trackData = new List<string>();
+                var productData = new List<string>();
+                var nameData = new List<string>();
 
-                object[,] trackData = trackRange.Value2 as object[,];
-                object[,] productData = productRange.Value2 as object[,];
-                object[,] nameData = nameRange.Value2 as object[,];
-
-                int dataRows = totalRows - 1;
-                for (int i = 1; i <= dataRows; i++)
+                // 分批读取数据
+                for (int startRow = 2; startRow <= totalRows; startRow += batchSize)
                 {
-                    if (i % 500 == 0 && CancellationCheck?.Invoke() == true) return index;
+                    int endRow = Math.Min(startRow + batchSize - 1, totalRows);
+                    
+                    trackData.AddRange(ExcelHelper.GetColumnDataBatch(shippingSheet, config.ShippingTrackColumn, startRow, endRow));
+                    productData.AddRange(ExcelHelper.GetColumnDataBatch(shippingSheet, config.ShippingProductColumn, startRow, endRow));
+                    nameData.AddRange(ExcelHelper.GetColumnDataBatch(shippingSheet, config.ShippingNameColumn, startRow, endRow));
 
-                    string trackNumber = GetArrayValue(trackData, i, 1);
+                    if (CancellationCheck?.Invoke() == true) return index;
+
+                    int progress = 10 + (int)(35.0 * (startRow - 2) / (totalRows - 1));
+                    progressCallback?.Invoke(progress, $"构建索引: {endRow}/{totalRows} 行");
+                }
+
+                // 处理数据
+                for (int i = 0; i < trackData.Count; i++)
+                {
+                    string trackNumber = trackData[i];
                     if (!string.IsNullOrWhiteSpace(trackNumber))
                     {
                         string normalizedTrack = NormalizeTrackNumber(trackNumber);
@@ -126,19 +182,17 @@ namespace YYTools
                         }
                         index[normalizedTrack].Add(new ShippingItem
                         {
-                            ProductCode = GetArrayValue(productData, i, 1),
-                            ProductName = GetArrayValue(nameData, i, 1)
+                            ProductCode = i < productData.Count ? productData[i] : "",
+                            ProductName = i < nameData.Count ? nameData[i] : ""
                         });
-                    }
-
-                    if (i % 1000 == 0 || i == dataRows)
-                    {
-                        int progress = 10 + (int)(40.0 * i / dataRows);
-                        progressCallback?.Invoke(progress, $"构建索引: {i}/{dataRows} 行");
                     }
                 }
             }
-            catch (Exception ex) { WriteLog("构建索引失败: " + ex.ToString(), LogLevel.Error); throw; }
+            catch (Exception ex) 
+            { 
+                WriteLog("构建索引失败: " + ex.ToString(), LogLevel.Error); 
+                throw; 
+            }
             return index;
         }
 
@@ -154,130 +208,169 @@ namespace YYTools
                 int productCol = ExcelHelper.GetColumnNumber(config.BillProductColumn);
                 int nameCol = ExcelHelper.GetColumnNumber(config.BillNameColumn);
 
-                Excel.Range trackRange = billSheet.Range[$"{ExcelHelper.GetColumnLetter(trackCol)}2", $"{ExcelHelper.GetColumnLetter(trackCol)}{totalRows}"];
-                object[,] trackData = trackRange.Value2 as object[,];
+                var batchSize = AppSettings.Instance.BatchSize;
+                var trackData = new List<string>();
+                var productData = new List<string>();
+                var nameData = new List<string>();
 
-                int dataRows = totalRows - 1;
-                object[,] productData = new object[dataRows, 1];
-                object[,] nameData = new object[dataRows, 1];
-                
-                int matchedCount = 0;
-                AppSettings settings = AppSettings.Instance;
-
-                for (int i = 1; i <= dataRows; i++)
+                // 分批读取运单号数据
+                for (int startRow = 2; startRow <= totalRows; startRow += batchSize)
                 {
-                    if (i % 100 == 0 && CancellationCheck?.Invoke() == true) return;
-
-                    string billTrackNumber = GetArrayValue(trackData, i, 1);
-                    if (!string.IsNullOrWhiteSpace(billTrackNumber))
-                    {
-                        string normalizedTrack = NormalizeTrackNumber(billTrackNumber);
-                        if (shippingIndex.ContainsKey(normalizedTrack))
-                        {
-                            matchedCount++;
-                            List<ShippingItem> matchedItems = shippingIndex[normalizedTrack];
-                            
-                            var productCodes = matchedItems.Select(item => item.ProductCode.Trim()).Where(c => !string.IsNullOrEmpty(c));
-                            var productNames = matchedItems.Select(item => item.ProductName.Trim()).Where(n => !string.IsNullOrEmpty(n));
-                            
-                            if (settings.RemoveDuplicateItems)
-                            {
-                                productCodes = productCodes.Distinct();
-                                productNames = productNames.Distinct();
-                            }
-                            
-                            if (productCodes.Any()) productData[i - 1, 0] = string.Join(settings.ConcatenationDelimiter, productCodes.ToArray());
-                            if (productNames.Any()) nameData[i - 1, 0] = string.Join(settings.ConcatenationDelimiter, productNames.ToArray());
-                        }
-                    }
-                    if (i % 500 == 0 || i == dataRows)
-                    {
-                        int progress = 50 + (int)(40.0 * i / dataRows);
-                        progressCallback?.Invoke(progress, $"匹配进度: {i}/{dataRows} 行");
-                    }
+                    int endRow = Math.Min(startRow + batchSize - 1, totalRows);
+                    trackData.AddRange(ExcelHelper.GetColumnDataBatch(billSheet, config.BillTrackColumn, startRow, endRow));
+                    
+                    if (CancellationCheck?.Invoke() == true) return;
                 }
 
-                progressCallback?.Invoke(90, "正在高速写入结果...");
+                int dataRows = trackData.Count;
+                int matchedCount = 0;
                 int updatedCells = 0;
-                updatedCells += BatchWriteColumn(billSheet, productCol, productData, totalRows, "商品编码");
-                updatedCells += BatchWriteColumn(billSheet, nameCol, nameData, totalRows, "商品名称");
-                
+                AppSettings settings = AppSettings.Instance;
+
+                // 分批处理数据
+                for (int batchStart = 0; batchStart < dataRows; batchStart += batchSize)
+                {
+                    int batchEnd = Math.Min(batchStart + batchSize, dataRows);
+                    var batchProductData = new List<string>();
+                    var batchNameData = new List<string>();
+
+                    for (int i = batchStart; i < batchEnd; i++)
+                    {
+                        string billTrackNumber = trackData[i];
+                        if (!string.IsNullOrWhiteSpace(billTrackNumber))
+                        {
+                            string normalizedTrack = NormalizeTrackNumber(billTrackNumber);
+                            if (shippingIndex.ContainsKey(normalizedTrack))
+                            {
+                                matchedCount++;
+                                List<ShippingItem> matchedItems = shippingIndex[normalizedTrack];
+                                
+                                var productCodes = matchedItems.Select(item => item.ProductCode.Trim()).Where(c => !string.IsNullOrEmpty(c));
+                                var productNames = matchedItems.Select(item => item.ProductName.Trim()).Where(n => !string.IsNullOrEmpty(n));
+                                
+                                if (settings.RemoveDuplicateItems)
+                                {
+                                    productCodes = productCodes.Distinct();
+                                    productNames = productNames.Distinct();
+                                }
+                                
+                                batchProductData.Add(productCodes.Any() ? string.Join(settings.ConcatenationDelimiter, productCodes.ToArray()) : "");
+                                batchNameData.Add(productNames.Any() ? string.Join(settings.ConcatenationDelimiter, productNames.ToArray()) : "");
+                            }
+                            else
+                            {
+                                batchProductData.Add("");
+                                batchNameData.Add("");
+                            }
+                        }
+                        else
+                        {
+                            batchProductData.Add("");
+                            batchNameData.Add("");
+                        }
+                    }
+
+                    // 批量写入数据
+                    WriteBatchData(billSheet, config.BillProductColumn, batchStart + 2, batchProductData);
+                    WriteBatchData(billSheet, config.BillNameColumn, batchStart + 2, batchNameData);
+                    
+                    updatedCells += batchProductData.Count + batchNameData.Count;
+
+                    if (CancellationCheck?.Invoke() == true) return;
+
+                    int progress = 50 + (int)(35.0 * batchEnd / dataRows);
+                    progressCallback?.Invoke(progress, $"匹配进度: {batchEnd}/{dataRows} 行");
+                }
+
                 result.ProcessedRows = dataRows;
                 result.MatchedCount = matchedCount;
                 result.UpdatedCells = updatedCells;
+
+                progressCallback?.Invoke(90, "正在高速写入结果...");
             }
-            catch (Exception ex) { WriteLog("处理账单失败: " + ex.ToString(), LogLevel.Error); throw; }
+            catch (Exception ex)
+            {
+                WriteLog($"处理账单明细失败: {ex.Message}", LogLevel.Error);
+                throw;
+            }
         }
-        
-        private int BatchWriteColumn(Excel.Worksheet worksheet, int column, object[,] data, int totalRows, string columnName)
+
+        private void WriteBatchData(Excel.Worksheet worksheet, string columnLetter, int startRow, List<string> data)
         {
             try
             {
-                if (data == null) return 0;
-                string columnLetter = ExcelHelper.GetColumnLetter(column);
-                Excel.Range targetRange = worksheet.Range[$"{columnLetter}2", $"{columnLetter}{totalRows}"];
-                targetRange.NumberFormat = "@";
-                targetRange.Value2 = data;
-                return data.Cast<object>().Count(v => v != null);
+                if (data.Count == 0) return;
+
+                var range = worksheet.Range[$"{columnLetter}{startRow}:{columnLetter}{startRow + data.Count - 1}"];
+                if (range == null) return;
+
+                var values = new object[data.Count, 1];
+                for (int i = 0; i < data.Count; i++)
+                {
+                    values[i, 0] = data[i];
+                }
+
+                range.Value2 = values;
             }
-            catch (Exception ex) { WriteLog($"{columnName}列写入失败: {ex.Message}", LogLevel.Error); return 0; }
+            catch (Exception ex)
+            {
+                WriteLog($"批量写入数据失败: {ex.Message}", LogLevel.Error);
+            }
+        }
+
+        private string NormalizeTrackNumber(string trackNumber)
+        {
+            if (string.IsNullOrWhiteSpace(trackNumber)) return "";
+            return trackNumber.Trim().ToUpperInvariant();
         }
 
         private string GetArrayValue(object[,] array, int row, int col)
         {
             try
             {
-                if (array == null || row > array.GetLength(0) || col > array.GetLength(1) || row < 1 || col < 1) return "";
-                object value = array[row, col];
-                return value?.ToString().Trim() ?? "";
-            }
-            catch { return ""; }
-        }
-        
-        private string NormalizeTrackNumber(string trackNumber)
-        {
-            if (string.IsNullOrWhiteSpace(trackNumber)) return "";
-            string normalized = trackNumber.Trim();
-            if (normalized.Contains("E+") || normalized.Contains("e+"))
-            {
-                if (decimal.TryParse(normalized, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out decimal decValue))
+                if (array != null && row <= array.GetLength(0) && col <= array.GetLength(1))
                 {
-                    return decValue.ToString();
+                    return array[row, col]?.ToString().Trim() ?? "";
                 }
             }
-            return normalized;
+            catch { }
+            return "";
         }
 
         public static void WriteLog(string message, LogLevel level)
         {
             try
             {
-                string logDir = AppSettings.Instance.LogDirectory;
-                if (string.IsNullOrEmpty(logDir)) logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "YYTools", "Logs");
-
-                if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
-                string logFile = Path.Combine(logDir, $"YYTools_{DateTime.Now:yyyyMMdd}.log");
-                string logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{level.ToString().ToUpper()}] {message}";
+                if (!Directory.Exists(LogPath)) Directory.CreateDirectory(LogPath);
+                string logFile = Path.Combine(LogPath, $"YYTools_{DateTime.Now:yyyy-MM-dd}.log");
+                string logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{level}] {message}";
                 File.AppendAllText(logFile, logEntry + Environment.NewLine, System.Text.Encoding.UTF8);
             }
             catch { }
         }
 
-        public static string GetLogFolderPath() => AppSettings.Instance.LogDirectory;
-        
+        public static string GetLogFolderPath() => LogPath;
+
         public static void CleanupOldLogs()
         {
             try
             {
-                string logDir = AppSettings.Instance.LogDirectory;
-                if (!Directory.Exists(logDir)) return;
-                var cutoffDate = DateTime.Now.AddDays(-7);
-                foreach (var file in Directory.GetFiles(logDir, "YYTools_*.log"))
+                if (!Directory.Exists(LogPath)) return;
+                
+                var logFiles = Directory.GetFiles(LogPath, "YYTools_*.log");
+                var cutoffDate = DateTime.Now.AddDays(-30); // 保留30天的日志
+                
+                foreach (var logFile in logFiles)
                 {
-                    if (new FileInfo(file).CreationTime < cutoffDate)
+                    try
                     {
-                        File.Delete(file);
+                        var fileInfo = new FileInfo(logFile);
+                        if (fileInfo.CreationTime < cutoffDate)
+                        {
+                            fileInfo.Delete();
+                        }
                     }
+                    catch { }
                 }
             }
             catch { }

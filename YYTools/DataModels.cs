@@ -60,6 +60,40 @@ namespace YYTools
     }
 
     /// <summary>
+    /// 列信息类
+    /// </summary>
+    public class ColumnInfo
+    {
+        public string ColumnLetter { get; set; }
+        public string HeaderText { get; set; }
+        public string PreviewData { get; set; }
+        public int RowCount { get; set; }
+        public bool IsValid { get; set; }
+        
+        public override string ToString()
+        {
+            return $"{ColumnLetter} ({HeaderText})";
+        }
+    }
+
+    /// <summary>
+    /// 智能列匹配规则
+    /// </summary>
+    public class SmartColumnRule
+    {
+        public string[] Keywords { get; set; }
+        public string[] ColumnTypes { get; set; }
+        public int Priority { get; set; }
+        
+        public SmartColumnRule(string[] keywords, string[] columnTypes, int priority = 1)
+        {
+            Keywords = keywords;
+            ColumnTypes = columnTypes;
+            Priority = priority;
+        }
+    }
+
+    /// <summary>
     /// 日志级别
     /// </summary>
     public enum LogLevel

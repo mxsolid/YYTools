@@ -38,6 +38,16 @@ namespace YYTools
         public string ConcatenationDelimiter { get; set; }
         public bool RemoveDuplicateItems { get; set; }
         public int MaxThreads { get; set; }
+        
+        // 新增：智能列选择设置
+        public bool EnableSmartColumnSelection { get; set; }
+        public bool EnableColumnPreview { get; set; }
+        public bool EnableColumnSearch { get; set; }
+        
+        // 新增：性能优化设置
+        public int BatchSize { get; set; }
+        public bool EnableProgressReporting { get; set; }
+        public int MaxRowsForPreview { get; set; }
 
         private string ConfigPath
         {
@@ -71,6 +81,14 @@ namespace YYTools
                 GetValue(settingsDict, "ConcatenationDelimiter", v => ConcatenationDelimiter = v);
                 GetValue(settingsDict, "RemoveDuplicateItems", v => RemoveDuplicateItems = bool.Parse(v));
                 GetValue(settingsDict, "MaxThreads", v => MaxThreads = int.Parse(v));
+                
+                // 新增设置
+                GetValue(settingsDict, "EnableSmartColumnSelection", v => EnableSmartColumnSelection = bool.Parse(v));
+                GetValue(settingsDict, "EnableColumnPreview", v => EnableColumnPreview = bool.Parse(v));
+                GetValue(settingsDict, "EnableColumnSearch", v => EnableColumnSearch = bool.Parse(v));
+                GetValue(settingsDict, "BatchSize", v => BatchSize = int.Parse(v));
+                GetValue(settingsDict, "EnableProgressReporting", v => EnableProgressReporting = bool.Parse(v));
+                GetValue(settingsDict, "MaxRowsForPreview", v => MaxRowsForPreview = int.Parse(v));
 
             }
             catch (Exception)
@@ -103,6 +121,16 @@ namespace YYTools
                     $"ConcatenationDelimiter={ConcatenationDelimiter}",
                     $"RemoveDuplicateItems={RemoveDuplicateItems}",
                     $"MaxThreads={MaxThreads}",
+                    "",
+                    "# 智能列选择设置",
+                    $"EnableSmartColumnSelection={EnableSmartColumnSelection}",
+                    $"EnableColumnPreview={EnableColumnPreview}",
+                    $"EnableColumnSearch={EnableColumnSearch}",
+                    "",
+                    "# 性能优化设置",
+                    $"BatchSize={BatchSize}",
+                    $"EnableProgressReporting={EnableProgressReporting}",
+                    $"MaxRowsForPreview={MaxRowsForPreview}",
                 };
                 File.WriteAllLines(ConfigPath, lines, System.Text.Encoding.UTF8);
             }
@@ -117,6 +145,14 @@ namespace YYTools
             MaxThreads = Environment.ProcessorCount;
             ConcatenationDelimiter = "、";
             RemoveDuplicateItems = true;
+            
+            // 新增默认值
+            EnableSmartColumnSelection = true;
+            EnableColumnPreview = true;
+            EnableColumnSearch = true;
+            BatchSize = 1000;
+            EnableProgressReporting = true;
+            MaxRowsForPreview = 100;
         }
     }
 }

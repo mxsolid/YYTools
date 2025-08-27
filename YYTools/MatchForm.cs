@@ -17,6 +17,9 @@ namespace YYTools
         private List<WorkbookInfo> workbooks = new List<WorkbookInfo>();
         private bool isProcessing = false;
         private AppSettings settings;
+        
+        // 新增：列信息缓存
+        private Dictionary<string, List<ColumnInfo>> columnCache = new Dictionary<string, List<ColumnInfo>>();
 
         public MatchForm()
         {
@@ -133,7 +136,7 @@ namespace YYTools
                 cmbShippingWorkbook.SelectedIndex = 0;
             
             if (!string.IsNullOrEmpty(prevBill) && cmbBillWorkbook.Items.Contains(prevBill))
-                cmbBillWorkbook.SelectedItem = prevBill;
+                cmbBillWorkbook.SelectedIndex = prevBill;
             else if (workbooks.Any(w => w.IsActive))
                 cmbBillWorkbook.SelectedIndex = workbooks.FindIndex(w => w.IsActive);
             else if (cmbBillWorkbook.Items.Count > 0)
@@ -201,33 +204,28 @@ namespace YYTools
                 var ws = wbInfo.Workbook.Worksheets[wsCombo.SelectedItem.ToString()] as Excel.Worksheet;
                 if (ws == null) return;
 
-                var usedRange = ws.UsedRange;
-                if (usedRange.Rows.Count == 0) return;
+                // 使用智能列选择服务获取列信息
+                var columns = SmartColumnService.GetColumnInfos(ws, settings.MaxRowsForPreview);
+                var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
+                columnCache[cacheKey] = columns;
 
-                var fileInfo = new FileInfo(wbInfo.Workbook.FullName);
-                infoLabel.Text = $"总行数: {usedRange.Rows.Count:N0} | 文件大小: {(double)fileInfo.Length / (1024 * 1024):F2} MB";
+                // 显示工作表信息
+                var stats = ExcelHelper.GetWorksheetStats(ws);
+                infoLabel.Text = $"总行数: {stats.rows:N0} | 总列数: {stats.columns:N0} | 估算大小: {(double)stats.dataSize / (1024 * 1024):F2} MB";
 
-                int colCount = usedRange.Columns.Count;
-                var headerRow = FindHeaderRow(usedRange);
-                var headers = headerRow?.Value2 as object[,];
-
-                var columnItems = new List<Tuple<string, string>>();
-                if (headers != null)
+                // 智能匹配默认列
+                if (settings.EnableSmartColumnSelection)
                 {
-                    for (int i = 1; i <= colCount; i++)
-                    {
-                        string colLetter = ExcelHelper.GetColumnLetter(i);
-                        string headerText = headers[1, i]?.ToString().Trim() ?? "";
-                        if (headerText.Length > 10) headerText = headerText.Substring(0, 10) + "...";
-                        columnItems.Add(new Tuple<string, string>($"{colLetter} ({headerText})", headerText));
-                    }
+                    var matchedColumns = SmartColumnService.SmartMatchColumns(columns);
+                    ApplySmartColumnSelection(columnCombos, matchedColumns, cacheKey);
                 }
-                
+
+                // 填充列下拉框
                 foreach (var combo in columnCombos)
                 {
-                    combo.DisplayMember = "Item1";
-                    combo.ValueMember = "Item2";
-                    combo.DataSource = new BindingSource(columnItems, null);
+                    combo.DisplayMember = "ToString";
+                    combo.ValueMember = "ColumnLetter";
+                    combo.DataSource = new BindingSource(columns, null);
                     combo.SelectedIndex = -1;
                 }
             }
@@ -236,19 +234,51 @@ namespace YYTools
                  WriteLog("填充列下拉框失败: " + ex.Message, LogLevel.Error);
             }
         }
-        
-        private Excel.Range FindHeaderRow(Excel.Range usedRange)
+
+        private void ApplySmartColumnSelection(ComboBox[] columnCombos, Dictionary<string, ColumnInfo> matchedColumns, string cacheKey)
         {
-            for (int i = 1; i <= Math.Min(100, usedRange.Rows.Count); i++)
+            try
             {
-                var row = usedRange.Rows[i] as Excel.Range;
-                var rowData = row.Value2 as object[,];
-                if (rowData != null && Enumerable.Range(1, rowData.GetLength(1)).Any(col => rowData[1, col] != null))
+                // 运单号列
+                if (matchedColumns.ContainsKey("TrackColumn"))
                 {
-                    return row;
+                    var trackColumn = matchedColumns["TrackColumn"];
+                    SetColumnSelection(columnCombos[0], trackColumn, "TrackColumn");
+                }
+
+                // 商品编码列
+                if (matchedColumns.ContainsKey("ProductColumn"))
+                {
+                    var productColumn = matchedColumns["ProductColumn"];
+                    SetColumnSelection(columnCombos[1], productColumn, "ProductColumn");
+                }
+
+                // 商品名称列
+                if (matchedColumns.ContainsKey("NameColumn"))
+                {
+                    var nameColumn = matchedColumns["NameColumn"];
+                    SetColumnSelection(columnCombos[2], nameColumn, "NameColumn");
                 }
             }
-            return usedRange.Rows[1] as Excel.Range;
+            catch (Exception ex)
+            {
+                WriteLog("应用智能列选择失败: " + ex.Message, LogLevel.Warning);
+            }
+        }
+
+        private void SetColumnSelection(ComboBox combo, ColumnInfo columnInfo, string expectedType)
+        {
+            try
+            {
+                if (columnInfo != null && SmartColumnService.ValidateColumnSelection(columnInfo, expectedType))
+                {
+                    combo.SelectedValue = columnInfo.ColumnLetter;
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"设置列选择失败: {ex.Message}", LogLevel.Warning);
+            }
         }
 
         private void SetDefaultSheet(ComboBox combo, string[] keywords)
@@ -344,8 +374,8 @@ namespace YYTools
         
         private string GetSelectedColumn(ComboBox combo)
         {
-            if (string.IsNullOrWhiteSpace(combo.Text)) return "";
-            return combo.Text.Split(' ')[0].Trim().ToUpper();
+            if (combo.SelectedValue == null) return "";
+            return combo.SelectedValue.ToString().ToUpper();
         }
 
         private bool AreColumnsValid(Excel.Workbook wb, string sheetName, string type, params ComboBox[] columnCombos)
@@ -356,11 +386,15 @@ namespace YYTools
                 {
                     string colLetter = GetSelectedColumn(cb);
                     bool isValid = !string.IsNullOrEmpty(colLetter) && ExcelHelper.IsValidColumnLetter(colLetter);
-                    bool existsInList = cb.Items.Cast<Tuple<string, string>>().Any(item => item.Item1.StartsWith(colLetter + " ", StringComparison.OrdinalIgnoreCase));
+                    
+                    // 检查列是否在缓存中存在
+                    var cacheKey = $"{wb.Name}_{sheetName}";
+                    bool existsInCache = columnCache.ContainsKey(cacheKey) && 
+                                       columnCache[cacheKey].Any(col => col.ColumnLetter == colLetter);
 
-                    if (!isValid || !existsInList)
+                    if (!isValid || !existsInCache)
                     {
-                        MessageBox.Show($"您为“{type}”表选择的列“{cb.Text}”无效或不存在。", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show($"您为\"{type}\"表选择的列\"{cb.Text}\"无效或不存在。", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         cb.Focus();
                         return false;
                     }
@@ -518,11 +552,13 @@ namespace YYTools
         }
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string aboutInfo = "YY 运单匹配工具 v2.5 (最终版)\n\n" +
+            string aboutInfo = "YY 运单匹配工具 v2.6 (智能版)\n\n" +
                              "功能特点：\n" +
                              "• 智能运单匹配，支持灵活拼接\n" +
+                             "• 智能列选择，自动识别最佳列\n" +
                              "• 支持多工作簿操作与动态加载\n" +
-                             "• 高级列选择(带预览和搜索)\n\n" +
+                             "• 高性能处理，支持大数据量\n" +
+                             "• 完善的错误处理和日志记录\n\n" +
                              "作者: 皮皮熊\n" +
                              "邮箱: oyxo@qq.com";
             MessageBox.Show(aboutInfo, "关于 YY工具", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -540,6 +576,63 @@ namespace YYTools
             else
             {
                 this.Close();
+            }
+        }
+
+        // 新增：列选择事件处理
+        private void cmbShippingTrackColumn_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ValidateAndUpdateColumnInfo(cmbShippingTrackColumn, "TrackColumn");
+        }
+
+        private void cmbShippingProductColumn_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ValidateAndUpdateColumnInfo(cmbShippingProductColumn, "ProductColumn");
+        }
+
+        private void cmbShippingNameColumn_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ValidateAndUpdateColumnInfo(cmbShippingNameColumn, "NameColumn");
+        }
+
+        private void cmbBillTrackColumn_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ValidateAndUpdateColumnInfo(cmbBillTrackColumn, "TrackColumn");
+        }
+
+        private void cmbBillProductColumn_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ValidateAndUpdateColumnInfo(cmbBillProductColumn, "ProductColumn");
+        }
+
+        private void cmbBillNameColumn_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ValidateAndUpdateColumnInfo(cmbBillNameColumn, "NameColumn");
+        }
+
+        private void ValidateAndUpdateColumnInfo(ComboBox combo, string expectedType)
+        {
+            try
+            {
+                if (combo.SelectedItem is ColumnInfo columnInfo)
+                {
+                    bool isValid = SmartColumnService.ValidateColumnSelection(columnInfo, expectedType);
+                    
+                    // 根据验证结果更新UI状态
+                    if (!isValid)
+                    {
+                        combo.BackColor = Color.LightPink;
+                        // 可以在这里添加提示信息
+                    }
+                    else
+                    {
+                        combo.BackColor = SystemColors.Window;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"验证列信息失败: {ex.Message}", LogLevel.Warning);
             }
         }
 

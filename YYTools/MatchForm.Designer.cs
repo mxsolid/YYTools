@@ -89,131 +89,118 @@ namespace YYTools
             this.gbShipping.Controls.Add(this.label2);
             this.gbShipping.Controls.Add(this.cmbShippingWorkbook);
             this.gbShipping.Controls.Add(this.label1);
-            this.gbShipping.Location = new System.Drawing.Point(6, 6);
+            this.gbShipping.Location = new System.Drawing.Point(12, 12);
             this.gbShipping.Name = "gbShipping";
-            this.gbShipping.Size = new System.Drawing.Size(370, 205);
+            this.gbShipping.Size = new System.Drawing.Size(380, 250);
             this.gbShipping.TabIndex = 0;
             this.gbShipping.TabStop = false;
             this.gbShipping.Text = "🚚 发货明细配置";
             // 
             // lblShippingInfo
             // 
-            this.lblShippingInfo.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblShippingInfo.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.lblShippingInfo.Location = new System.Drawing.Point(15, 185);
+            this.lblShippingInfo.AutoSize = true;
+            this.lblShippingInfo.Location = new System.Drawing.Point(15, 220);
             this.lblShippingInfo.Name = "lblShippingInfo";
-            this.lblShippingInfo.Size = new System.Drawing.Size(340, 17);
-            this.lblShippingInfo.TabIndex = 17;
+            this.lblShippingInfo.Size = new System.Drawing.Size(0, 17);
+            this.lblShippingInfo.TabIndex = 10;
             // 
             // cmbShippingNameColumn
             // 
-            this.cmbShippingNameColumn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbShippingNameColumn.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
-            this.cmbShippingNameColumn.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbShippingNameColumn.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbShippingNameColumn.FormattingEnabled = true;
-            this.cmbShippingNameColumn.Location = new System.Drawing.Point(90, 150);
+            this.cmbShippingNameColumn.Location = new System.Drawing.Point(120, 180);
             this.cmbShippingNameColumn.Name = "cmbShippingNameColumn";
-            this.cmbShippingNameColumn.Size = new System.Drawing.Size(265, 25);
-            this.cmbShippingNameColumn.TabIndex = 16;
+            this.cmbShippingNameColumn.Size = new System.Drawing.Size(240, 25);
+            this.cmbShippingNameColumn.TabIndex = 9;
+            this.cmbShippingNameColumn.SelectedIndexChanged += new System.EventHandler(this.cmbShippingNameColumn_SelectedIndexChanged);
             // 
             // cmbShippingProductColumn
             // 
-            this.cmbShippingProductColumn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbShippingProductColumn.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
-            this.cmbShippingProductColumn.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbShippingProductColumn.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbShippingProductColumn.FormattingEnabled = true;
-            this.cmbShippingProductColumn.Location = new System.Drawing.Point(90, 117);
+            this.cmbShippingProductColumn.Location = new System.Drawing.Point(120, 145);
             this.cmbShippingProductColumn.Name = "cmbShippingProductColumn";
-            this.cmbShippingProductColumn.Size = new System.Drawing.Size(265, 25);
-            this.cmbShippingProductColumn.TabIndex = 15;
+            this.cmbShippingProductColumn.Size = new System.Drawing.Size(240, 25);
+            this.cmbShippingProductColumn.TabIndex = 8;
+            this.cmbShippingProductColumn.SelectedIndexChanged += new System.EventHandler(this.cmbShippingProductColumn_SelectedIndexChanged);
             // 
             // cmbShippingTrackColumn
             // 
-            this.cmbShippingTrackColumn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbShippingTrackColumn.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
-            this.cmbShippingTrackColumn.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbShippingTrackColumn.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbShippingTrackColumn.FormattingEnabled = true;
-            this.cmbShippingTrackColumn.Location = new System.Drawing.Point(90, 84);
+            this.cmbShippingTrackColumn.Location = new System.Drawing.Point(120, 110);
             this.cmbShippingTrackColumn.Name = "cmbShippingTrackColumn";
-            this.cmbShippingTrackColumn.Size = new System.Drawing.Size(265, 25);
-            this.cmbShippingTrackColumn.TabIndex = 14;
+            this.cmbShippingTrackColumn.Size = new System.Drawing.Size(240, 25);
+            this.cmbShippingTrackColumn.TabIndex = 7;
+            this.cmbShippingTrackColumn.SelectedIndexChanged += new System.EventHandler(this.cmbShippingTrackColumn_SelectedIndexChanged);
             // 
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(15, 153);
+            this.label5.Location = new System.Drawing.Point(15, 183);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(71, 17);
-            this.label5.TabIndex = 8;
-            this.label5.Text = "商品名称列:";
+            this.label5.Size = new System.Drawing.Size(68, 17);
+            this.label5.TabIndex = 6;
+            this.label5.Text = "商品名称:";
             // 
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(15, 120);
+            this.label4.Location = new System.Drawing.Point(15, 148);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(71, 17);
-            this.label4.TabIndex = 6;
-            this.label4.Text = "商品编码列:";
+            this.label4.Size = new System.Drawing.Size(68, 17);
+            this.label4.TabIndex = 5;
+            this.label4.Text = "商品编码:";
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(15, 87);
+            this.label3.Location = new System.Drawing.Point(15, 113);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(59, 17);
+            this.label3.Size = new System.Drawing.Size(68, 17);
             this.label3.TabIndex = 4;
             this.label3.Text = "运单号列:";
             // 
             // cmbShippingSheet
             // 
-            this.cmbShippingSheet.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbShippingSheet.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbShippingSheet.FormattingEnabled = true;
-            this.cmbShippingSheet.Location = new System.Drawing.Point(90, 51);
+            this.cmbShippingSheet.Location = new System.Drawing.Point(120, 75);
             this.cmbShippingSheet.Name = "cmbShippingSheet";
-            this.cmbShippingSheet.Size = new System.Drawing.Size(265, 25);
+            this.cmbShippingSheet.Size = new System.Drawing.Size(240, 25);
             this.cmbShippingSheet.TabIndex = 3;
             this.cmbShippingSheet.SelectedIndexChanged += new System.EventHandler(this.cmbShippingSheet_SelectedIndexChanged);
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(15, 54);
+            this.label2.Location = new System.Drawing.Point(15, 78);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(47, 17);
+            this.label2.Size = new System.Drawing.Size(68, 17);
             this.label2.TabIndex = 2;
             this.label2.Text = "工作表:";
             // 
             // cmbShippingWorkbook
             // 
-            this.cmbShippingWorkbook.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbShippingWorkbook.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbShippingWorkbook.FormattingEnabled = true;
-            this.cmbShippingWorkbook.Location = new System.Drawing.Point(90, 18);
+            this.cmbShippingWorkbook.Location = new System.Drawing.Point(120, 40);
             this.cmbShippingWorkbook.Name = "cmbShippingWorkbook";
-            this.cmbShippingWorkbook.Size = new System.Drawing.Size(265, 25);
+            this.cmbShippingWorkbook.Size = new System.Drawing.Size(240, 25);
             this.cmbShippingWorkbook.TabIndex = 1;
             this.cmbShippingWorkbook.SelectedIndexChanged += new System.EventHandler(this.cmbShippingWorkbook_SelectedIndexChanged);
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(15, 21);
+            this.label1.Location = new System.Drawing.Point(15, 43);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(47, 17);
+            this.label1.Size = new System.Drawing.Size(68, 17);
             this.label1.TabIndex = 0;
             this.label1.Text = "工作簿:";
             // 
             // gbBill
             // 
-            this.gbBill.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.gbBill.Controls.Add(this.lblBillInfo);
             this.gbBill.Controls.Add(this.cmbBillNameColumn);
             this.gbBill.Controls.Add(this.cmbBillProductColumn);
@@ -225,146 +212,130 @@ namespace YYTools
             this.gbBill.Controls.Add(this.label9);
             this.gbBill.Controls.Add(this.cmbBillWorkbook);
             this.gbBill.Controls.Add(this.label10);
-            this.gbBill.Location = new System.Drawing.Point(382, 6);
+            this.gbBill.Location = new System.Drawing.Point(408, 12);
             this.gbBill.Name = "gbBill";
-            this.gbBill.Size = new System.Drawing.Size(370, 205);
+            this.gbBill.Size = new System.Drawing.Size(380, 250);
             this.gbBill.TabIndex = 1;
             this.gbBill.TabStop = false;
-            this.gbBill.Text = "💰 账单明细配置";
+            this.gbBill.Text = "📋 账单明细配置";
             // 
             // lblBillInfo
             // 
-            this.lblBillInfo.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblBillInfo.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.lblBillInfo.Location = new System.Drawing.Point(15, 185);
+            this.lblBillInfo.AutoSize = true;
+            this.lblBillInfo.Location = new System.Drawing.Point(15, 220);
             this.lblBillInfo.Name = "lblBillInfo";
-            this.lblBillInfo.Size = new System.Drawing.Size(340, 17);
-            this.lblBillInfo.TabIndex = 18;
+            this.lblBillInfo.Size = new System.Drawing.Size(0, 17);
+            this.lblBillInfo.TabIndex = 10;
             // 
             // cmbBillNameColumn
             // 
-            this.cmbBillNameColumn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbBillNameColumn.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
-            this.cmbBillNameColumn.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbBillNameColumn.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbBillNameColumn.FormattingEnabled = true;
-            this.cmbBillNameColumn.Location = new System.Drawing.Point(90, 150);
+            this.cmbBillNameColumn.Location = new System.Drawing.Point(120, 180);
             this.cmbBillNameColumn.Name = "cmbBillNameColumn";
-            this.cmbBillNameColumn.Size = new System.Drawing.Size(265, 25);
-            this.cmbBillNameColumn.TabIndex = 17;
+            this.cmbBillNameColumn.Size = new System.Drawing.Size(240, 25);
+            this.cmbBillNameColumn.TabIndex = 9;
+            this.cmbBillNameColumn.SelectedIndexChanged += new System.EventHandler(this.cmbBillNameColumn_SelectedIndexChanged);
             // 
             // cmbBillProductColumn
             // 
-            this.cmbBillProductColumn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbBillProductColumn.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
-            this.cmbBillProductColumn.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbBillProductColumn.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbBillProductColumn.FormattingEnabled = true;
-            this.cmbBillProductColumn.Location = new System.Drawing.Point(90, 117);
+            this.cmbBillProductColumn.Location = new System.Drawing.Point(120, 145);
             this.cmbBillProductColumn.Name = "cmbBillProductColumn";
-            this.cmbBillProductColumn.Size = new System.Drawing.Size(265, 25);
-            this.cmbBillProductColumn.TabIndex = 16;
+            this.cmbBillProductColumn.Size = new System.Drawing.Size(240, 25);
+            this.cmbBillProductColumn.TabIndex = 8;
+            this.cmbBillProductColumn.SelectedIndexChanged += new System.EventHandler(this.cmbBillProductColumn_SelectedIndexChanged);
             // 
             // cmbBillTrackColumn
             // 
-            this.cmbBillTrackColumn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbBillTrackColumn.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
-            this.cmbBillTrackColumn.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbBillTrackColumn.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbBillTrackColumn.FormattingEnabled = true;
-            this.cmbBillTrackColumn.Location = new System.Drawing.Point(90, 84);
+            this.cmbBillTrackColumn.Location = new System.Drawing.Point(120, 110);
             this.cmbBillTrackColumn.Name = "cmbBillTrackColumn";
-            this.cmbBillTrackColumn.Size = new System.Drawing.Size(265, 25);
-            this.cmbBillTrackColumn.TabIndex = 15;
+            this.cmbBillTrackColumn.Size = new System.Drawing.Size(240, 25);
+            this.cmbBillTrackColumn.TabIndex = 7;
+            this.cmbBillTrackColumn.SelectedIndexChanged += new System.EventHandler(this.cmbBillTrackColumn_SelectedIndexChanged);
             // 
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(15, 153);
+            this.label6.Location = new System.Drawing.Point(15, 183);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(71, 17);
-            this.label6.TabIndex = 8;
-            this.label6.Text = "商品名称列:";
+            this.label6.Size = new System.Drawing.Size(68, 17);
+            this.label6.TabIndex = 6;
+            this.label6.Text = "商品名称:";
             // 
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(15, 120);
+            this.label7.Location = new System.Drawing.Point(15, 148);
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(71, 17);
-            this.label7.TabIndex = 6;
-            this.label7.Text = "商品编码列:";
+            this.label7.Size = new System.Drawing.Size(68, 17);
+            this.label7.TabIndex = 5;
+            this.label7.Text = "商品编码:";
             // 
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(15, 87);
+            this.label8.Location = new System.Drawing.Point(15, 113);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(59, 17);
+            this.label8.Size = new System.Drawing.Size(68, 17);
             this.label8.TabIndex = 4;
             this.label8.Text = "运单号列:";
             // 
             // cmbBillSheet
             // 
-            this.cmbBillSheet.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbBillSheet.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbBillSheet.FormattingEnabled = true;
-            this.cmbBillSheet.Location = new System.Drawing.Point(90, 51);
+            this.cmbBillSheet.Location = new System.Drawing.Point(120, 75);
             this.cmbBillSheet.Name = "cmbBillSheet";
-            this.cmbBillSheet.Size = new System.Drawing.Size(265, 25);
+            this.cmbBillSheet.Size = new System.Drawing.Size(240, 25);
             this.cmbBillSheet.TabIndex = 3;
             this.cmbBillSheet.SelectedIndexChanged += new System.EventHandler(this.cmbBillSheet_SelectedIndexChanged);
             // 
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(15, 54);
+            this.label9.Location = new System.Drawing.Point(15, 78);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(47, 17);
+            this.label9.Size = new System.Drawing.Size(68, 17);
             this.label9.TabIndex = 2;
             this.label9.Text = "工作表:";
             // 
             // cmbBillWorkbook
             // 
-            this.cmbBillWorkbook.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbBillWorkbook.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbBillWorkbook.FormattingEnabled = true;
-            this.cmbBillWorkbook.Location = new System.Drawing.Point(90, 18);
+            this.cmbBillWorkbook.Location = new System.Drawing.Point(120, 40);
             this.cmbBillWorkbook.Name = "cmbBillWorkbook";
-            this.cmbBillWorkbook.Size = new System.Drawing.Size(265, 25);
+            this.cmbBillWorkbook.Size = new System.Drawing.Size(240, 25);
             this.cmbBillWorkbook.TabIndex = 1;
             this.cmbBillWorkbook.SelectedIndexChanged += new System.EventHandler(this.cmbBillWorkbook_SelectedIndexChanged);
             // 
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(15, 21);
+            this.label10.Location = new System.Drawing.Point(15, 43);
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(47, 17);
+            this.label10.Size = new System.Drawing.Size(68, 17);
             this.label10.TabIndex = 0;
             this.label10.Text = "工作簿:";
             // 
             // lblStatus
             // 
-            this.lblStatus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblStatus.Location = new System.Drawing.Point(8, 7);
+            this.lblStatus.AutoSize = true;
+            this.lblStatus.Location = new System.Drawing.Point(8, 8);
             this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new System.Drawing.Size(760, 17);
-            this.lblStatus.TabIndex = 4;
-            this.lblStatus.Text = "请配置并开始任务";
+            this.lblStatus.Size = new System.Drawing.Size(0, 17);
+            this.lblStatus.TabIndex = 0;
             // 
             // progressBar
             // 
-            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar.Location = new System.Drawing.Point(11, 29);
+            this.progressBar.Location = new System.Drawing.Point(8, 30);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(757, 10);
-            this.progressBar.TabIndex = 5;
+            this.progressBar.Size = new System.Drawing.Size(768, 10);
+            this.progressBar.TabIndex = 1;
             this.progressBar.Visible = false;
             // 
             // menuStrip1
@@ -375,7 +346,7 @@ namespace YYTools
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(784, 25);
+            this.menuStrip1.Size = new System.Drawing.Size(800, 25);
             this.menuStrip1.TabIndex = 9;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -460,10 +431,10 @@ namespace YYTools
             this.bottomPanel.Controls.Add(this.progressBar);
             this.bottomPanel.Controls.Add(this.lblStatus);
             this.bottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.bottomPanel.Location = new System.Drawing.Point(0, 292);
+            this.bottomPanel.Location = new System.Drawing.Point(0, 320);
             this.bottomPanel.Name = "bottomPanel";
-            this.bottomPanel.Padding = new System.Windows.Forms.Padding(8, 0, 8, 8);
-            this.bottomPanel.Size = new System.Drawing.Size(784, 89);
+            this.bottomPanel.Padding = new System.Windows.Forms.Padding(8, 8, 8, 8);
+            this.bottomPanel.Size = new System.Drawing.Size(800, 81);
             this.bottomPanel.TabIndex = 10;
             // 
             // flowLayoutPanel1
@@ -475,7 +446,7 @@ namespace YYTools
             this.flowLayoutPanel1.Location = new System.Drawing.Point(8, 43);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Padding = new System.Windows.Forms.Padding(0, 5, 0, 0);
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(768, 38);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(784, 30);
             this.flowLayoutPanel1.TabIndex = 6;
             // 
             // btnClose
@@ -514,7 +485,7 @@ namespace YYTools
             this.tabControlMain.Location = new System.Drawing.Point(0, 25);
             this.tabControlMain.Name = "tabControlMain";
             this.tabControlMain.SelectedIndex = 0;
-            this.tabControlMain.Size = new System.Drawing.Size(784, 267);
+            this.tabControlMain.Size = new System.Drawing.Size(800, 295);
             this.tabControlMain.TabIndex = 11;
             // 
             // tabPageMatcher
@@ -526,7 +497,7 @@ namespace YYTools
             this.tabPageMatcher.Location = new System.Drawing.Point(4, 26);
             this.tabPageMatcher.Name = "tabPageMatcher";
             this.tabPageMatcher.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageMatcher.Size = new System.Drawing.Size(776, 237);
+            this.tabPageMatcher.Size = new System.Drawing.Size(792, 265);
             this.tabPageMatcher.TabIndex = 0;
             this.tabPageMatcher.Text = "运单匹配";
             // 
@@ -537,17 +508,17 @@ namespace YYTools
             this.groupBox3.Controls.Add(this.chkRemoveDuplicates);
             this.groupBox3.Controls.Add(this.label12);
             this.groupBox3.Controls.Add(this.txtDelimiter);
-            this.groupBox3.Location = new System.Drawing.Point(6, 217);
+            this.groupBox3.Location = new System.Drawing.Point(12, 275);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(746, 50);
+            this.groupBox3.Size = new System.Drawing.Size(776, 60);
             this.groupBox3.TabIndex = 2;
             this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "匹配选项";
+            this.groupBox3.Text = "⚙️ 匹配选项";
             // 
             // chkRemoveDuplicates
             // 
             this.chkRemoveDuplicates.AutoSize = true;
-            this.chkRemoveDuplicates.Location = new System.Drawing.Point(176, 22);
+            this.chkRemoveDuplicates.Location = new System.Drawing.Point(200, 25);
             this.chkRemoveDuplicates.Name = "chkRemoveDuplicates";
             this.chkRemoveDuplicates.Size = new System.Drawing.Size(87, 21);
             this.chkRemoveDuplicates.TabIndex = 2;
@@ -557,7 +528,7 @@ namespace YYTools
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(15, 24);
+            this.label12.Location = new System.Drawing.Point(15, 27);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(47, 17);
             this.label12.TabIndex = 1;
@@ -565,7 +536,7 @@ namespace YYTools
             // 
             // txtDelimiter
             // 
-            this.txtDelimiter.Location = new System.Drawing.Point(68, 21);
+            this.txtDelimiter.Location = new System.Drawing.Point(68, 24);
             this.txtDelimiter.Name = "txtDelimiter";
             this.txtDelimiter.Size = new System.Drawing.Size(80, 23);
             this.txtDelimiter.TabIndex = 0;
@@ -576,7 +547,7 @@ namespace YYTools
             this.tabPageFuture.Location = new System.Drawing.Point(4, 26);
             this.tabPageFuture.Name = "tabPageFuture";
             this.tabPageFuture.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageFuture.Size = new System.Drawing.Size(776, 277);
+            this.tabPageFuture.Size = new System.Drawing.Size(792, 265);
             this.tabPageFuture.TabIndex = 1;
             this.tabPageFuture.Text = "（待开发）";
             // 
@@ -585,15 +556,15 @@ namespace YYTools
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
-            this.ClientSize = new System.Drawing.Size(784, 381);
+            this.ClientSize = new System.Drawing.Size(800, 401);
             this.Controls.Add(this.tabControlMain);
             this.Controls.Add(this.bottomPanel);
             this.Controls.Add(this.menuStrip1);
             this.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.MainMenuStrip = this.menuStrip1;
-            this.MinimumSize = new System.Drawing.Size(800, 420);
+            this.MinimumSize = new System.Drawing.Size(816, 440);
             this.Name = "MatchForm";
-            this.Text = "YY 运单匹配工具 v2.5";
+            this.Text = "YY 运单匹配工具 v2.6";
             this.gbShipping.ResumeLayout(false);
             this.gbShipping.PerformLayout();
             this.gbBill.ResumeLayout(false);
@@ -646,12 +617,6 @@ namespace YYTools
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
         private System.Windows.Forms.Button btnClose;
         private System.Windows.Forms.Button btnStart;
-        private System.Windows.Forms.ComboBox cmbShippingTrackColumn;
-        private System.Windows.Forms.ComboBox cmbShippingNameColumn;
-        private System.Windows.Forms.ComboBox cmbShippingProductColumn;
-        private System.Windows.Forms.ComboBox cmbBillNameColumn;
-        private System.Windows.Forms.ComboBox cmbBillProductColumn;
-        private System.Windows.Forms.ComboBox cmbBillTrackColumn;
         private System.Windows.Forms.TabControl tabControlMain;
         private System.Windows.Forms.TabPage tabPageMatcher;
         private System.Windows.Forms.TabPage tabPageFuture;
@@ -661,5 +626,11 @@ namespace YYTools
         private System.Windows.Forms.CheckBox chkRemoveDuplicates;
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.TextBox txtDelimiter;
+        private System.Windows.Forms.ComboBox cmbShippingTrackColumn;
+        private System.Windows.Forms.ComboBox cmbShippingNameColumn;
+        private System.Windows.Forms.ComboBox cmbShippingProductColumn;
+        private System.Windows.Forms.ComboBox cmbBillNameColumn;
+        private System.Windows.Forms.ComboBox cmbBillProductColumn;
+        private System.Windows.Forms.ComboBox cmbBillTrackColumn;
     }
 }
