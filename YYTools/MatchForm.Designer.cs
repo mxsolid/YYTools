@@ -518,7 +518,7 @@ namespace YYTools
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(113, 27);
             this.btnStart.TabIndex = 3;
-            this.btnStart.Text = "🚀 开始匹配";
+            this.btnStart.Text = "🚀 开始任务";
             this.btnStart.UseVisualStyleBackColor = false;
             this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
             // 
@@ -530,7 +530,7 @@ namespace YYTools
             this.tabControlMain.Location = new System.Drawing.Point(0, 25);
             this.tabControlMain.Name = "tabControlMain";
             this.tabControlMain.SelectedIndex = 0;
-            this.tabControlMain.Size = new System.Drawing.Size(800, 335);
+            this.tabControlMain.Size = new System.Drawing.Size(800, 360);
             this.tabControlMain.TabIndex = 11;
             // 
             // tabPageMatcher
@@ -542,7 +542,7 @@ namespace YYTools
             this.tabPageMatcher.Location = new System.Drawing.Point(4, 26);
             this.tabPageMatcher.Name = "tabPageMatcher";
             this.tabPageMatcher.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageMatcher.Size = new System.Drawing.Size(792, 305);
+            this.tabPageMatcher.Size = new System.Drawing.Size(792, 330);
             this.tabPageMatcher.TabIndex = 0;
             this.tabPageMatcher.Text = "运单匹配";
             // 
@@ -555,9 +555,9 @@ namespace YYTools
             this.groupBox3.Controls.Add(this.chkRemoveDuplicates);
             this.groupBox3.Controls.Add(this.label12);
             this.groupBox3.Controls.Add(this.txtDelimiter);
-            this.groupBox3.Location = new System.Drawing.Point(12, 200);
+            this.groupBox3.Location = new System.Drawing.Point(12, 240);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(776, 60);
+            this.groupBox3.Size = new System.Drawing.Size(776, 70);
             this.groupBox3.TabIndex = 2;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "⚙️ 匹配选项";

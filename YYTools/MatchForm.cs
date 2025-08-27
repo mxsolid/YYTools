@@ -34,6 +34,13 @@ namespace YYTools
             this.StartPosition = FormStartPosition.CenterScreen;
             this.ShowInTaskbar = true;
             this.Shown += (s, e) => { this.Activate(); };
+            // 降低界面闪烁
+            try
+            {
+                this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+                this.UpdateStyles();
+            }
+            catch { }
         }
 
         private void InitializeBackgroundWorker()
@@ -210,14 +217,15 @@ namespace YYTools
                 var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
                 columnCache[cacheKey] = columns;
 
-                // 显示工作表信息
+                // 显示工作表信息 + tooltip
                 try
                 {
                     var fileInfo = new FileInfo(wbInfo.Workbook.FullName);
                     infoLabel.ForeColor = Color.FromArgb(120, 120, 120);
                     infoLabel.Text = $"总行数: {ws.UsedRange.Rows.Count:N0} | 总列数: {ws.UsedRange.Columns.Count:N0} | 文件大小: {(double)fileInfo.Length / (1024 * 1024):F2} MB";
+                    toolTip1.SetToolTip(infoLabel, infoLabel.Text);
                 }
-                catch { infoLabel.Text = $"总行数: {ws.UsedRange.Rows.Count:N0} | 总列数: {ws.UsedRange.Columns.Count:N0}"; }
+                catch { infoLabel.Text = $"总行数: {ws.UsedRange.Rows.Count:N0} | 总列数: {ws.UsedRange.Columns.Count:N0}"; toolTip1.SetToolTip(infoLabel, infoLabel.Text); }
 
                 // 填充列下拉框，并开启可输入搜索
                 foreach (var combo in columnCombos)
@@ -350,7 +358,7 @@ namespace YYTools
         {
             this.isProcessing = processing;
             menuStrip1.Enabled = !processing;
-            tabControlMain.Enabled = !processing;
+            // 不整体禁用，以减少闪烁，仅禁用开始按钮
             btnStart.Enabled = !processing;
             
             progressBar.Visible = processing;
@@ -364,7 +372,7 @@ namespace YYTools
             else
             {
                 btnClose.Text = "关闭";
-                RefreshWorkbookList();
+                // 不刷新列表，保持用户当前选择，避免闪烁
             }
         }
 
