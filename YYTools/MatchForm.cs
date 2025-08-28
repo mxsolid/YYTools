@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 using Excel = Microsoft.Office.Interop.Excel;
 using System.Threading; // 支持ThreadPool和Thread
@@ -1303,15 +1304,15 @@ namespace YYTools
                 }
                 catch (OperationCanceledException)
                 {
-                    if (timeoutToken.Token.IsCancellationRequested())
-                    {
-                        lblStatus.Text = "任务执行超时，已自动取消";
-                        MessageBox.Show("任务执行时间过长，已自动取消。请检查数据量或优化配置。", "任务超时", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
-                    else
-                    {
-                        lblStatus.Text = "任务已取消";
-                    }
+                    // if (timeoutToken.Token.IsCancellationRequested())
+                    // {
+                    //     lblStatus.Text = "任务执行超时，已自动取消";
+                    //     MessageBox.Show("任务执行时间过长，已自动取消。请检查数据量或优化配置。", "任务超时", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    // }
+                    // else
+                    // {
+                    //     lblStatus.Text = "任务已取消";
+                    // }
                 }
                 catch (Exception ex)
                 {

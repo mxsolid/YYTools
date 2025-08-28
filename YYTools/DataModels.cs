@@ -1,4 +1,6 @@
 // --- 文件 1: DataModels.cs ---
+
+using System;
 using Excel = Microsoft.Office.Interop.Excel;
 
 namespace YYTools

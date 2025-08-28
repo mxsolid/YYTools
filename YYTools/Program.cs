@@ -15,14 +15,18 @@ namespace YYTools
         {
             try
             {
+                WriteLog("开始启动程序", LogLevel.Info);
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
 
+                WriteLog("开始创建主窗体", LogLevel.Info);
                 // 快速启动主窗体，跳过所有复杂初始化
                 var mainForm = new MatchForm();
-                
+                WriteLog("创建主窗体完成", LogLevel.Info);
+                WriteLog("开始显示主窗体", LogLevel.Info);
                 // 显示主窗体
                 Application.Run(mainForm);
+                WriteLog("显示主窗体完成", LogLevel.Info);
             }
             catch (Exception ex)
             {
@@ -37,5 +41,8 @@ namespace YYTools
                 Application.Exit();
             }
         }
+        
+        static void WriteLog(string message, LogLevel level) => MatchService.WriteLog($"[Program] {message}", level);
+
     }
 }
