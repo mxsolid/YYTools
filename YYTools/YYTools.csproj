@@ -64,13 +64,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppSettings.cs" />
+    <Compile Include="AsyncStartupManager.cs" />
     <Compile Include="AsyncTaskManager.cs" />
     <Compile Include="CacheManager.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="DataManager.cs" />
     <Compile Include="DataModels.cs" />
+    <Compile Include="DPIManager.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="StartupProgressForm.cs" />
+    <Compile Include="TaskOptionsForm.cs" />
     <Compile Include="ColumnSelectionForm.cs">
       <SubType>Form</SubType>
     </Compile>

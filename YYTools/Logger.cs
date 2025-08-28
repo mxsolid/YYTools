@@ -29,6 +29,9 @@ namespace YYTools
                 InitializeLogDirectories();
                 flushTimer = new Timer(FlushLogQueue, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
                 isInitialized = true;
+                
+                // 立即记录初始化日志
+                Log("日志系统已初始化", LogLevel.Info);
             }
             catch (Exception ex)
             {
@@ -38,6 +41,7 @@ namespace YYTools
                     LogPath = Path.Combine(Path.GetTempPath(), "YYTools", "Logs");
                     InitializeLogDirectories();
                     isInitialized = true;
+                    Log("日志系统已初始化（使用临时目录）", LogLevel.Info);
                 }
                 catch
                 {
@@ -48,10 +52,13 @@ namespace YYTools
                         if (!Directory.Exists(LogPath))
                             Directory.CreateDirectory(LogPath);
                         isInitialized = true;
+                        Log("日志系统已初始化（使用当前目录）", LogLevel.Info);
                     }
                     catch
                     {
                         isInitialized = false;
+                        // 最后尝试直接写入控制台
+                        Console.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 日志系统初始化失败: {ex.Message}");
                     }
                 }
             }
@@ -193,7 +200,12 @@ namespace YYTools
         /// </summary>
         public static void Log(string message, LogLevel level)
         {
-            if (!isInitialized) return;
+            if (!isInitialized)
+            {
+                // 如果日志系统未初始化，直接写入控制台
+                Console.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{level}] {message}");
+                return;
+            }
 
             var logEntry = new LogEntry
             {
@@ -450,6 +462,14 @@ namespace YYTools
             {
                 return new LogStatistics();
             }
+        }
+
+        /// <summary>
+        /// 强制刷新日志队列
+        /// </summary>
+        public static void ForceFlush()
+        {
+            FlushLogQueue(null);
         }
 
         #endregion

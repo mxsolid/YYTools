@@ -66,20 +66,32 @@ namespace YYTools
                     comboBox.FlatStyle = FlatStyle.Flat;
                     comboBox.BackColor = DefaultTheme.SurfaceColor;
                     comboBox.ForeColor = DefaultTheme.TextColor;
-                    // comboBox.BorderStyle = BorderStyle.FixedSingle;
                     
-                    // 设置字体
+                    // 在.NET 4.8中ComboBox没有BorderStyle属性，使用其他方式美化
                     comboBox.Font = new Font("微软雅黑", 9F, FontStyle.Regular);
-                    
-                    // 设置下拉箭头颜色
                     comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+                    
+                    // 添加自定义绘制事件来美化边框
+                    comboBox.DrawMode = DrawMode.OwnerDrawFixed;
+                    comboBox.DrawItem += (s, e) =>
+                    {
+                        if (e.Index >= 0)
+                        {
+                            e.DrawBackground();
+                            if (comboBox.Items[e.Index] != null)
+                            {
+                                TextRenderer.DrawText(e.Graphics, comboBox.Items[e.Index].ToString(),
+                                    comboBox.Font, e.Bounds, e.ForeColor, TextFormatFlags.Left);
+                            }
+                        }
+                    };
                 }
                 else
                 {
                     comboBox.FlatStyle = FlatStyle.Standard;
                     comboBox.BackColor = SystemColors.Window;
                     comboBox.ForeColor = SystemColors.WindowText;
-                    // comboBox.BorderStyle = BorderStyle.Fixed3D;
+                    comboBox.DrawMode = DrawMode.Normal;
                 }
             }
             catch (Exception ex)
@@ -380,9 +392,10 @@ namespace YYTools
                     form.ForeColor = DefaultTheme.TextColor;
                     form.Font = new Font("微软雅黑", 9F, FontStyle.Regular);
                     
-                    // 设置窗体样式
-                    form.FormBorderStyle = FormBorderStyle.FixedDialog;
-                    form.MaximizeBox = false;
+                    // 设置窗体样式 - 允许调整大小
+                    form.FormBorderStyle = FormBorderStyle.Sizable;
+                    form.MaximizeBox = true;
+                    form.MinimizeBox = true;
                     form.StartPosition = FormStartPosition.CenterScreen;
                     
                     // 启用双缓冲
@@ -391,6 +404,9 @@ namespace YYTools
                         System.Reflection.BindingFlags.Instance | 
                         System.Reflection.BindingFlags.NonPublic, 
                         null, form, new object[] { true });
+                        
+                    // 设置最小尺寸
+                    form.MinimumSize = new Size(800, 600);
                 }
             }
             catch (Exception ex)
