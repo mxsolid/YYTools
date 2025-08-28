@@ -27,26 +27,26 @@ namespace YYTools
                 var mainForm = new MatchForm();
                 Logger.LogInfo("new MatchForm end");
 
-                // 显示启动进度窗体（轻量：仅抓取已打开文件名）
-                var progressForm = StartupProgressForm.ShowStartupProgress();
-                var cts = new System.Threading.CancellationTokenSource();
-                var progress = new Progress<YYTools.TaskProgress>(p => { try { progressForm?.UpdateProgress(p.Percentage, p.Message); } catch { } });
-                ((IProgress<YYTools.TaskProgress>)progress)
-                    .Report(new YYTools.TaskProgress(5, "正在检测已打开的Excel/WPS..."));
+                // // 显示启动进度窗体（轻量：仅抓取已打开文件名）
+                // var progressForm = StartupProgressForm.ShowStartupProgress();
+                // var cts = new System.Threading.CancellationTokenSource();
+                // var progress = new Progress<YYTools.TaskProgress>(p => { try { progressForm?.UpdateProgress(p.Percentage, p.Message); } catch { } });
+                // ((IProgress<YYTools.TaskProgress>)progress)
+                //     .Report(new YYTools.TaskProgress(5, "正在检测已打开的Excel/WPS..."));
+                //
+                //
+                // var namesTask = AsyncStartupManager.FetchOpenWorkbookNamesAsync(cts.Token);
+                // try
+                // {
+                //     var names = namesTask.GetAwaiter().GetResult();
+                //     Logger.LogInfo($"已获取打开的工作簿数量: {names.Names.Count}, 活动: {names.ActiveName}");
+                // }
+                // catch (Exception exFetch)
+                // {
+                //     Logger.LogWarning($"获取打开的工作簿名称失败: {exFetch.Message}");
+                // }
 
-
-                var namesTask = AsyncStartupManager.FetchOpenWorkbookNamesAsync(cts.Token);
-                try
-                {
-                    var names = namesTask.GetAwaiter().GetResult();
-                    Logger.LogInfo($"已获取打开的工作簿数量: {names.Names.Count}, 活动: {names.ActiveName}");
-                }
-                catch (Exception exFetch)
-                {
-                    Logger.LogWarning($"获取打开的工作簿名称失败: {exFetch.Message}");
-                }
-
-                try { progressForm?.CompleteStartup(true, ""); } catch { }
+                // try { progressForm?.CompleteStartup(true, ""); } catch { }
                 Logger.LogInfo("Application.Run(mainForm) begin");
                 Application.Run(mainForm);
                 Logger.LogInfo("Application.Run(mainForm) end");
