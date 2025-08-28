@@ -413,7 +413,7 @@ namespace YYTools
             // 
             this.btnStart.Font = new System.Drawing.Font("微软雅黑", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnStart.ForeColor = System.Drawing.Color.ForestGreen;
-            this.btnStart.Location = new System.Drawing.Point(259, 582);
+            this.btnStart.Location = new System.Drawing.Point(259, 620);
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(100, 30);
             this.btnStart.TabIndex = 5;
@@ -423,7 +423,7 @@ namespace YYTools
             // 
             // btnClose
             // 
-            this.btnClose.Location = new System.Drawing.Point(372, 582);
+            this.btnClose.Location = new System.Drawing.Point(372, 620);
             this.btnClose.Name = "btnClose";
             this.btnClose.Size = new System.Drawing.Size(100, 30);
             this.btnClose.TabIndex = 6;

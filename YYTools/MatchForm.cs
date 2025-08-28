@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using Excel = Microsoft.Office.Interop.Excel;
+using System.Threading; // Added for ThreadPool
+using System.Threading.Tasks; // Added for Task
 
 namespace YYTools
 {
@@ -20,6 +22,61 @@ namespace YYTools
         private Dictionary<string, List<ColumnInfo>> columnCache = new Dictionary<string, List<ColumnInfo>>();
 
         private Dictionary<ComboBox, string> comboBoxColumnTypeMap;
+
+        /// <summary>
+        /// 内存监控定时器
+        /// </summary>
+        private System.Windows.Forms.Timer _memoryMonitorTimer;
+
+        /// <summary>
+        /// 任务超时保护
+        /// </summary>
+        private CancellationTokenSource _taskCancellationTokenSource;
+
+        /// <summary>
+        /// 初始化内存监控
+        /// </summary>
+        private void InitializeMemoryMonitor()
+        {
+            try
+            {
+                _memoryMonitorTimer = new System.Windows.Forms.Timer();
+                _memoryMonitorTimer.Interval = 30000; // 30秒检查一次
+                _memoryMonitorTimer.Tick += (s, e) =>
+                {
+                    try
+                    {
+                        var process = System.Diagnostics.Process.GetCurrentProcess();
+                        var memoryMB = process.WorkingSet64 / 1024 / 1024;
+                        
+                        // 如果内存使用超过500MB，进行垃圾回收
+                        if (memoryMB > 500)
+                        {
+                            GC.Collect();
+                            GC.WaitForPendingFinalizers();
+                            GC.Collect();
+                            
+                            WriteLog($"内存使用: {memoryMB}MB，已执行垃圾回收", LogLevel.Info);
+                        }
+                        
+                        // 如果内存使用超过1GB，显示警告
+                        if (memoryMB > 1024)
+                        {
+                            WriteLog($"内存使用过高: {memoryMB}MB，建议重启程序", LogLevel.Warning);
+                        }
+                    }
+                    catch
+                    {
+                        // 忽略内存监控错误
+                    }
+                };
+                _memoryMonitorTimer.Start();
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"初始化内存监控失败: {ex.Message}", LogLevel.Warning);
+            }
+        }
 
         public MatchForm()
         {
@@ -39,6 +96,7 @@ namespace YYTools
             InitializeCustomComponents();
             InitializeBackgroundWorker();
             InitializeForm();
+            InitializeMemoryMonitor(); // 初始化内存监控
             
             // 跳过Logger调用，避免Logger系统问题
             // Logger.LogUserAction("主窗体创建", "MatchForm已初始化", "成功");
@@ -777,32 +835,46 @@ namespace YYTools
                 progressBar.Value = 100;
                 Application.DoEvents();
 
-                // 延迟隐藏进度条
-                System.Threading.Timer timer = null;
-                timer = new System.Threading.Timer((state) =>
+                // 延迟隐藏进度条 - 使用线程池提高安全性
+                ThreadPool.QueueUserWorkItem((state) =>
                 {
                     try
                     {
+                        Thread.Sleep(1000); // 等待1秒
+                        
                         if (this.InvokeRequired)
                         {
                             this.Invoke(new Action(() =>
                             {
-                                progressBar.Visible = false;
-                                progressBar.Value = 0;
+                                try
+                                {
+                                    progressBar.Visible = false;
+                                    progressBar.Value = 0;
+                                }
+                                catch
+                                {
+                                    // 忽略UI操作错误
+                                }
                             }));
                         }
                         else
                         {
-                            progressBar.Visible = false;
-                            progressBar.Value = 0;
+                            try
+                            {
+                                progressBar.Visible = false;
+                                progressBar.Value = 0;
+                            }
+                            catch
+                            {
+                                // 忽略UI操作错误
+                            }
                         }
-                        timer?.Dispose();
                     }
                     catch
                     {
-                        // 忽略错误
+                        // 忽略线程池操作错误
                     }
-                }, null, 1000, Timeout.Infinite);
+                });
             }
             catch (Exception ex)
             {
@@ -986,6 +1058,193 @@ namespace YYTools
             {
                 WriteLog($"生成预览数据失败: {ex.Message}", LogLevel.Warning);
                 return new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// 异步初始化Excel文件
+        /// </summary>
+        public async void InitializeExcelFilesAsync()
+        {
+            try
+            {
+                // 显示加载状态
+                if (lblStatus.InvokeRequired)
+                {
+                    lblStatus.Invoke(new Action(() => lblStatus.Text = "正在加载Excel文件..."));
+                }
+                else
+                {
+                    lblStatus.Text = "正在加载Excel文件...";
+                }
+
+                // 异步加载Excel文件
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        LoadExcelFiles();
+                    }
+                    catch (Exception ex)
+                    {
+                        // 记录错误但不影响程序运行
+                        WriteLog($"异步加载Excel文件失败: {ex.Message}", LogLevel.Warning);
+                    }
+                });
+
+                // 更新状态
+                if (lblStatus.InvokeRequired)
+                {
+                    lblStatus.Invoke(new Action(() => lblStatus.Text = "Excel文件加载完成"));
+                }
+                else
+                {
+                    lblStatus.Text = "Excel文件加载完成";
+                }
+
+                // 延迟清除状态
+                ThreadPool.QueueUserWorkItem((state) =>
+                {
+                    try
+                    {
+                        Thread.Sleep(2000); // 等待2秒
+                        if (lblStatus.InvokeRequired)
+                        {
+                            lblStatus.Invoke(new Action(() => lblStatus.Text = "欢迎使用YY匹配工具"));
+                        }
+                        else
+                        {
+                            lblStatus.Text = "欢迎使用YY匹配工具";
+                        }
+                    }
+                    catch
+                    {
+                        // 忽略错误
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"异步初始化Excel文件失败: {ex.Message}", LogLevel.Warning);
+                if (lblStatus.InvokeRequired)
+                {
+                    lblStatus.Invoke(new Action(() => lblStatus.Text = "Excel文件加载失败"));
+                }
+                else
+                {
+                    lblStatus.Text = "Excel文件加载失败";
+                }
+            }
+        }
+
+        /// <summary>
+        /// 开始任务（带超时保护）
+        /// </summary>
+        private async void StartTaskWithTimeout()
+        {
+            try
+            {
+                // 取消之前的任务
+                _taskCancellationTokenSource?.Cancel();
+                _taskCancellationTokenSource = new CancellationTokenSource();
+
+                // 设置超时时间（5分钟）
+                var timeoutToken = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+                var combinedToken = CancellationTokenSource.CreateLinkedTokenSource(
+                    _taskCancellationTokenSource.Token, timeoutToken.Token);
+
+                // 显示进度条
+                progressBar.Visible = true;
+                progressBar.Value = 0;
+                lblStatus.Text = "正在执行任务...";
+                btnStart.Enabled = false;
+                Application.DoEvents();
+
+                try
+                {
+                    // 执行任务
+                    await Task.Run(() =>
+                    {
+                        // 这里执行实际的匹配任务
+                        // 为了演示，我们模拟一个长时间运行的任务
+                        for (int i = 0; i < 100; i++)
+                        {
+                            combinedToken.Token.ThrowIfCancellationRequested();
+                            
+                            // 更新进度
+                            var progress = i;
+                            if (progressBar.InvokeRequired)
+                            {
+                                progressBar.Invoke(new Action(() => progressBar.Value = progress));
+                            }
+                            else
+                            {
+                                progressBar.Value = progress;
+                            }
+                            
+                            Thread.Sleep(100); // 模拟工作
+                        }
+                    }, combinedToken.Token);
+
+                    // 任务完成
+                    lblStatus.Text = "任务执行完成";
+                    progressBar.Value = 100;
+                }
+                catch (OperationCanceledException)
+                {
+                    if (timeoutToken.Token.IsCancellationRequested())
+                    {
+                        lblStatus.Text = "任务执行超时，已自动取消";
+                        MessageBox.Show("任务执行时间过长，已自动取消。请检查数据量或优化配置。", "任务超时", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                    else
+                    {
+                        lblStatus.Text = "任务已取消";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lblStatus.Text = $"任务执行失败: {ex.Message}";
+                    MessageBox.Show($"任务执行失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    // 恢复界面状态
+                    btnStart.Enabled = true;
+                    
+                    // 延迟隐藏进度条
+                    ThreadPool.QueueUserWorkItem((state) =>
+                    {
+                        try
+                        {
+                            Thread.Sleep(2000);
+                            if (progressBar.InvokeRequired)
+                            {
+                                progressBar.Invoke(new Action(() =>
+                                {
+                                    progressBar.Visible = false;
+                                    progressBar.Value = 0;
+                                }));
+                            }
+                            else
+                            {
+                                progressBar.Visible = false;
+                                progressBar.Value = 0;
+                            }
+                        }
+                        catch
+                        {
+                            // 忽略错误
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"启动任务失败: {ex.Message}", LogLevel.Error);
+                lblStatus.Text = "启动任务失败";
+                btnStart.Enabled = true;
+                progressBar.Visible = false;
             }
         }
     }

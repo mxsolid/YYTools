@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Threading; // Added for Thread.Sleep
 
 namespace YYTools
 {
@@ -21,8 +22,33 @@ namespace YYTools
                 // 显示启动信息
                 MessageBox.Show("正在启动YY工具...", "启动中", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                // 直接创建并显示主窗体（跳过所有复杂功能）
+                // 快速启动主窗体
                 var mainForm = new MatchForm();
+                
+                // 异步加载Excel文件，不阻塞启动
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        Thread.Sleep(100); // 短暂延迟，让主窗体先显示
+                        mainForm.BeginInvoke(new Action(() =>
+                        {
+                            try
+                            {
+                                mainForm.InitializeExcelFilesAsync();
+                            }
+                            catch (Exception ex)
+                            {
+                                // 忽略Excel加载错误，不影响程序启动
+                                System.Diagnostics.Debug.WriteLine($"Excel文件加载失败: {ex.Message}");
+                            }
+                        }));
+                    }
+                    catch
+                    {
+                        // 忽略异步加载错误
+                    }
+                });
                 
                 // 显示启动成功信息
                 MessageBox.Show("主窗体创建成功，正在显示...", "启动成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -44,21 +70,10 @@ namespace YYTools
                 // 尝试写入错误到文件
                 try
                 {
-                    string errorLog = $"启动时间: {DateTime.Now}\n" +
-                                     $"错误类型: {ex.GetType().Name}\n" +
-                                     $"错误信息: {ex.Message}\n" +
-                                     $"堆栈跟踪: {ex.StackTrace}\n" +
-                                     $"操作系统: {Environment.OSVersion}\n" +
-                                     $".NET版本: {Environment.Version}\n" +
-                                     $"工作目录: {Environment.CurrentDirectory}\n";
-                    
-                    System.IO.File.WriteAllText("startup_error.log", errorLog);
-                    MessageBox.Show("错误信息已保存到 startup_error.log 文件", "错误已保存", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                catch
-                {
-                    // 忽略保存错误日志失败
-                }
+                    System.IO.File.WriteAllText("startup_error.log", 
+                        $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 启动错误:\n{ex}\n\n堆栈跟踪:\n{ex.StackTrace}"); 
+                } 
+                catch { }
                 
                 // 确保程序不会静默退出
                 Application.Exit();
