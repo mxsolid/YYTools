@@ -64,7 +64,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppSettings.cs" />
+    <Compile Include="Constants.cs" />
+    <Compile Include="DataManager.cs" />
     <Compile Include="DataModels.cs" />
+    <Compile Include="Logger.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ColumnSelectionForm.cs">
       <SubType>Form</SubType>
@@ -112,6 +115,7 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\loading.gif" />
     <Content Include="YYProgram.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
