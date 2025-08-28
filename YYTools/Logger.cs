@@ -267,7 +267,7 @@ namespace YYTools
 
                 File.AppendAllText(logFile, logBuilder.ToString(), Encoding.UTF8);
             }
-            catch (Exception _)
+            catch
             {
                 // 如果写入失败，尝试写入备用位置
                 try

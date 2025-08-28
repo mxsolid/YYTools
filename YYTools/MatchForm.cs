@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using Excel = Microsoft.Office.Interop.Excel;
-using System.Threading; // Added for ThreadPool
-using System.Threading.Tasks; // Added for Task
+using System.Threading; // 统一线程管理
+using System.Threading.Tasks; // 异步任务支持
 
 namespace YYTools
 {
@@ -82,24 +83,64 @@ namespace YYTools
         {
             InitializeComponent();
             
-            // 启用DPI感知（跳过Logger调用）
+            // 基本初始化
+            InitializeForm();
+            
+            // 延迟初始化其他组件，提高启动速度
+            this.Load += (s, e) => DelayedInitialization();
+        }
+
+        /// <summary>
+        /// 延迟初始化，提高启动速度
+        /// </summary>
+        private void DelayedInitialization()
+        {
             try
             {
-                DPIManager.EnableDpiAwarenessForAllControls(this);
+                // 在窗体加载完成后执行这些初始化
+                ThreadPool.QueueUserWorkItem((state) =>
+                {
+                    try
+                    {
+                        // 延迟100ms执行，确保窗体完全显示
+                        Thread.Sleep(100);
+                        
+                        if (this.InvokeRequired)
+                        {
+                            this.Invoke(new Action(() =>
+                            {
+                                try
+                                {
+                                    // DPI适配
+                                    DPIManager.EnableDpiAwarenessForAllControls(this);
+                                    
+                                    // 其他初始化
+                                    InitializeCustomComponents();
+                                    InitializeBackgroundWorker();
+                                    InitializeMemoryMonitor();
+                                    
+                                    // 异步加载Excel文件
+                                    LoadExcelFiles();
+                                    
+                                    WriteLog("延迟初始化完成", LogLevel.Info);
+                                }
+                                catch (Exception ex)
+                                {
+                                    WriteLog($"延迟初始化失败: {ex.Message}", LogLevel.Warning);
+                                }
+                            }));
+                        }
+                    }
+                    catch
+                    {
+                        // 忽略延迟初始化错误
+                    }
+                });
             }
             catch (Exception ex)
             {
-                // 忽略DPI管理器错误，不影响基本功能
-                MessageBox.Show($"DPI适配失败，但不影响程序运行: {ex.Message}", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                WriteLog($"启动延迟初始化失败: {ex.Message}", LogLevel.Warning);
             }
-            
-            InitializeCustomComponents();
-            InitializeBackgroundWorker();
-            InitializeForm();
-            InitializeMemoryMonitor(); // 初始化内存监控
-            
-            // 跳过Logger调用，避免Logger系统问题
-            // Logger.LogUserAction("主窗体创建", "MatchForm已初始化", "成功");
         }
 
         private void InitializeCustomComponents()
@@ -884,19 +925,28 @@ namespace YYTools
             }
         }
         
-        private string BuildPreviewLine(IEnumerable<string> data, string prefix)
+        /// <summary>
+        /// 构建预览行
+        /// </summary>
+        private string BuildPreviewLine(IEnumerable<string> items, string prefix)
         {
-            string delimiter = txtDelimiter.Text;
-            bool removeDuplicates = chkRemoveDuplicates.Checked;
-            SortOption sortOption = GetSortOption();
-            
-            IEnumerable<string> processedData = data;
+            try
+            {
+                if (items == null || !items.Any())
+                    return $"{prefix}无数据";
 
-            if (removeDuplicates) processedData = processedData.Distinct();
-            if (sortOption == SortOption.Asc) processedData = processedData.OrderBy(x => x, StringComparer.Ordinal);
-            else if (sortOption == SortOption.Desc) processedData = processedData.OrderByDescending(x => x, StringComparer.Ordinal);
-            
-            return prefix + string.Join(delimiter, processedData);
+                var delimiter = txtDelimiter.Text;
+                if (string.IsNullOrWhiteSpace(delimiter))
+                    delimiter = "、";
+
+                var result = string.Join(delimiter, items.Where(i => !string.IsNullOrWhiteSpace(i)));
+                return $"{prefix}{result}";
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"构建预览行失败: {ex.Message}", LogLevel.Warning);
+                return $"{prefix}构建失败";
+            }
         }
 
         private void WriteLog(string message, LogLevel level) => MatchService.WriteLog($"[MatchForm] {message}", level);
@@ -1016,48 +1066,108 @@ namespace YYTools
             try
             {
                 var result = new List<string>();
-                var shippingDict = shippingData.GroupBy(s => s.TrackNumber).ToDictionary(g => g.Key, g => g.ToList());
-
-                foreach (var bill in billData.Take(10)) // 只处理前10个账单
+                
+                if (shippingData == null || billData == null || shippingData.Count == 0 || billData.Count == 0)
                 {
-                    if (shippingDict.ContainsKey(bill.TrackNumber))
+                    result.Add("数据不足，无法生成预览");
+                    return result;
+                }
+
+                // 创建发货数据的索引
+                var shippingDict = shippingData
+                    .Where(s => !string.IsNullOrWhiteSpace(s.TrackNumber))
+                    .GroupBy(s => s.TrackNumber.Trim())
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                WriteLog($"发货数据索引创建完成，共 {shippingDict.Count} 个运单号", LogLevel.Info);
+
+                // 处理账单数据
+                int processedCount = 0;
+                foreach (var bill in billData.Take(20)) // 处理前20个账单
+                {
+                    if (string.IsNullOrWhiteSpace(bill.TrackNumber))
+                        continue;
+
+                    string trackNumber = bill.TrackNumber.Trim();
+                    
+                    if (shippingDict.ContainsKey(trackNumber))
                     {
-                        var items = shippingDict[bill.TrackNumber];
+                        var items = shippingDict[trackNumber];
                         var previewLines = new List<string>();
 
-                        if (items.Any(i => !string.IsNullOrWhiteSpace(i.ProductCode)))
+                        // 添加运单号
+                        result.Add($"运单号: {trackNumber}");
+
+                        // 处理商品编码
+                        var productCodes = items
+                            .Where(i => !string.IsNullOrWhiteSpace(i.ProductCode))
+                            .Select(i => i.ProductCode.Trim())
+                            .Where(pc => !string.IsNullOrWhiteSpace(pc))
+                            .Distinct()
+                            .ToList();
+
+                        if (productCodes.Count > 0)
                         {
-                            var productCodes = items.Select(i => i.ProductCode).Where(pc => !string.IsNullOrWhiteSpace(pc));
-                            if (productCodes.Any())
-                            {
-                                previewLines.Add(BuildPreviewLine(productCodes, "商品: "));
-                            }
+                            string productCodeLine = BuildPreviewLine(productCodes, "商品编码: ");
+                            result.Add(productCodeLine);
+                            WriteLog($"运单 {trackNumber} 找到 {productCodes.Count} 个商品编码", LogLevel.Debug);
                         }
 
-                        if (items.Any(i => !string.IsNullOrWhiteSpace(i.ProductName)))
+                        // 处理商品名称
+                        var productNames = items
+                            .Where(i => !string.IsNullOrWhiteSpace(i.ProductName))
+                            .Select(i => i.ProductName.Trim())
+                            .Where(pn => !string.IsNullOrWhiteSpace(pn))
+                            .Distinct()
+                            .ToList();
+
+                        if (productNames.Count > 0)
                         {
-                            var productNames = items.Select(i => i.ProductName).Where(pn => !string.IsNullOrWhiteSpace(pn));
-                            if (productNames.Any())
-                            {
-                                previewLines.Add(BuildPreviewLine(productNames, "品名: "));
-                            }
+                            string productNameLine = BuildPreviewLine(productNames, "商品名称: ");
+                            result.Add(productNameLine);
+                            WriteLog($"运单 {trackNumber} 找到 {productNames.Count} 个商品名称", LogLevel.Debug);
                         }
 
-                        if (previewLines.Any())
+                        if (previewLines.Count > 0)
                         {
-                            result.Add($"运单号: {bill.TrackNumber}");
                             result.AddRange(previewLines);
-                            result.Add(""); // 空行分隔
                         }
+
+                        result.Add(""); // 空行分隔
+                        processedCount++;
+                    }
+                    else
+                    {
+                        WriteLog($"运单号 {trackNumber} 在发货数据中未找到匹配", LogLevel.Debug);
                     }
                 }
 
+                if (processedCount == 0)
+                {
+                    result.Clear();
+                    result.Add("未找到匹配的数据");
+                    result.Add("可能的原因：");
+                    result.Add("1. 运单号格式不一致（如空格、大小写等）");
+                    result.Add("2. 发货明细和账单明细中的运单号不匹配");
+                    result.Add("3. 数据为空或格式错误");
+                    result.Add("");
+                    result.Add($"发货数据: {shippingData.Count} 条");
+                    result.Add($"账单数据: {billData.Count} 条");
+                    result.Add($"发货运单号示例: {shippingData.Take(3).Select(s => s.TrackNumber).Where(t => !string.IsNullOrWhiteSpace(t)).FirstOrDefault() ?? "无"}");
+                    result.Add($"账单运单号示例: {billData.Take(3).Select(b => b.TrackNumber).Where(t => !string.IsNullOrWhiteSpace(t)).FirstOrDefault() ?? "无"}");
+                }
+                else
+                {
+                    result.Insert(0, $"预览数据生成完成，共处理 {processedCount} 个运单");
+                }
+
+                WriteLog($"预览数据生成完成，共 {result.Count} 行", LogLevel.Info);
                 return result;
             }
             catch (Exception ex)
             {
                 WriteLog($"生成预览数据失败: {ex.Message}", LogLevel.Warning);
-                return new List<string>();
+                return new List<string> { $"生成预览数据失败: {ex.Message}" };
             }
         }
 
@@ -1169,7 +1279,8 @@ namespace YYTools
                         // 为了演示，我们模拟一个长时间运行的任务
                         for (int i = 0; i < 100; i++)
                         {
-                            combinedToken.Token.ThrowIfCancellationRequested();
+                            if (combinedToken.Token.IsCancellationRequested)
+                                throw new OperationCanceledException();
                             
                             // 更新进度
                             var progress = i;
@@ -1245,6 +1356,76 @@ namespace YYTools
                 lblStatus.Text = "启动任务失败";
                 btnStart.Enabled = true;
                 progressBar.Visible = false;
+            }
+        }
+
+        /// <summary>
+        /// 加载Excel文件列表
+        /// </summary>
+        private void LoadExcelFiles()
+        {
+            try
+            {
+                // 清空现有列表
+                cmbShippingWorkbook.Items.Clear();
+                cmbBillWorkbook.Items.Clear();
+                workbooks.Clear();
+
+                // 获取当前目录下的Excel文件
+                string[] excelFiles = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.xlsx")
+                    .Concat(Directory.GetFiles(Directory.GetCurrentDirectory(), "*.xls"))
+                    .ToArray();
+
+                if (excelFiles.Length == 0)
+                {
+                    WriteLog("当前目录下未找到Excel文件", LogLevel.Info);
+                    return;
+                }
+
+                // 加载每个Excel文件
+                foreach (string filePath in excelFiles)
+                {
+                    try
+                    {
+                        var fileInfo = new FileInfo(filePath);
+                        if (fileInfo.Length > 100 * 1024 * 1024) // 100MB限制
+                        {
+                            WriteLog($"文件过大，跳过: {fileInfo.Name}", LogLevel.Warning);
+                            continue;
+                        }
+
+                        var wbInfo = new WorkbookInfo
+                        {
+                            FilePath = filePath,
+                            FileName = fileInfo.Name,
+                            FileSize = fileInfo.Length,
+                            LastModified = fileInfo.LastWriteTime
+                        };
+
+                        workbooks.Add(wbInfo);
+                        cmbShippingWorkbook.Items.Add(fileInfo.Name);
+                        cmbBillWorkbook.Items.Add(fileInfo.Name);
+
+                        WriteLog($"已加载Excel文件: {fileInfo.Name} ({fileInfo.Length / 1024}KB)", LogLevel.Info);
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteLog($"加载Excel文件失败: {Path.GetFileName(filePath)}, 错误: {ex.Message}", LogLevel.Warning);
+                    }
+                }
+
+                // 如果有文件，选择第一个
+                if (cmbShippingWorkbook.Items.Count > 0)
+                {
+                    cmbShippingWorkbook.SelectedIndex = 0;
+                    cmbBillWorkbook.SelectedIndex = 0;
+                }
+
+                WriteLog($"Excel文件加载完成，共 {workbooks.Count} 个文件", LogLevel.Info);
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"加载Excel文件列表失败: {ex.Message}", LogLevel.Error);
             }
         }
     }
