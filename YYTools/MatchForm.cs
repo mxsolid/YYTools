@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using Excel = Microsoft.Office.Interop.Excel;
-using System.Threading; // 统一线程管理
+using System.Threading; // 支持ThreadPool和Thread
 using System.Threading.Tasks; // 异步任务支持
 
 namespace YYTools
@@ -1398,8 +1398,10 @@ namespace YYTools
                         {
                             FilePath = filePath,
                             FileName = fileInfo.Name,
+                            Name = fileInfo.Name, // 设置Name属性
                             FileSize = fileInfo.Length,
-                            LastModified = fileInfo.LastWriteTime
+                            LastModified = fileInfo.LastWriteTime,
+                            IsActive = false // 默认非活动状态
                         };
 
                         workbooks.Add(wbInfo);

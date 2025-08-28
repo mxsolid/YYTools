@@ -74,6 +74,10 @@ namespace YYTools
         public string Name { get; set; }
         public Excel.Workbook Workbook { get; set; }
         public bool IsActive { get; set; }
+        public string FilePath { get; set; }
+        public string FileName { get; set; }
+        public long FileSize { get; set; }
+        public DateTime LastModified { get; set; }
     }
 
     /// <summary>
