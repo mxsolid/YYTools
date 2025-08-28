@@ -66,7 +66,7 @@ namespace YYTools
                     comboBox.FlatStyle = FlatStyle.Flat;
                     comboBox.BackColor = DefaultTheme.SurfaceColor;
                     comboBox.ForeColor = DefaultTheme.TextColor;
-                    comboBox.BorderStyle = BorderStyle.FixedSingle;
+                    // comboBox.BorderStyle = BorderStyle.FixedSingle;
                     
                     // 设置字体
                     comboBox.Font = new Font("微软雅黑", 9F, FontStyle.Regular);
@@ -79,7 +79,7 @@ namespace YYTools
                     comboBox.FlatStyle = FlatStyle.Standard;
                     comboBox.BackColor = SystemColors.Window;
                     comboBox.ForeColor = SystemColors.WindowText;
-                    comboBox.BorderStyle = BorderStyle.Fixed3D;
+                    // comboBox.BorderStyle = BorderStyle.Fixed3D;
                 }
             }
             catch (Exception ex)

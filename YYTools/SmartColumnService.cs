@@ -21,10 +21,11 @@ namespace YYTools
             new SmartColumnRule(new[] { "名称" }, new[] { "NameColumn" }, 7),
             
             // 商品编码相关列 (新规则，高优先级)
-            new SmartColumnRule(new[] { "商品编码", "商品编号", "产品编码", "sku" }, new[] { "ProductColumn" }, 10),
-            new SmartColumnRule(new[] { "编码" }, new[] { "ProductColumn" }, 8),
             // "商品"作为完全匹配项，优先级适中，避免错误匹配"商品名称"
-            new SmartColumnRule(new[] { "商品" }, new[] { "ProductColumn" }, 6),
+            new SmartColumnRule(new[] { "商品" }, new[] { "ProductColumn" }, 10),
+            new SmartColumnRule(new[] { "商品编码", "商品编号", "产品编码", "sku" }, new[] { "ProductColumn" }, 8),
+            new SmartColumnRule(new[] { "编码" }, new[] { "ProductColumn" }, 6),
+
             
             // 其他通用规则，优先级较低
             new SmartColumnRule(new[] { "产品" }, new[] { "ProductColumn", "NameColumn" }, 5),
