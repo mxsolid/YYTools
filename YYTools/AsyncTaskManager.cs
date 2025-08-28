@@ -93,16 +93,16 @@ namespace YYTools
                 _runningTasks[taskName] = task;
 
                 // 等待任务完成
-                var result = await task;
+                var taskResult = await task;
 
                 // 清理任务
                 CleanupTask(taskName);
 
                 // 记录任务完成
-                Logger.LogUserAction("异步任务完成", $"任务名称: {taskName}", result.Success ? "成功" : "失败");
-                OnTaskCompleted(taskName, result);
+                Logger.LogUserAction("异步任务完成", $"任务名称: {taskName}", taskResult.Success ? "成功" : "失败");
+                OnTaskCompleted(taskName, taskResult);
 
-                return result;
+                return taskResult;
             }
             catch (Exception ex)
             {
