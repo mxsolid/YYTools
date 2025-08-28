@@ -436,6 +436,11 @@ namespace YYTools
             this.panelButtons.Height = 50;
             this.panelButtons.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
             this.panelButtons.BackColor = System.Drawing.Color.Transparent;
+            // 在面板内使用相对定位，按钮靠右排列
+            this.btnClose.Location = new System.Drawing.Point(this.panelButtons.Width - 110, 10);
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnStart.Location = new System.Drawing.Point(this.panelButtons.Width - 220, 10);
+            this.btnStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.panelButtons.Controls.Add(this.btnStart);
             this.panelButtons.Controls.Add(this.btnClose);
             // 
@@ -555,9 +560,9 @@ namespace YYTools
             this.ClientSize = new System.Drawing.Size(484, 621);
             this.Controls.Add(this.gbWritePreview);
             this.Controls.Add(this.gbOptions);
-            // 先添加状态面板，再添加按钮面板，确保按钮面板位于状态区之上且可见
-            this.Controls.Add(this.panelStatus);
+            // 先添加按钮面板，再添加状态面板，使状态面板处于最底部
             this.Controls.Add(this.panelButtons);
+            this.Controls.Add(this.panelStatus);
             this.Controls.Add(this.gbBill);
             this.Controls.Add(this.gbShipping);
             this.Controls.Add(this.menuStrip1);

@@ -236,11 +236,80 @@ namespace YYTools
         private void cmbShippingSheet_SelectedIndexChanged(object sender, EventArgs e)
         {
             PopulateColumnComboBoxes(cmbShippingWorkbook, cmbShippingSheet, cmbShippingTrackColumn, cmbShippingProductColumn, cmbShippingNameColumn);
+            TryPrefetchOtherIfParallelPossible();
         }
 
         private void cmbBillSheet_SelectedIndexChanged(object sender, EventArgs e)
         {
             PopulateColumnComboBoxes(cmbBillWorkbook, cmbBillSheet, cmbBillTrackColumn, cmbBillProductColumn, cmbBillNameColumn);
+            TryPrefetchOtherIfParallelPossible();
+        }
+
+        private void TryPrefetchOtherIfParallelPossible()
+        {
+            try
+            {
+                if (cmbShippingWorkbook.SelectedIndex < 0 || cmbBillWorkbook.SelectedIndex < 0) return;
+                if (cmbShippingSheet.SelectedIndex < 0 || cmbBillSheet.SelectedIndex < 0) return;
+
+                var shipWb = workbooks[cmbShippingWorkbook.SelectedIndex].Workbook;
+                var billWb = workbooks[cmbBillWorkbook.SelectedIndex].Workbook;
+                var shipSheetName = cmbShippingSheet.SelectedItem?.ToString();
+                var billSheetName = cmbBillSheet.SelectedItem?.ToString();
+                if (string.IsNullOrEmpty(shipSheetName) || string.IsNullOrEmpty(billSheetName)) return;
+
+                // 如果是同一工作簿同一工作表，无需并行
+                bool sameTarget = string.Equals((shipWb.FullName ?? shipWb.Name), (billWb.FullName ?? billWb.Name), StringComparison.OrdinalIgnoreCase)
+                                  && string.Equals(shipSheetName, billSheetName, StringComparison.OrdinalIgnoreCase);
+                if (sameTarget) return;
+
+                int maxThreads = Math.Max(1, Math.Min(AppSettings.Instance.MaxThreads, Environment.ProcessorCount));
+                var semaphore = new System.Threading.SemaphoreSlim(maxThreads);
+
+                var tasks = new List<System.Threading.Tasks.Task>();
+                Action<Excel.Workbook, string> prefetch = (wb, sheetName) =>
+                {
+                    tasks.Add(System.Threading.Tasks.Task.Run(async () =>
+                    {
+                        await semaphore.WaitAsync();
+                        try
+                        {
+                            var ws = wb.Worksheets[sheetName] as Excel.Worksheet;
+                            if (ws != null)
+                            {
+                                // 触发一次列信息解析并写入缓存（如果已缓存则瞬间返回）
+                                var cols = DataManager.GetColumnInfos(ws);
+                                Logger.LogInfo($"并行预取列信息: {wb.Name}/{sheetName} 列数: {cols?.Count ?? 0}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogWarning($"并行预取失败: {wb.Name}/{sheetName} - {ex.Message}");
+                        }
+                        finally { semaphore.Release(); }
+                    }));
+                };
+
+                // 对两个目标进行并行预取（如果是同文件不同表或不同文件）
+                prefetch(shipWb, shipSheetName);
+                prefetch(billWb, billSheetName);
+
+                System.Threading.Tasks.Task.WhenAll(tasks).ContinueWith(_ =>
+                {
+                    try
+                    {
+                        if (IsHandleCreated)
+                        {
+                            BeginInvoke(new Action(() =>
+                            {
+                                lblStatus.Text = "列信息预取完成。";
+                            }));
+                        }
+                    }
+                    catch { }
+                });
+            }
+            catch { }
         }
 
         private void LoadSheetsForWorkbook(ComboBox workbookCombo, ComboBox sheetCombo)
