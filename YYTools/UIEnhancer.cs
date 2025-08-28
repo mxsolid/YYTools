@@ -408,8 +408,9 @@ namespace YYTools
             {
                 if (useModernStyle)
                 {
-                    form.BackColor = DefaultTheme.BackgroundColor;
-                    form.ForeColor = DefaultTheme.TextColor;
+                    // 为避免某些对话框出现背景纯白或空白，统一采用浅色主题
+                    form.BackColor = LightTheme.BackgroundColor;
+                    form.ForeColor = LightTheme.TextColor;
                     form.Font = new Font("微软雅黑", 9F, FontStyle.Regular);
                     
                     // 设置窗体样式 - 允许调整大小

@@ -339,7 +339,13 @@ namespace YYTools
 
         private void PopulateColumnComboBoxes(ComboBox wbCombo, ComboBox wsCombo, params ComboBox[] columnCombos)
         {
-            foreach (var combo in columnCombos) { combo.DataSource = null; combo.Items.Clear(); combo.Text = ""; }
+            foreach (var combo in columnCombos)
+            {
+                if (combo == null) continue;
+                combo.DataSource = null;
+                combo.Items.Clear();
+                combo.Text = "";
+            }
             toolTip1.SetToolTip(wsCombo, "请选择工作表");
 
             if (wbCombo.SelectedIndex < 0 || wsCombo.SelectedIndex < 0 || wsCombo.SelectedItem == null) return;
@@ -347,13 +353,18 @@ namespace YYTools
             try
             {
                 var wbInfo = workbooks[wbCombo.SelectedIndex];
-                var ws = wbInfo.Workbook.Worksheets[wsCombo.SelectedItem.ToString()] as Excel.Worksheet;
+                if (wbInfo == null || wbInfo.Workbook == null) return;
+                var wsName = wsCombo.SelectedItem.ToString();
+                var ws = wbInfo.Workbook.Worksheets[wsName] as Excel.Worksheet;
                 if (ws == null) return;
 
                 ShowLoading(true);
                 var columns = SmartColumnService.GetColumnInfos(ws, 50);
-                var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
-                columnCache[cacheKey] = columns;
+                var cacheKey = $"{wbInfo.Name}_{wsName}";
+                if (columns != null)
+                {
+                    columnCache[cacheKey] = columns;
+                }
 
                 try
                 {
@@ -365,9 +376,10 @@ namespace YYTools
 
                 foreach (var combo in columnCombos)
                 {
+                    if (combo == null) continue;
                     combo.DisplayMember = "ToString";
                     combo.ValueMember = "ColumnLetter";
-                    combo.DataSource = new BindingSource(columns, null);
+                    combo.DataSource = new BindingSource(columns ?? new List<ColumnInfo>(), null);
                     combo.SelectedIndex = -1;
                 }
 
@@ -803,7 +815,7 @@ namespace YYTools
             }
         }
 
-        private void RefreshWritePreview()
+        private async void RefreshWritePreview()
         {
             try
             {
@@ -825,8 +837,8 @@ namespace YYTools
                 progressBar.Value = 20;
                 Application.DoEvents();
 
-                // 获取发货明细数据
-                var shippingData = GetShippingData();
+                // 获取发货明细数据（后台线程）
+                var shippingData = await Task.Run(() => GetShippingData());
                 if (shippingData == null || shippingData.Count == 0)
                 {
                     txtWritePreview.Text = "未找到发货明细数据...";
@@ -838,8 +850,8 @@ namespace YYTools
                 progressBar.Value = 40;
                 Application.DoEvents();
 
-                // 获取账单明细数据
-                var billData = GetBillData();
+                // 获取账单明细数据（后台线程）
+                var billData = await Task.Run(() => GetBillData());
                 if (billData == null || billData.Count == 0)
                 {
                     txtWritePreview.Text = "未找到账单明细数据...";
@@ -851,8 +863,8 @@ namespace YYTools
                 progressBar.Value = 60;
                 Application.DoEvents();
 
-                // 生成预览数据
-                var previewData = GeneratePreviewData(shippingData, billData);
+                // 生成预览数据（后台线程）
+                var previewData = await Task.Run(() => GeneratePreviewData(shippingData, billData));
                 
                 progressBar.Value = 80;
                 Application.DoEvents();
@@ -1077,7 +1089,7 @@ namespace YYTools
                 // 创建发货数据的索引
                 var shippingDict = shippingData
                     .Where(s => !string.IsNullOrWhiteSpace(s.TrackNumber))
-                    .GroupBy(s => s.TrackNumber.Trim())
+                    .GroupBy(s => ExcelHelper.NormalizeTrackingNumber(s.TrackNumber))
                     .ToDictionary(g => g.Key, g => g.ToList());
 
                 WriteLog($"发货数据索引创建完成，共 {shippingDict.Count} 个运单号", LogLevel.Info);
@@ -1089,7 +1101,7 @@ namespace YYTools
                     if (string.IsNullOrWhiteSpace(bill.TrackNumber))
                         continue;
 
-                    string trackNumber = bill.TrackNumber.Trim();
+                    string trackNumber = ExcelHelper.NormalizeTrackingNumber(bill.TrackNumber);
                     
                     if (shippingDict.ContainsKey(trackNumber))
                     {
@@ -1154,8 +1166,8 @@ namespace YYTools
                     result.Add("");
                     result.Add($"发货数据: {shippingData.Count} 条");
                     result.Add($"账单数据: {billData.Count} 条");
-                    result.Add($"发货运单号示例: {shippingData.Take(3).Select(s => s.TrackNumber).Where(t => !string.IsNullOrWhiteSpace(t)).FirstOrDefault() ?? "无"}");
-                    result.Add($"账单运单号示例: {billData.Take(3).Select(b => b.TrackNumber).Where(t => !string.IsNullOrWhiteSpace(t)).FirstOrDefault() ?? "无"}");
+                    result.Add($"发货运单号示例: {shippingData.Select(s => ExcelHelper.NormalizeTrackingNumber(s.TrackNumber)).Where(t => !string.IsNullOrWhiteSpace(t)).FirstOrDefault() ?? "无"}");
+                    result.Add($"账单运单号示例: {billData.Select(b => ExcelHelper.NormalizeTrackingNumber(b.TrackNumber)).Where(t => !string.IsNullOrWhiteSpace(t)).FirstOrDefault() ?? "无"}");
                 }
                 else
                 {

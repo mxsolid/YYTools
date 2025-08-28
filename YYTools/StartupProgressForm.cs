@@ -29,8 +29,8 @@ namespace YYTools
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.ShowInTaskbar = false;
-            this.TopMost = true;
+            this.ShowInTaskbar = true; // 便于用户看到启动过程
+            this.TopMost = false; // 避免挡住其他窗口
 
             // 主面板
             mainPanel = new Panel

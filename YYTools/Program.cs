@@ -8,6 +8,94 @@ namespace YYTools
     static class Program
     {
         /// <summary>
+        /// 自定义应用程序上下文：先显示启动进度窗体，启动完成后切换到主窗体。
+        /// </summary>
+        private class StartupApplicationContext : ApplicationContext
+        {
+            private StartupProgressForm _progressForm;
+            private AsyncStartupManager _startupManager;
+            private MatchForm _mainForm;
+
+            public StartupApplicationContext()
+            {
+                try
+                {
+                    // 显示启动进度窗体
+                    _progressForm = StartupProgressForm.ShowStartupProgress();
+
+                    // 订阅进度事件
+                    _startupManager = new AsyncStartupManager();
+                    _startupManager.ProgressReported += (s, e) =>
+                    {
+                        try { _progressForm?.UpdateProgress(e.Percentage, e.Message); } catch { }
+                    };
+                    _startupManager.StartupCompleted += (s, e) =>
+                    {
+                        try { _progressForm?.CompleteStartup(e.Success, e.Message); } catch { }
+                        OnStartupCompleted(e.Success);
+                    };
+
+                    // 异步启动
+                    Task.Run(async () => { await _startupManager.StartAsync(); }).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"应用程序启动失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    ExitThread();
+                }
+            }
+
+            private void OnStartupCompleted(bool success)
+            {
+                if (!success)
+                {
+                    // 启动失败则退出
+                    ExitThreadSafe();
+                    return;
+                }
+
+                // 在UI线程切换到主窗体
+                if (_progressForm != null)
+                {
+                    _progressForm.BeginInvoke(new Action(() =>
+                    {
+                        try
+                        {
+                            _mainForm = new MatchForm();
+                            _mainForm.FormClosed += (s, e) => ExitThread();
+                            _mainForm.Show();
+
+                            // 关闭进度窗体
+                            try { _progressForm.Close(); } catch { }
+                            _progressForm = null;
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"创建主窗体失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            ExitThread();
+                        }
+                    }));
+                }
+                else
+                {
+                    // 回退：直接创建主窗体
+                    _mainForm = new MatchForm();
+                    _mainForm.FormClosed += (s, e) => ExitThread();
+                    _mainForm.Show();
+                }
+            }
+
+            private void ExitThreadSafe()
+            {
+                if (_progressForm != null)
+                {
+                    try { _progressForm.Close(); } catch { }
+                    _progressForm = null;
+                }
+                ExitThread();
+            }
+        }
+        /// <summary>
         /// 应用程序的主入口点。
         /// </summary>
         [STAThread]
@@ -19,14 +107,9 @@ namespace YYTools
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
 
-                WriteLog("开始创建主窗体", LogLevel.Info);
-                // 快速启动主窗体，跳过所有复杂初始化
-                var mainForm = new MatchForm();
-                WriteLog("创建主窗体完成", LogLevel.Info);
-                WriteLog("开始显示主窗体", LogLevel.Info);
-                // 显示主窗体
-                Application.Run(mainForm);
-                WriteLog("显示主窗体完成", LogLevel.Info);
+                // 使用自定义应用程序上下文，确保单一消息循环并安全切换窗体
+                var appContext = new StartupApplicationContext();
+                Application.Run(appContext);
             }
             catch (Exception ex)
             {

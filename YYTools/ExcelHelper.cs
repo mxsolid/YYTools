@@ -7,6 +7,17 @@ namespace YYTools
 {
     public static class ExcelHelper
     {
+        /// <summary>
+        /// 标准化运单号：去除空白与分隔符，仅保留数字与大写字母
+        /// </summary>
+        public static string NormalizeTrackingNumber(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+            var trimmed = input.Trim();
+            var chars = trimmed.Where(c => char.IsDigit(c) || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+                               .Select(c => char.ToUpperInvariant(c));
+            return new string(chars.ToArray());
+        }
         public static string GetColumnLetter(int columnNumber)
         {
             if (columnNumber <= 0)
