@@ -48,9 +48,18 @@ namespace YYTools
                 await Task.Delay(100);
                 ReportProgress(30, "缓存管理器初始化完成");
 
-                // 第四步：异步加载Excel文件信息
-                await LoadExcelFilesAsync();
-                ReportProgress(80, "Excel文件信息加载完成");
+                // 第四步：异步加载Excel文件信息（可选，失败不影响启动）
+                try
+                {
+                    await LoadExcelFilesAsync();
+                    ReportProgress(80, "Excel文件信息加载完成");
+                }
+                catch (Exception ex)
+                {
+                    // Excel加载失败不影响程序启动
+                    Logger.LogWarning($"Excel文件信息加载失败，但不影响程序启动: {ex.Message}");
+                    ReportProgress(80, "Excel文件信息加载跳过（不影响启动）");
+                }
 
                 // 第五步：完成启动
                 await Task.Delay(100);
@@ -67,6 +76,11 @@ namespace YYTools
             catch (Exception ex)
             {
                 Logger.LogError("应用程序异步启动失败", ex);
+                
+                // 即使失败也要标记为已初始化，避免重复尝试
+                _isInitialized = true;
+                
+                // 触发启动完成事件（失败状态）
                 OnStartupCompleted(false, $"启动失败: {ex.Message}");
                 return false;
             }

@@ -250,19 +250,30 @@ namespace YYTools
             try
             {
                 var form = new StartupProgressForm();
+                
+                // 确保窗体正确显示
                 form.Show();
+                form.BringToFront();
+                form.Refresh();
+                
+                // 强制处理消息队列
+                Application.DoEvents();
+                
                 return form;
             }
             catch (Exception ex)
             {
+                // 记录错误但不抛出异常
                 try
                 {
-                    Logger.LogError($"显示启动进度窗体失败: {ex.Message}", ex);
+                    Logger.LogError("显示启动进度窗体失败", ex);
                 }
                 catch
                 {
                     // 忽略日志记录失败
                 }
+                
+                // 返回null，让调用者使用降级模式
                 return null;
             }
         }
