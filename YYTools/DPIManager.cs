@@ -238,6 +238,18 @@ namespace YYTools
                 // 根据DPI调整窗体大小
                 if (IsHighDpi)
                 {
+                    // 优先尝试按窗口DPI获取缩放
+                    try
+                    {
+                        int dpiForWindow = GetDpiForWindow(form.Handle);
+                        if (dpiForWindow > 0)
+                        {
+                            _currentDpiX = dpiForWindow / 96.0f;
+                            _currentDpiY = _currentDpiX;
+                        }
+                    }
+                    catch { }
+
                     // 调整窗体最小尺寸
                     if (form.MinimumSize != Size.Empty)
                     {

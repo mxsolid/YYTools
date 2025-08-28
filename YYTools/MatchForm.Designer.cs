@@ -134,8 +134,7 @@ namespace YYTools
             // toolsToolStripMenuItem
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.settingsToolStripMenuItem,
-            this.taskOptionsToolStripMenuItem});
+            this.settingsToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(59, 21);
             this.toolsToolStripMenuItem.Text = "工具(&T)";
@@ -147,12 +146,7 @@ namespace YYTools
             this.settingsToolStripMenuItem.Text = "设置(&S)";
             this.settingsToolStripMenuItem.Click += new System.EventHandler(this.settingsToolStripMenuItem_Click);
             // 
-            // taskOptionsToolStripMenuItem
-            // 
-            this.taskOptionsToolStripMenuItem.Name = "taskOptionsToolStripMenuItem";
-            this.taskOptionsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
-            this.taskOptionsToolStripMenuItem.Text = "任务选项(&T)";
-            this.taskOptionsToolStripMenuItem.Click += new System.EventHandler(this.taskOptionsToolStripMenuItem_Click);
+            
             // 
             // helpToolStripMenuItem
             // 
@@ -435,12 +429,12 @@ namespace YYTools
             // 
             // progressBar
             // 
-            this.progressBar.Location = new System.Drawing.Point(12, 618);
+            this.progressBar.Location = new System.Drawing.Point(12, 612);
             this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar.Height = 18;
+            this.progressBar.Height = 10;
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(460, 5);
+            this.progressBar.Size = new System.Drawing.Size(460, 10);
             this.progressBar.TabIndex = 7;
             // 
             // lblStatus
@@ -465,7 +459,7 @@ namespace YYTools
             this.gbOptions.Size = new System.Drawing.Size(460, 65);
             this.gbOptions.TabIndex = 3;
             this.gbOptions.TabStop = false;
-            this.gbOptions.Text = "任务选项";
+            this.gbOptions.Text = "任务配置";
             // 
             // cmbSort
             // 
@@ -601,7 +595,7 @@ namespace YYTools
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem taskOptionsToolStripMenuItem;
+        
         private System.Windows.Forms.ToolStripMenuItem viewLogsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         private System.Windows.Forms.Button btnStart;

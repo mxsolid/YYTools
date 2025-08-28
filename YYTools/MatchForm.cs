@@ -621,27 +621,7 @@ namespace YYTools
             }
         }
 
-        private void taskOptionsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                // 显示任务选项配置窗体
-                TaskOptionsForm.ShowTaskOptions(this);
-                
-                // 重新加载任务选项设置
-                LoadMatcherSettings();
-                
-                // 刷新写入预览
-                RefreshWritePreview();
-                
-                Logger.LogUserAction("打开任务选项配置", "任务选项配置已更新", "成功");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError("打开任务选项配置失败", ex);
-                MessageBox.Show($"打开任务选项配置失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        // 主界面不再提供“任务选项”入口，统一在菜单 工具->设置 中维护
         private void viewLogsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             try

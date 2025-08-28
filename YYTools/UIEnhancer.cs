@@ -162,9 +162,15 @@ namespace YYTools
                         break;
                 }
 
-                // 添加鼠标事件
-                button.MouseEnter += (s, e) => button.FlatAppearance.BorderColor = DefaultTheme.HighlightColor;
-                button.MouseLeave += (s, e) => button.FlatAppearance.BorderColor = Color.Transparent;
+                // 添加鼠标事件（避免设置为 Transparent 导致 NotSupportedException）
+                button.MouseEnter += (s, e) =>
+                {
+                    try { button.FlatAppearance.BorderSize = 1; button.FlatAppearance.BorderColor = DefaultTheme.HighlightColor; } catch { }
+                };
+                button.MouseLeave += (s, e) =>
+                {
+                    try { button.FlatAppearance.BorderSize = 0; /* 不设置为 Transparent，保持当前色 */ } catch { }
+                };
             }
             catch (Exception ex)
             {

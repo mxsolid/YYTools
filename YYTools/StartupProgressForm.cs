@@ -95,7 +95,6 @@ namespace YYTools
 
             // 设置窗体样式
             this.BackColor = Color.White;
-            this.TransparencyKey = Color.White;
         }
 
         /// <summary>
