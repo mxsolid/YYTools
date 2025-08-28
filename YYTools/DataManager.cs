@@ -9,6 +9,21 @@ namespace YYTools
         private static readonly object cacheLock = new object();
         private static readonly Dictionary<string, List<string>> sheetNamesCache = new Dictionary<string, List<string>>();
         private static readonly Dictionary<string, List<ColumnInfo>> columnInfoCache = new Dictionary<string, List<ColumnInfo>>();
+        // 针对列解析的键级别锁，防止相同工作表被并发重复解析
+        private static readonly Dictionary<string, object> columnKeyLocks = new Dictionary<string, object>();
+        // 并发限制信号量，防止过多并发导致内存与句柄压力
+        private static System.Threading.SemaphoreSlim parseSemaphore = new System.Threading.SemaphoreSlim(System.Environment.ProcessorCount);
+
+        /// <summary>
+        /// 更新解析的最大并发数（从设置中读取），上限不超过 CPU 核心数
+        /// </summary>
+        public static void UpdateMaxConcurrency(int requested)
+        {
+            int limit = System.Math.Max(1, System.Math.Min(requested, System.Environment.ProcessorCount));
+            // 直接替换信号量实例，旧实例允许自然释放
+            parseSemaphore = new System.Threading.SemaphoreSlim(limit);
+            Logger.LogInfo($"更新列解析最大并发为: {limit}");
+        }
 
         public static List<string> GetSheetNames(Excel.Workbook workbook)
         {
@@ -35,6 +50,7 @@ namespace YYTools
         {
             string wbName = worksheet?.Parent is Excel.Workbook wb ? (wb.FullName ?? wb.Name) : "";
             string key = wbName + "::" + (worksheet?.Name ?? "") + "::columns";
+            // 先查缓存
             lock (cacheLock)
             {
                 if (columnInfoCache.TryGetValue(key, out var cached))
@@ -44,13 +60,56 @@ namespace YYTools
                 }
             }
 
-            Logger.LogInfo($"从Excel读取列信息: {worksheet.Name}");
-            var infos = SmartColumnService.GetColumnInfos(worksheet, 50);
-            lock (cacheLock)
+            // 并发限制，避免内存与COM对象压力
+            parseSemaphore.Wait();
+            try
             {
-                columnInfoCache[key] = infos;
+                // 双重检查缓存，防止并发重复解析
+                lock (cacheLock)
+                {
+                    if (columnInfoCache.TryGetValue(key, out var cached2))
+                    {
+                        Logger.LogInfo($"从缓存命中列信息: {worksheet.Name}");
+                        return cached2;
+                    }
+                }
+
+                // 针对该key的局部锁
+                object localLock;
+                lock (cacheLock)
+                {
+                    if (!columnKeyLocks.TryGetValue(key, out localLock))
+                    {
+                        localLock = new object();
+                        columnKeyLocks[key] = localLock;
+                    }
+                }
+
+                lock (localLock)
+                {
+                    // 再次检查缓存
+                    lock (cacheLock)
+                    {
+                        if (columnInfoCache.TryGetValue(key, out var cached3))
+                        {
+                            Logger.LogInfo($"从缓存命中列信息: {worksheet.Name}");
+                            return cached3;
+                        }
+                    }
+
+                    Logger.LogInfo($"从Excel读取列信息: {worksheet?.Name}");
+                    var infos = SmartColumnService.GetColumnInfos(worksheet, 50);
+                    lock (cacheLock)
+                    {
+                        columnInfoCache[key] = infos;
+                    }
+                    return infos;
+                }
             }
-            return infos;
+            finally
+            {
+                parseSemaphore.Release();
+            }
         }
 
         public static void ClearCache()

@@ -119,6 +119,8 @@ namespace YYTools
                 settings = AppSettings.Instance;
                 ApplySettings();
                 // 将耗时初始化延后到 Shown 阶段
+                // 同时更新列解析最大并发
+                try { DataManager.UpdateMaxConcurrency(settings.MaxThreads); } catch { }
                 MatchService.CleanupOldLogs();
             }
             catch (Exception ex)
