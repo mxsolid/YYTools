@@ -165,7 +165,13 @@ namespace YYTools
 
                 for (int i = 0; i < trackData.Count; i++)
                 {
+                    // 过滤掉空行（若原文件存在大量空行，防止参与后续处理导致卡顿）
                     string trackNumber = trackData[i];
+                    bool isRowEmpty = string.IsNullOrWhiteSpace(trackNumber)
+                                      && (i >= productData.Count || string.IsNullOrWhiteSpace(productData[i]))
+                                      && (i >= nameData.Count || string.IsNullOrWhiteSpace(nameData[i]));
+                    if (isRowEmpty) continue;
+
                     if (!string.IsNullOrWhiteSpace(trackNumber))
                     {
                         string normalizedTrack = NormalizeTrackNumber(trackNumber);

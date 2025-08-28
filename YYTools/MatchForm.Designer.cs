@@ -429,12 +429,13 @@ namespace YYTools
             // 
             // progressBar
             // 
-            this.progressBar.Location = new System.Drawing.Point(12, 612);
+            // 进度条上移，避免底部裁切，保留可视边距
+            this.progressBar.Location = new System.Drawing.Point(12, 606);
             this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.progressBar.Height = 10;
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(460, 10);
+            this.progressBar.Size = new System.Drawing.Size(460, 12);
             this.progressBar.TabIndex = 7;
             // 
             // lblStatus

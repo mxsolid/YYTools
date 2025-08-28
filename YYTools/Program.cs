@@ -26,23 +26,25 @@ namespace YYTools
                 // 先显示主窗体，保证快速可见
                 var mainForm = new MatchForm();
                 Logger.LogInfo("new MatchForm end");
-                
-                Logger.LogInfo("StartupProgressForm.ShowStartupProgress()");
-                // 启动后台预热（解析已打开的Excel/WPS，填充缓存），并显示小型启动进度窗体
-                // var progressForm = StartupProgressForm.ShowStartupProgress();
-                // var cts = new System.Threading.CancellationTokenSource();
-                // var progress = new Progress<YYTools.TaskProgress>(p => { try { progressForm?.UpdateProgress(p.Percentage, p.Message); } catch { } });
-                //
-                // _taskManager.StartBackgroundTask(
-                //     taskName: "StartupWarmup",
-                //     taskFactory: async (token, reporter) =>
-                //     {
-                //         // 桥接到统一的进度对象
-                //         await AsyncStartupManager.WarmUpAsync(cts.Token, progress);
-                //         try { progressForm?.CompleteStartup(true, ""); } catch { }
-                //     },
-                //     allowMultiple: false
-                // );
+
+                // 显示启动进度窗体（轻量：仅抓取已打开文件名）
+                var progressForm = StartupProgressForm.ShowStartupProgress();
+                var cts = new System.Threading.CancellationTokenSource();
+                var progress = new Progress<YYTools.TaskProgress>(p => { try { progressForm?.UpdateProgress(p.Percentage, p.Message); } catch { } });
+                progress?.Report(new YYTools.TaskProgress(5, "正在检测已打开的Excel/WPS..."));
+
+                var namesTask = AsyncStartupManager.FetchOpenWorkbookNamesAsync(cts.Token);
+                try
+                {
+                    var names = namesTask.GetAwaiter().GetResult();
+                    Logger.LogInfo($"已获取打开的工作簿数量: {names.Names.Count}, 活动: {names.ActiveName}");
+                }
+                catch (Exception exFetch)
+                {
+                    Logger.LogWarning($"获取打开的工作簿名称失败: {exFetch.Message}");
+                }
+
+                try { progressForm?.CompleteStartup(true, ""); } catch { }
                 Logger.LogInfo("Application.Run(mainForm) begin");
                 Application.Run(mainForm);
                 Logger.LogInfo("Application.Run(mainForm) end");

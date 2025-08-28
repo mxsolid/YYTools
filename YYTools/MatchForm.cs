@@ -21,6 +21,9 @@ namespace YYTools
 
         private Dictionary<ComboBox, string> comboBoxColumnTypeMap;
 
+        // 统一管理UI侧的异步任务（如启动后的预解析）
+        private AsyncTaskManager _uiTaskManager = new AsyncTaskManager();
+
         public MatchForm()
         {
             InitializeComponent();
@@ -40,7 +43,12 @@ namespace YYTools
         {
             this.StartPosition = FormStartPosition.CenterScreen;
             this.ShowInTaskbar = true;
-            this.Shown += (s, e) => { this.Activate(); };
+            this.Shown += (s, e) =>
+            {
+                this.Activate();
+                // 启动后立即尝试轻量预解析：若无打开的文件则引导用户选择文件
+                try { StartInitialParsingIfNeeded(); } catch { }
+            };
             try
             {
                 this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
@@ -618,6 +626,106 @@ namespace YYTools
             catch (Exception ex)
             {
                 MessageBox.Show($"打开设置窗口失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            try { _uiTaskManager?.Dispose(); } catch { }
+            base.OnFormClosed(e);
+        }
+
+        /// <summary>
+        /// 启动后进行轻量预解析：
+        /// 1) 若无打开的工作簿，引导用户选择文件；
+        /// 2) 获取活动工作簿与工作表，预热列信息缓存；
+        /// 3) 全程异步，并在状态栏与进度条显示进度。
+        /// </summary>
+        private void StartInitialParsingIfNeeded()
+        {
+            try
+            {
+                excelApp = ExcelAddin.GetExcelApplication();
+                if (excelApp == null || !ExcelAddin.HasOpenWorkbooks(excelApp))
+                {
+                    Logger.LogInfo("未检测到打开的Excel/WPS文件，弹出文件选择器");
+                    openFileToolStripMenuItem_Click(this, EventArgs.Empty);
+                }
+
+                // 刷新一次工作簿列表，确保界面先可用
+                RefreshWorkbookList();
+
+                // 后台预解析当前活动工作簿
+                _uiTaskManager.StartBackgroundTask(
+                    taskName: "InitialParseActiveWorkbook",
+                    taskFactory: async (token, progress) =>
+                    {
+                        try
+                        {
+                            await System.Threading.Tasks.Task.Yield();
+                            var app = ExcelAddin.GetExcelApplication();
+                            if (app == null || !ExcelAddin.HasOpenWorkbooks(app)) return;
+
+                            Excel.Workbook activeWb = null;
+                            try { activeWb = app.ActiveWorkbook; } catch { }
+                            if (activeWb == null) return;
+
+                            var wbName = activeWb.Name;
+                            progress?.Report(new TaskProgress(10, $"正在预解析: {wbName}"));
+                            Logger.LogUserAction("启动后预解析", $"活动工作簿: {wbName}", "开始");
+
+                            // 预热工作表列表
+                            var sheetNames = DataManager.GetSheetNames(activeWb);
+
+                            // 获取活动工作表
+                            Excel.Worksheet activeSheet = null;
+                            try { activeSheet = app.ActiveSheet as Excel.Worksheet; } catch { }
+                            if (activeSheet != null)
+                            {
+                                progress?.Report(new TaskProgress(40, $"解析工作表列: {activeSheet.Name}"));
+                                var columns = DataManager.GetColumnInfos(activeSheet);
+                                Logger.LogInfo($"预解析完成: {wbName}/{activeSheet.Name} 列数: {columns?.Count ?? 0}");
+                            }
+
+                            progress?.Report(new TaskProgress(100, "预解析完成"));
+                            Logger.LogUserAction("启动后预解析", $"活动工作簿: {wbName}", "成功");
+                        }
+                        catch (System.OperationCanceledException)
+                        {
+                            Logger.LogUserAction("启动后预解析", "", "已取消");
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError("启动后预解析失败", ex);
+                        }
+                        finally
+                        {
+                            // UI提示
+                            try
+                            {
+                                if (this.IsHandleCreated)
+                                {
+                                    this.BeginInvoke(new Action(() =>
+                                    {
+                                        progressBar.Style = ProgressBarStyle.Blocks;
+                                        lblStatus.Text = "已加载工作簿列表。";
+                                        progressBar.Visible = false;
+                                    }));
+                                }
+                            }
+                            catch { }
+                        }
+                    },
+                    allowMultiple: false
+                );
+
+                // UI层展示加载动画
+                ShowLoading(true);
+                lblStatus.Text = "正在预解析活动工作簿...";
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("启动预解析初始化失败", ex);
             }
         }
 

@@ -12,6 +12,41 @@ namespace YYTools
     public static class AsyncStartupManager
     {
         /// <summary>
+        /// 仅抓取当前已打开的工作簿文件名（以及活动工作簿名），尽量轻量，不做列解析
+        /// </summary>
+        public static Task<(List<string> Names, string ActiveName)> FetchOpenWorkbookNamesAsync(System.Threading.CancellationToken token)
+        {
+            return Task.Run<(List<string>, string)>(() =>
+            {
+                var names = new List<string>();
+                string active = string.Empty;
+                try
+                {
+                    var app = ExcelAddin.GetExcelApplication();
+                    if (app == null || !ExcelAddin.HasOpenWorkbooks(app)) return (names, active);
+
+                    string activeName = string.Empty;
+                    try { activeName = app.ActiveWorkbook != null ? app.ActiveWorkbook.Name : string.Empty; } catch { }
+
+                    foreach (Excel.Workbook wb in app.Workbooks)
+                    {
+                        if (token.IsCancellationRequested) token.ThrowIfCancellationRequested();
+                        try
+                        {
+                            if (wb != null && !string.IsNullOrEmpty(wb.Name))
+                            {
+                                names.Add(wb.Name);
+                            }
+                        }
+                        catch { }
+                    }
+                    active = names.Contains(activeName) ? activeName : (names.Count > 0 ? names[0] : string.Empty);
+                }
+                catch { }
+                return (names, active);
+            }, token);
+        }
+        /// <summary>
         /// 预热Excel数据到缓存（不阻塞UI）
         /// </summary>
         public static Task WarmUpAsync(CancellationToken token, IProgress<TaskProgress> progress)
