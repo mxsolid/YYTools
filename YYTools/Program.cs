@@ -31,7 +31,9 @@ namespace YYTools
                 var progressForm = StartupProgressForm.ShowStartupProgress();
                 var cts = new System.Threading.CancellationTokenSource();
                 var progress = new Progress<YYTools.TaskProgress>(p => { try { progressForm?.UpdateProgress(p.Percentage, p.Message); } catch { } });
-                progress?.Report(new YYTools.TaskProgress(5, "正在检测已打开的Excel/WPS..."));
+                ((IProgress<YYTools.TaskProgress>)progress)
+                    .Report(new YYTools.TaskProgress(5, "正在检测已打开的Excel/WPS..."));
+
 
                 var namesTask = AsyncStartupManager.FetchOpenWorkbookNamesAsync(cts.Token);
                 try
