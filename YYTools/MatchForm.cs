@@ -25,15 +25,23 @@ namespace YYTools
         {
             InitializeComponent();
             
-            // 启用DPI感知
-            DPIManager.EnableDpiAwarenessForAllControls(this);
+            // 启用DPI感知（跳过Logger调用）
+            try
+            {
+                DPIManager.EnableDpiAwarenessForAllControls(this);
+            }
+            catch (Exception ex)
+            {
+                // 忽略DPI管理器错误，不影响基本功能
+                MessageBox.Show($"DPI适配失败，但不影响程序运行: {ex.Message}", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
             
             InitializeCustomComponents();
             InitializeBackgroundWorker();
             InitializeForm();
             
-            // 记录窗体创建日志
-            Logger.LogUserAction("主窗体创建", "MatchForm已初始化", "成功");
+            // 跳过Logger调用，避免Logger系统问题
+            // Logger.LogUserAction("主窗体创建", "MatchForm已初始化", "成功");
         }
 
         private void InitializeCustomComponents()
@@ -617,11 +625,13 @@ namespace YYTools
                 // 刷新写入预览
                 RefreshWritePreview();
                 
-                Logger.LogUserAction("打开任务选项配置", "任务选项配置已更新", "成功");
+                // 跳过Logger调用，避免Logger系统问题
+                // Logger.LogUserAction("打开任务选项配置", "任务选项配置已更新", "成功");
             }
             catch (Exception ex)
             {
-                Logger.LogError("打开任务选项配置失败", ex);
+                // 跳过Logger调用，避免Logger系统问题
+                // Logger.LogError("打开任务选项配置失败", ex);
                 MessageBox.Show($"打开任务选项配置失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

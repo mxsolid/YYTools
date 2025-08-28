@@ -1,13 +1,15 @@
 using System;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace YYTools
 {
-    static class Program
+    /// <summary>
+    /// 最小化测试版本 - 只包含最基本的启动逻辑
+    /// </summary>
+    static class Program_Minimal
     {
         /// <summary>
-        /// 应用程序的主入口点。
+        /// 应用程序的主入口点（最小化版本）
         /// </summary>
         [STAThread]
         static void Main()
@@ -19,16 +21,31 @@ namespace YYTools
                 Application.SetCompatibleTextRenderingDefault(false);
 
                 // 显示启动信息
-                MessageBox.Show("正在启动YY工具...", "启动中", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("正在启动YY工具（最小化版本）...", "启动中", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                // 直接创建并显示主窗体（跳过所有复杂功能）
-                var mainForm = new MatchForm();
-                
-                // 显示启动成功信息
-                MessageBox.Show("主窗体创建成功，正在显示...", "启动成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                
-                // 运行主窗体
-                Application.Run(mainForm);
+                // 尝试创建主窗体
+                MatchForm mainForm = null;
+                try
+                {
+                    mainForm = new MatchForm();
+                    MessageBox.Show("主窗体创建成功！", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"主窗体创建失败: {ex.Message}\n\n堆栈: {ex.StackTrace}", "窗体创建失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // 尝试显示主窗体
+                try
+                {
+                    MessageBox.Show("正在显示主窗体...", "显示中", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Application.Run(mainForm);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"主窗体显示失败: {ex.Message}\n\n堆栈: {ex.StackTrace}", "窗体显示失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             catch (Exception ex)
             {
@@ -52,15 +69,18 @@ namespace YYTools
                                      $".NET版本: {Environment.Version}\n" +
                                      $"工作目录: {Environment.CurrentDirectory}\n";
                     
-                    System.IO.File.WriteAllText("startup_error.log", errorLog);
-                    MessageBox.Show("错误信息已保存到 startup_error.log 文件", "错误已保存", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    System.IO.File.WriteAllText("startup_error_minimal.log", errorLog);
+                    MessageBox.Show("错误信息已保存到 startup_error_minimal.log 文件", "错误已保存", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch
                 {
                     // 忽略保存错误日志失败
                 }
-                
+            }
+            finally
+            {
                 // 确保程序不会静默退出
+                MessageBox.Show("程序即将退出", "退出", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 Application.Exit();
             }
         }

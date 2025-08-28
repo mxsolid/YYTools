@@ -1,13 +1,15 @@
 using System;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace YYTools
 {
-    static class Program
+    /// <summary>
+    /// 紧急修复版本 - 完全跳过Logger和复杂功能
+    /// </summary>
+    static class Program_Emergency
     {
         /// <summary>
-        /// 应用程序的主入口点。
+        /// 应用程序的主入口点（紧急修复版本）
         /// </summary>
         [STAThread]
         static void Main()
@@ -21,7 +23,7 @@ namespace YYTools
                 // 显示启动信息
                 MessageBox.Show("正在启动YY工具...", "启动中", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                // 直接创建并显示主窗体（跳过所有复杂功能）
+                // 直接创建并显示主窗体
                 var mainForm = new MatchForm();
                 
                 // 显示启动成功信息
