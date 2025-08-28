@@ -23,6 +23,7 @@ namespace YYTools
 
         // 统一管理UI侧的异步任务（如启动后的预解析）
         private AsyncTaskManager _uiTaskManager = new AsyncTaskManager();
+        private System.Windows.Forms.Timer _debounceTimer;
 
         public MatchForm()
         {
@@ -66,11 +67,31 @@ namespace YYTools
                 { cmbBillNameColumn, "NameColumn" }
             };
 
-            txtDelimiter.TextChanged += (s, e) => RefreshWritePreview();
+            // 初始化防抖定时器（避免输入未完成就触发重算造成卡顿）
+            _debounceTimer = new System.Windows.Forms.Timer { Interval = 300 };
+            _debounceTimer.Tick += (s, e) => { _debounceTimer.Stop(); RefreshWritePreview(); };
+            // 为分隔符输入增加防抖
+            txtDelimiter.TextChanged += (s, e) => DebounceRefreshWritePreview();
             chkRemoveDuplicates.CheckedChanged += (s, e) => RefreshWritePreview();
             cmbSort.SelectedIndexChanged += (s, e) => RefreshWritePreview();
             
             cmbSort.SelectedIndex = 0;
+        }
+        private void DebounceRefreshWritePreview()
+        {
+            try
+            {
+                if (_debounceTimer != null)
+                {
+                    _debounceTimer.Stop();
+                    _debounceTimer.Start();
+                }
+                else
+                {
+                    RefreshWritePreview();
+                }
+            }
+            catch { }
         }
 
         private void InitializeBackgroundWorker()

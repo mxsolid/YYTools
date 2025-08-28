@@ -65,8 +65,9 @@ namespace YYTools
             this.cmbBillWorkbook = new System.Windows.Forms.ComboBox();
             this.btnStart = new System.Windows.Forms.Button();
             this.btnClose = new System.Windows.Forms.Button();
-            this.progressBar = new System.Windows.Forms.ProgressBar();
+            this.panelStatus = new System.Windows.Forms.Panel();
             this.lblStatus = new System.Windows.Forms.Label();
+            this.progressBar = new System.Windows.Forms.ProgressBar();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.gbOptions = new System.Windows.Forms.GroupBox();
             this.cmbSort = new System.Windows.Forms.ComboBox();
@@ -78,6 +79,7 @@ namespace YYTools
             this.menuStrip1.SuspendLayout();
             this.gbShipping.SuspendLayout();
             this.gbBill.SuspendLayout();
+            this.panelStatus.SuspendLayout();
             this.gbOptions.SuspendLayout();
             this.gbWritePreview.SuspendLayout();
             this.SuspendLayout();
@@ -427,31 +429,41 @@ namespace YYTools
             this.btnClose.UseVisualStyleBackColor = true;
             this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
             // 
-            // progressBar
+            // panelStatus
             // 
-            // 进度条上移，避免底部裁切，保留可视边距
-            this.progressBar.Location = new System.Drawing.Point(12, 606);
-            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar.Height = 10;
-            this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(460, 12);
-            this.progressBar.TabIndex = 7;
+            this.panelStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panelStatus.Location = new System.Drawing.Point(0, 604);
+            this.panelStatus.Name = "panelStatus";
+            this.panelStatus.Size = new System.Drawing.Size(484, 40);
+            this.panelStatus.TabIndex = 100;
+            this.panelStatus.BackColor = System.Drawing.Color.FromArgb(248,248,248);
+            this.panelStatus.Padding = new System.Windows.Forms.Padding(10, 6, 10, 6);
+            this.panelStatus.Controls.Add(this.progressBar);
+            this.panelStatus.Controls.Add(this.lblStatus);
             // 
             // lblStatus
             // 
-            this.lblStatus.AutoSize = true;
-            this.lblStatus.Location = new System.Drawing.Point(12, 592);
-            this.lblStatus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblStatus.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblStatus.AutoSize = false;
+            this.lblStatus.Height = 20;
+            this.lblStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new System.Drawing.Size(123, 17);
+            this.lblStatus.Size = new System.Drawing.Size(464, 20);
             this.lblStatus.TabIndex = 8;
             this.lblStatus.Text = "欢迎使用YY匹配工具";
+            // 
+            // progressBar
+            // 
+            this.progressBar.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.progressBar.Height = 8;
+            this.progressBar.Name = "progressBar";
+            this.progressBar.TabIndex = 7;
             // 
             // gbOptions
             // 
             this.gbOptions.Controls.Add(this.cmbSort);
+            // 隐藏“去重”按钮，避免干扰输入预览性能
+            this.chkRemoveDuplicates.Visible = false;
             this.gbOptions.Controls.Add(this.chkRemoveDuplicates);
             this.gbOptions.Controls.Add(this.txtDelimiter);
             this.gbOptions.Controls.Add(this.label13);
@@ -533,6 +545,7 @@ namespace YYTools
             this.ClientSize = new System.Drawing.Size(484, 621);
             this.Controls.Add(this.gbWritePreview);
             this.Controls.Add(this.gbOptions);
+            this.Controls.Add(this.panelStatus);
             this.Controls.Add(this.lblStatus);
             this.Controls.Add(this.progressBar);
             this.Controls.Add(this.btnClose);
@@ -556,6 +569,7 @@ namespace YYTools
             this.gbBill.PerformLayout();
             this.gbOptions.ResumeLayout(false);
             this.gbOptions.PerformLayout();
+            this.panelStatus.ResumeLayout(false);
             this.gbWritePreview.ResumeLayout(false);
             this.gbWritePreview.PerformLayout();
             this.ResumeLayout(false);
@@ -606,11 +620,12 @@ namespace YYTools
         private System.Windows.Forms.Label lblStatus;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.GroupBox gbOptions;
-        private System.Windows.Forms.Label label13;
-        private System.Windows.Forms.TextBox txtDelimiter;
-        private System.Windows.Forms.CheckBox chkRemoveDuplicates;
         private System.Windows.Forms.ComboBox cmbSort;
+        private System.Windows.Forms.CheckBox chkRemoveDuplicates;
+        private System.Windows.Forms.TextBox txtDelimiter;
+        private System.Windows.Forms.Label label13;
         private System.Windows.Forms.GroupBox gbWritePreview;
         private System.Windows.Forms.TextBox txtWritePreview;
+        private System.Windows.Forms.Panel panelStatus;
     }
 }
