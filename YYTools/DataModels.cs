@@ -53,8 +53,17 @@ namespace YYTools
     /// </summary>
     public class ShippingItem
     {
+        public string TrackNumber { get; set; }
         public string ProductCode { get; set; }
         public string ProductName { get; set; }
+    }
+
+    /// <summary>
+    /// 账单明细项
+    /// </summary>
+    public class BillItem
+    {
+        public string TrackNumber { get; set; }
     }
 
     /// <summary>

@@ -707,91 +707,108 @@ namespace YYTools
         {
             try
             {
+                // 显示进度条
+                progressBar.Visible = true;
+                progressBar.Value = 0;
+                lblStatus.Text = "正在生成写入预览...";
+                Application.DoEvents();
+
                 txtWritePreview.Text = "";
                 if (cmbShippingWorkbook.SelectedIndex < 0 || cmbShippingSheet.SelectedIndex < 0 || cmbShippingSheet.SelectedItem == null)
                 {
                     txtWritePreview.Text = "请先选择发货明细...";
+                    progressBar.Visible = false;
+                    lblStatus.Text = "欢迎使用YY匹配工具";
                     return;
                 }
 
-                string trackCol = GetSelectedColumn(cmbShippingTrackColumn);
-                string prodCol = GetSelectedColumn(cmbShippingProductColumn);
-                string nameCol = GetSelectedColumn(cmbShippingNameColumn);
+                progressBar.Value = 20;
+                Application.DoEvents();
 
-                if (string.IsNullOrEmpty(trackCol) || !ExcelHelper.IsValidColumnLetter(trackCol))
+                // 获取发货明细数据
+                var shippingData = GetShippingData();
+                if (shippingData == null || shippingData.Count == 0)
                 {
-                    txtWritePreview.Text = "请先选择有效的“发货”运单号列。";
+                    txtWritePreview.Text = "未找到发货明细数据...";
+                    progressBar.Visible = false;
+                    lblStatus.Text = "欢迎使用YY匹配工具";
                     return;
                 }
-                if (string.IsNullOrEmpty(prodCol) && string.IsNullOrEmpty(nameCol))
+
+                progressBar.Value = 40;
+                Application.DoEvents();
+
+                // 获取账单明细数据
+                var billData = GetBillData();
+                if (billData == null || billData.Count == 0)
                 {
-                    txtWritePreview.Text = "请选择“商品编码”或“商品名称”列以生成预览。";
+                    txtWritePreview.Text = "未找到账单明细数据...";
+                    progressBar.Visible = false;
+                    lblStatus.Text = "欢迎使用YY匹配工具";
                     return;
                 }
 
-                var wbInfo = workbooks[cmbShippingWorkbook.SelectedIndex];
-                var ws = wbInfo.Workbook.Worksheets[cmbShippingSheet.SelectedItem.ToString()] as Excel.Worksheet;
-                if (ws == null) return;
+                progressBar.Value = 60;
+                Application.DoEvents();
 
-                Dictionary<string, List<ShippingItem>> previewIndex = new Dictionary<string, List<ShippingItem>>();
-                int maxScanRows = Math.Min(100, ws.UsedRange.Rows.Count);
-                int trackColNum = ExcelHelper.GetColumnNumber(trackCol);
-                int prodColNum = !string.IsNullOrEmpty(prodCol) && ExcelHelper.IsValidColumnLetter(prodCol) ? ExcelHelper.GetColumnNumber(prodCol) : -1;
-                int nameColNum = !string.IsNullOrEmpty(nameCol) && ExcelHelper.IsValidColumnLetter(nameCol) ? ExcelHelper.GetColumnNumber(nameCol) : -1;
-
-                for (int r = 2; r <= maxScanRows; r++)
-                {
-                    string trackNumber = ExcelHelper.GetCellValue(ws.Cells[r, trackColNum]);
-                    if (string.IsNullOrWhiteSpace(trackNumber)) continue;
-
-                    if (!previewIndex.ContainsKey(trackNumber))
-                    {
-                        previewIndex[trackNumber] = new List<ShippingItem>();
-                    }
-
-                    previewIndex[trackNumber].Add(new ShippingItem
-                    {
-                        ProductCode = prodColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, prodColNum]) : "",
-                        ProductName = nameColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, nameColNum]) : ""
-                    });
-                }
+                // 生成预览数据
+                var previewData = GeneratePreviewData(shippingData, billData);
                 
-                var exampleEntry = previewIndex.FirstOrDefault(kvp => kvp.Value.Count > 1);
-                if (exampleEntry.Key == null) exampleEntry = previewIndex.FirstOrDefault();
-                if (exampleEntry.Key == null)
-                {
-                    txtWritePreview.Text = "（在前100行发货明细中未找到可预览的数据）";
-                    return;
-                }
+                progressBar.Value = 80;
+                Application.DoEvents();
 
-                List<string> previewLines = new List<string>();
-                List<ShippingItem> items = exampleEntry.Value;
-
-                if (prodColNum > 0)
+                // 显示预览结果
+                if (previewData.Count > 0)
                 {
-                    IEnumerable<string> productCodes = items.Select(i => i.ProductCode).Where(pc => !string.IsNullOrWhiteSpace(pc));
-                    if (productCodes.Any())
+                    var previewText = string.Join("\n", previewData.Take(10)); // 只显示前10行
+                    if (previewData.Count > 10)
                     {
-                        previewLines.Add(BuildPreviewLine(productCodes, "商品: "));
+                        previewText += $"\n... 还有 {previewData.Count - 10} 行数据";
                     }
+                    txtWritePreview.Text = previewText;
+                    lblStatus.Text = $"预览生成完成，共 {previewData.Count} 行数据";
                 }
-
-                if (nameColNum > 0)
+                else
                 {
-                    IEnumerable<string> productNames = items.Select(i => i.ProductName).Where(pn => !string.IsNullOrWhiteSpace(pn));
-                    if (productNames.Any())
-                    {
-                        previewLines.Add(BuildPreviewLine(productNames, "品名: "));
-                    }
+                    txtWritePreview.Text = "未找到匹配的数据...";
+                    lblStatus.Text = "预览生成完成，无匹配数据";
                 }
 
-                txtWritePreview.Text = previewLines.Any() ? string.Join(Environment.NewLine, previewLines) : "（无有效数据可供预览）";
-                toolTip1.SetToolTip(txtWritePreview, "根据“发货明细”中的数据和下方选项，模拟匹配成功后将写入的数据效果。");
+                progressBar.Value = 100;
+                Application.DoEvents();
+
+                // 延迟隐藏进度条
+                System.Threading.Timer timer = null;
+                timer = new System.Threading.Timer((state) =>
+                {
+                    try
+                    {
+                        if (this.InvokeRequired)
+                        {
+                            this.Invoke(new Action(() =>
+                            {
+                                progressBar.Visible = false;
+                                progressBar.Value = 0;
+                            }));
+                        }
+                        else
+                        {
+                            progressBar.Visible = false;
+                            progressBar.Value = 0;
+                        }
+                        timer?.Dispose();
+                    }
+                    catch
+                    {
+                        // 忽略错误
+                    }
+                }, null, 1000, Timeout.Infinite);
             }
             catch (Exception ex)
             {
-                WriteLog($"[MatchForm] 刷新写入预览失败: {ex.Message}", LogLevel.Warning);
-                txtWritePreview.Text = "生成预览时出错。";
+                txtWritePreview.Text = $"生成预览失败: {ex.Message}";
+                progressBar.Visible = false;
+                lblStatus.Text = "预览生成失败";
             }
         }
         
@@ -826,6 +843,150 @@ namespace YYTools
                 }
             }
             base.OnFormClosing(e);
+        }
+
+        /// <summary>
+        /// 获取发货明细数据
+        /// </summary>
+        private List<ShippingItem> GetShippingData()
+        {
+            try
+            {
+                if (cmbShippingWorkbook.SelectedIndex < 0 || cmbShippingSheet.SelectedIndex < 0)
+                    return null;
+
+                var wbInfo = workbooks[cmbShippingWorkbook.SelectedIndex];
+                var ws = wbInfo.Workbook.Worksheets[cmbShippingSheet.SelectedItem.ToString()] as Excel.Worksheet;
+                if (ws == null) return null;
+
+                string trackCol = GetSelectedColumn(cmbShippingTrackColumn);
+                string prodCol = GetSelectedColumn(cmbShippingProductColumn);
+                string nameCol = GetSelectedColumn(cmbShippingNameColumn);
+
+                if (string.IsNullOrEmpty(trackCol) || !ExcelHelper.IsValidColumnLetter(trackCol))
+                    return null;
+
+                var result = new List<ShippingItem>();
+                int maxScanRows = Math.Min(100, ws.UsedRange.Rows.Count);
+                int trackColNum = ExcelHelper.GetColumnNumber(trackCol);
+                int prodColNum = !string.IsNullOrEmpty(prodCol) && ExcelHelper.IsValidColumnLetter(prodCol) ? ExcelHelper.GetColumnNumber(prodCol) : -1;
+                int nameColNum = !string.IsNullOrEmpty(nameCol) && ExcelHelper.IsValidColumnLetter(nameCol) ? ExcelHelper.GetColumnNumber(nameCol) : -1;
+
+                for (int r = 2; r <= maxScanRows; r++)
+                {
+                    string trackNumber = ExcelHelper.GetCellValue(ws.Cells[r, trackColNum]);
+                    if (string.IsNullOrWhiteSpace(trackNumber)) continue;
+
+                    result.Add(new ShippingItem
+                    {
+                        TrackNumber = trackNumber,
+                        ProductCode = prodColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, prodColNum]) : "",
+                        ProductName = nameColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, nameColNum]) : ""
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"获取发货明细数据失败: {ex.Message}", LogLevel.Warning);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 获取账单明细数据
+        /// </summary>
+        private List<BillItem> GetBillData()
+        {
+            try
+            {
+                if (cmbBillWorkbook.SelectedIndex < 0 || cmbBillSheet.SelectedIndex < 0)
+                    return null;
+
+                var wbInfo = workbooks[cmbBillWorkbook.SelectedIndex];
+                var ws = wbInfo.Workbook.Worksheets[cmbBillSheet.SelectedItem.ToString()] as Excel.Worksheet;
+                if (ws == null) return null;
+
+                string trackCol = GetSelectedColumn(cmbBillTrackColumn);
+                if (string.IsNullOrEmpty(trackCol) || !ExcelHelper.IsValidColumnLetter(trackCol))
+                    return null;
+
+                var result = new List<BillItem>();
+                int maxScanRows = Math.Min(100, ws.UsedRange.Rows.Count);
+                int trackColNum = ExcelHelper.GetColumnNumber(trackCol);
+
+                for (int r = 2; r <= maxScanRows; r++)
+                {
+                    string trackNumber = ExcelHelper.GetCellValue(ws.Cells[r, trackColNum]);
+                    if (string.IsNullOrWhiteSpace(trackNumber)) continue;
+
+                    result.Add(new BillItem
+                    {
+                        TrackNumber = trackNumber
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"获取账单明细数据失败: {ex.Message}", LogLevel.Warning);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 生成预览数据
+        /// </summary>
+        private List<string> GeneratePreviewData(List<ShippingItem> shippingData, List<BillItem> billData)
+        {
+            try
+            {
+                var result = new List<string>();
+                var shippingDict = shippingData.GroupBy(s => s.TrackNumber).ToDictionary(g => g.Key, g => g.ToList());
+
+                foreach (var bill in billData.Take(10)) // 只处理前10个账单
+                {
+                    if (shippingDict.ContainsKey(bill.TrackNumber))
+                    {
+                        var items = shippingDict[bill.TrackNumber];
+                        var previewLines = new List<string>();
+
+                        if (items.Any(i => !string.IsNullOrWhiteSpace(i.ProductCode)))
+                        {
+                            var productCodes = items.Select(i => i.ProductCode).Where(pc => !string.IsNullOrWhiteSpace(pc));
+                            if (productCodes.Any())
+                            {
+                                previewLines.Add(BuildPreviewLine(productCodes, "商品: "));
+                            }
+                        }
+
+                        if (items.Any(i => !string.IsNullOrWhiteSpace(i.ProductName)))
+                        {
+                            var productNames = items.Select(i => i.ProductName).Where(pn => !string.IsNullOrWhiteSpace(pn));
+                            if (productNames.Any())
+                            {
+                                previewLines.Add(BuildPreviewLine(productNames, "品名: "));
+                            }
+                        }
+
+                        if (previewLines.Any())
+                        {
+                            result.Add($"运单号: {bill.TrackNumber}");
+                            result.AddRange(previewLines);
+                            result.Add(""); // 空行分隔
+                        }
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"生成预览数据失败: {ex.Message}", LogLevel.Warning);
+                return new List<string>();
+            }
         }
     }
 }

@@ -107,18 +107,23 @@ namespace YYTools
 
             try
             {
-                // 获取系统DPI
-                IntPtr hdc = GetDC(IntPtr.Zero);
-                if (hdc != IntPtr.Zero)
+                // 使用更兼容的方法获取DPI信息
+                _systemDpiX = 1.0f;
+                _systemDpiY = 1.0f;
+                
+                // 尝试使用Graphics获取DPI信息
+                using (var graphics = Graphics.FromHwnd(IntPtr.Zero))
                 {
                     try
                     {
-                        _systemDpiX = GetDeviceCaps(hdc, LOGPIXELSX) / 96.0f;
-                        _systemDpiY = GetDeviceCaps(hdc, LOGPIXELSY) / 96.0f;
+                        _systemDpiX = graphics.DpiX / 96.0f;
+                        _systemDpiY = graphics.DpiY / 96.0f;
                     }
-                    finally
+                    catch
                     {
-                        ReleaseDC(IntPtr.Zero, hdc);
+                        // 如果Graphics方法失败，使用默认值
+                        _systemDpiX = 1.0f;
+                        _systemDpiY = 1.0f;
                     }
                 }
 

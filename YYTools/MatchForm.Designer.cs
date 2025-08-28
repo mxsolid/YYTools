@@ -433,19 +433,21 @@ namespace YYTools
             // 
             // progressBar
             // 
-            this.progressBar.Location = new System.Drawing.Point(12, 618);
+            this.progressBar.Location = new System.Drawing.Point(12, 590);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(460, 5);
+            this.progressBar.Size = new System.Drawing.Size(460, 20);
             this.progressBar.TabIndex = 7;
+            this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             // 
             // lblStatus
             // 
             this.lblStatus.AutoSize = true;
-            this.lblStatus.Location = new System.Drawing.Point(12, 592);
+            this.lblStatus.Location = new System.Drawing.Point(12, 615);
             this.lblStatus.Name = "lblStatus";
             this.lblStatus.Size = new System.Drawing.Size(123, 17);
             this.lblStatus.TabIndex = 8;
             this.lblStatus.Text = "欢迎使用YY匹配工具";
+            this.lblStatus.BackColor = System.Drawing.Color.Transparent;
             // 
             // gbOptions
             // 

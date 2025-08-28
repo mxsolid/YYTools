@@ -51,48 +51,55 @@ namespace YYTools
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.ShowInTaskbar = false;
+            this.BackColor = Color.White; // 确保背景是白色
 
             // 分隔符配置组
             gbConcatenation = new GroupBox
             {
                 Text = "拼接配置",
                 Location = new Point(20, 20),
-                Size = new Size(440, 120)
+                Size = new Size(440, 120),
+                BackColor = Color.White // 确保分组框背景是白色
             };
 
             lblDelimiter = new Label
             {
                 Text = "分隔符:",
                 Location = new Point(20, 30),
-                Size = new Size(80, 20)
+                Size = new Size(80, 20),
+                BackColor = Color.White // 确保标签背景是白色
             };
 
             cmbDelimiter = new ComboBox
             {
                 Location = new Point(110, 28),
                 Size = new Size(100, 20),
-                DropDownStyle = ComboBoxStyle.DropDownList
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.White // 确保下拉框背景是白色
             };
 
             chkRemoveDuplicates = new CheckBox
             {
                 Text = "去除重复项",
                 Location = new Point(20, 60),
-                Size = new Size(120, 20)
+                Size = new Size(120, 20),
+                BackColor = Color.White // 确保复选框背景是白色
             };
 
             lblSort = new Label
             {
                 Text = "排序方式:",
                 Location = new Point(220, 30),
-                Size = new Size(80, 20)
+                Size = new Size(80, 20),
+                BackColor = Color.White // 确保标签背景是白色
             };
 
             cmbSort = new ComboBox
             {
                 Location = new Point(310, 28),
                 Size = new Size(100, 20),
-                DropDownStyle = ComboBoxStyle.DropDownList
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.White // 确保下拉框背景是白色
             };
 
             // 性能配置组
@@ -100,14 +107,16 @@ namespace YYTools
             {
                 Text = "性能配置",
                 Location = new Point(20, 160),
-                Size = new Size(440, 140)
+                Size = new Size(440, 140),
+                BackColor = Color.White // 确保分组框背景是白色
             };
 
             lblBatchSize = new Label
             {
                 Text = "批处理大小:",
                 Location = new Point(20, 30),
-                Size = new Size(100, 20)
+                Size = new Size(100, 20),
+                BackColor = Color.White // 确保标签背景是白色
             };
 
             numBatchSize = new NumericUpDown
@@ -116,14 +125,16 @@ namespace YYTools
                 Size = new Size(100, 20),
                 Minimum = 100,
                 Maximum = 10000,
-                Increment = 100
+                Increment = 100,
+                BackColor = Color.White // 确保数字输入框背景是白色
             };
 
             lblMaxPreviewRows = new Label
             {
                 Text = "预览最大行数:",
                 Location = new Point(20, 60),
-                Size = new Size(100, 20)
+                Size = new Size(100, 20),
+                BackColor = Color.White // 确保标签背景是白色
             };
 
             numMaxPreviewRows = new NumericUpDown
@@ -132,14 +143,16 @@ namespace YYTools
                 Size = new Size(100, 20),
                 Minimum = 10,
                 Maximum = 1000,
-                Increment = 10
+                Increment = 10,
+                BackColor = Color.White // 确保数字输入框背景是白色
             };
 
             chkEnableProgressReporting = new CheckBox
             {
                 Text = "启用进度报告",
                 Location = new Point(20, 90),
-                Size = new Size(120, 20)
+                Size = new Size(120, 20),
+                BackColor = Color.White // 确保复选框背景是白色
             };
 
             // 智能匹配配置组
@@ -147,28 +160,32 @@ namespace YYTools
             {
                 Text = "智能匹配配置",
                 Location = new Point(20, 320),
-                Size = new Size(440, 140)
+                Size = new Size(440, 140),
+                BackColor = Color.White // 确保分组框背景是白色
             };
 
             chkEnableSmartMatching = new CheckBox
             {
                 Text = "启用智能匹配",
                 Location = new Point(20, 30),
-                Size = new Size(120, 20)
+                Size = new Size(120, 20),
+                BackColor = Color.White // 确保复选框背景是白色
             };
 
             chkEnableExactMatchPriority = new CheckBox
             {
                 Text = "完全匹配优先",
                 Location = new Point(20, 60),
-                Size = new Size(120, 20)
+                Size = new Size(120, 20),
+                BackColor = Color.White // 确保复选框背景是白色
             };
 
             lblMinMatchScore = new Label
             {
                 Text = "最小匹配分数:",
                 Location = new Point(20, 90),
-                Size = new Size(100, 20)
+                Size = new Size(100, 20),
+                BackColor = Color.White // 确保标签背景是白色
             };
 
             trkMinMatchScore = new TrackBar
@@ -178,7 +195,8 @@ namespace YYTools
                 Minimum = 0,
                 Maximum = 100,
                 TickFrequency = 10,
-                Value = 50
+                Value = 50,
+                BackColor = Color.White // 确保滑块背景是白色
             };
 
             lblMinMatchScoreValue = new Label
@@ -186,7 +204,8 @@ namespace YYTools
                 Text = "0.5",
                 Location = new Point(340, 90),
                 Size = new Size(50, 20),
-                TextAlign = ContentAlignment.MiddleLeft
+                TextAlign = ContentAlignment.MiddleLeft,
+                BackColor = Color.White // 确保标签背景是白色
             };
 
             // 按钮
@@ -195,7 +214,10 @@ namespace YYTools
                 Text = "确定",
                 DialogResult = DialogResult.OK,
                 Location = new Point(280, 500),
-                Size = new Size(80, 30)
+                Size = new Size(80, 30),
+                BackColor = Color.FromArgb(0, 122, 204), // 蓝色按钮
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
             };
 
             btnCancel = new Button
@@ -203,14 +225,20 @@ namespace YYTools
                 Text = "取消",
                 DialogResult = DialogResult.Cancel,
                 Location = new Point(370, 500),
-                Size = new Size(80, 30)
+                Size = new Size(80, 30),
+                BackColor = Color.FromArgb(100, 100, 100), // 灰色按钮
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
             };
 
             btnReset = new Button
             {
                 Text = "重置默认",
                 Location = new Point(20, 500),
-                Size = new Size(80, 30)
+                Size = new Size(80, 30),
+                BackColor = Color.FromArgb(255, 152, 0), // 橙色按钮
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
             };
 
             // 添加控件到分组
