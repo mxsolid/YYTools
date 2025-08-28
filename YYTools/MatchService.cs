@@ -1,4 +1,3 @@
-// --- 文件 7: MatchService.cs ---
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,7 +18,7 @@ namespace YYTools
         {
             return ExecuteMatchUltraFast(config, progressCallback);
         }
-        
+
         private MatchResult ExecuteMatchUltraFast(MultiWorkbookMatchConfig config, ProgressReportDelegate progressCallback = null)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -31,13 +30,12 @@ namespace YYTools
             bool originalEnableEvents = excelApp.EnableEvents;
             bool originalDisplayStatusBar = excelApp.DisplayStatusBar;
             bool originalDisplayAlerts = excelApp.DisplayAlerts;
-            
+
             try
             {
-                WriteLog("开始执行运单匹配 - 极速模式", LogLevel.Info);
+                WriteLog("开始执行匹配任务 - 极速模式", LogLevel.Info);
                 progressCallback?.Invoke(1, "正在优化Excel性能...");
-                
-                // 性能优化
+
                 ExcelHelper.OptimizeExcelPerformance(excelApp);
 
                 progressCallback?.Invoke(5, "正在获取工作表...");
@@ -50,7 +48,6 @@ namespace YYTools
                     return result;
                 }
 
-                // 检查工作表大小，给出性能警告
                 CheckWorksheetSize(shippingSheet, "发货明细", progressCallback);
                 CheckWorksheetSize(billSheet, "账单明细", progressCallback);
 
@@ -65,9 +62,9 @@ namespace YYTools
                 stopwatch.Stop();
                 result.Success = true;
                 result.ElapsedSeconds = stopwatch.Elapsed.TotalSeconds;
-                progressCallback?.Invoke(100, "匹配完成！");
-                
-                WriteLog($"匹配完成，处理 {result.ProcessedRows:N0} 行，匹配 {result.MatchedCount:N0} 个运单，耗时 {result.ElapsedSeconds:F2} 秒", LogLevel.Info);
+                progressCallback?.Invoke(100, "任务完成！");
+
+                WriteLog($"任务完成，处理 {result.ProcessedRows:N0} 行，匹配 {result.MatchedCount:N0} 个运单，耗时 {result.ElapsedSeconds:F2} 秒", LogLevel.Info);
             }
             catch (Exception ex)
             {
@@ -75,11 +72,10 @@ namespace YYTools
                 result.Success = false;
                 result.ErrorMessage = ex.Message;
                 result.ElapsedSeconds = stopwatch.Elapsed.TotalSeconds;
-                WriteLog($"匹配过程中发生错误: {ex.ToString()}", LogLevel.Error);
+                WriteLog($"任务执行过程中发生错误: {ex.ToString()}", LogLevel.Error);
             }
             finally
             {
-                // 恢复Excel设置
                 ExcelHelper.RestoreExcelPerformance(excelApp, originalScreenUpdating, originalCalculation);
                 try
                 {
@@ -103,7 +99,7 @@ namespace YYTools
                     progressCallback?.Invoke(0, warning);
                     WriteLog(warning, LogLevel.Warning);
                 }
-                
+
                 if (stats.rows > 500000)
                 {
                     string criticalWarning = $"🚨 严重警告：{sheetName}工作表数据量过大 ({stats.rows:N0} 行)，建议分批处理或优化数据结构。";
@@ -148,17 +144,15 @@ namespace YYTools
                 int productCol = ExcelHelper.GetColumnNumber(config.ShippingProductColumn);
                 int nameCol = ExcelHelper.GetColumnNumber(config.ShippingNameColumn);
 
-                // 使用批量读取优化性能
                 var batchSize = AppSettings.Instance.BatchSize;
                 var trackData = new List<string>();
                 var productData = new List<string>();
                 var nameData = new List<string>();
 
-                // 分批读取数据
                 for (int startRow = 2; startRow <= totalRows; startRow += batchSize)
                 {
                     int endRow = Math.Min(startRow + batchSize - 1, totalRows);
-                    
+
                     trackData.AddRange(ExcelHelper.GetColumnDataBatch(shippingSheet, config.ShippingTrackColumn, startRow, endRow));
                     productData.AddRange(ExcelHelper.GetColumnDataBatch(shippingSheet, config.ShippingProductColumn, startRow, endRow));
                     nameData.AddRange(ExcelHelper.GetColumnDataBatch(shippingSheet, config.ShippingNameColumn, startRow, endRow));
@@ -169,7 +163,6 @@ namespace YYTools
                     progressCallback?.Invoke(progress, $"构建索引: {endRow}/{totalRows} 行");
                 }
 
-                // 处理数据
                 for (int i = 0; i < trackData.Count; i++)
                 {
                     string trackNumber = trackData[i];
@@ -188,10 +181,10 @@ namespace YYTools
                     }
                 }
             }
-            catch (Exception ex) 
-            { 
-                WriteLog("构建索引失败: " + ex.ToString(), LogLevel.Error); 
-                throw; 
+            catch (Exception ex)
+            {
+                WriteLog("构建索引失败: " + ex.ToString(), LogLevel.Error);
+                throw;
             }
             return index;
         }
@@ -210,15 +203,12 @@ namespace YYTools
 
                 var batchSize = AppSettings.Instance.BatchSize;
                 var trackData = new List<string>();
-                var productData = new List<string>();
-                var nameData = new List<string>();
 
-                // 分批读取运单号数据
                 for (int startRow = 2; startRow <= totalRows; startRow += batchSize)
                 {
                     int endRow = Math.Min(startRow + batchSize - 1, totalRows);
                     trackData.AddRange(ExcelHelper.GetColumnDataBatch(billSheet, config.BillTrackColumn, startRow, endRow));
-                    
+
                     if (CancellationCheck?.Invoke() == true) return;
                 }
 
@@ -227,7 +217,6 @@ namespace YYTools
                 int updatedCells = 0;
                 AppSettings settings = AppSettings.Instance;
 
-                // 分批处理数据
                 for (int batchStart = 0; batchStart < dataRows; batchStart += batchSize)
                 {
                     int batchEnd = Math.Min(batchStart + batchSize, dataRows);
@@ -244,11 +233,10 @@ namespace YYTools
                             {
                                 matchedCount++;
                                 List<ShippingItem> matchedItems = shippingIndex[normalizedTrack];
-                                
+
                                 var productCodes = matchedItems.Select(item => item.ProductCode.Trim()).Where(c => !string.IsNullOrEmpty(c));
                                 var productNames = matchedItems.Select(item => item.ProductName.Trim()).Where(n => !string.IsNullOrEmpty(n));
 
-                                // 排序选项
                                 if (config.SortOption == SortOption.Asc)
                                 {
                                     productCodes = productCodes.OrderBy(x => x, StringComparer.Ordinal);
@@ -259,13 +247,13 @@ namespace YYTools
                                     productCodes = productCodes.OrderByDescending(x => x, StringComparer.Ordinal);
                                     productNames = productNames.OrderByDescending(x => x, StringComparer.Ordinal);
                                 }
-                                
+
                                 if (settings.RemoveDuplicateItems)
                                 {
                                     productCodes = productCodes.Distinct();
                                     productNames = productNames.Distinct();
                                 }
-                                
+
                                 batchProductData.Add(productCodes.Any() ? string.Join(settings.ConcatenationDelimiter, productCodes.ToArray()) : "");
                                 batchNameData.Add(productNames.Any() ? string.Join(settings.ConcatenationDelimiter, productNames.ToArray()) : "");
                             }
@@ -282,23 +270,20 @@ namespace YYTools
                         }
                     }
 
-                    // 批量写入数据
                     WriteBatchData(billSheet, config.BillProductColumn, batchStart + 2, batchProductData);
                     WriteBatchData(billSheet, config.BillNameColumn, batchStart + 2, batchNameData);
-                    
-                    updatedCells += batchProductData.Count + batchNameData.Count;
+
+                    updatedCells += batchProductData.Count(s => !string.IsNullOrEmpty(s)) + batchNameData.Count(s => !string.IsNullOrEmpty(s));
 
                     if (CancellationCheck?.Invoke() == true) return;
 
-                    int progress = 50 + (int)(35.0 * batchEnd / dataRows);
-                    progressCallback?.Invoke(progress, $"匹配进度: {batchEnd}/{dataRows} 行");
+                    int progress = 50 + (int)(45.0 * batchEnd / dataRows);
+                    progressCallback?.Invoke(progress, $"处理进度: {batchEnd}/{dataRows} 行");
                 }
 
                 result.ProcessedRows = dataRows;
                 result.MatchedCount = matchedCount;
                 result.UpdatedCells = updatedCells;
-
-                progressCallback?.Invoke(90, "正在高速写入结果...");
             }
             catch (Exception ex)
             {
@@ -311,7 +296,7 @@ namespace YYTools
         {
             try
             {
-                if (data.Count == 0) return;
+                if (data.Count == 0 || string.IsNullOrWhiteSpace(columnLetter) || !ExcelHelper.IsValidColumnLetter(columnLetter)) return;
 
                 var range = worksheet.Range[$"{columnLetter}{startRow}:{columnLetter}{startRow + data.Count - 1}"];
                 if (range == null) return;
@@ -368,10 +353,10 @@ namespace YYTools
             try
             {
                 if (!Directory.Exists(LogPath)) return;
-                
+
                 var logFiles = Directory.GetFiles(LogPath, "YYTools_*.log");
-                var cutoffDate = DateTime.Now.AddDays(-30); // 保留30天的日志
-                
+                var cutoffDate = DateTime.Now.AddDays(-30);
+
                 foreach (var logFile in logFiles)
                 {
                     try

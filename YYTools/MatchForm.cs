@@ -1,4 +1,3 @@
-// --- 文件 5: MatchForm.cs ---
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -17,9 +16,10 @@ namespace YYTools
         private List<WorkbookInfo> workbooks = new List<WorkbookInfo>();
         private bool isProcessing = false;
         private AppSettings settings;
-        
-        // 新增：列信息缓存
+
         private Dictionary<string, List<ColumnInfo>> columnCache = new Dictionary<string, List<ColumnInfo>>();
+
+        private Dictionary<ComboBox, string> comboBoxColumnTypeMap;
 
         public MatchForm()
         {
@@ -34,13 +34,28 @@ namespace YYTools
             this.StartPosition = FormStartPosition.CenterScreen;
             this.ShowInTaskbar = true;
             this.Shown += (s, e) => { this.Activate(); };
-            // 降低界面闪烁
             try
             {
                 this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
                 this.UpdateStyles();
             }
             catch { }
+
+            comboBoxColumnTypeMap = new Dictionary<ComboBox, string>
+            {
+                { cmbShippingTrackColumn, "TrackColumn" },
+                { cmbShippingProductColumn, "ProductColumn" },
+                { cmbShippingNameColumn, "NameColumn" },
+                { cmbBillTrackColumn, "TrackColumn" },
+                { cmbBillProductColumn, "ProductColumn" },
+                { cmbBillNameColumn, "NameColumn" }
+            };
+
+            txtDelimiter.TextChanged += (s, e) => RefreshWritePreview();
+            chkRemoveDuplicates.CheckedChanged += (s, e) => RefreshWritePreview();
+            cmbSort.SelectedIndexChanged += (s, e) => RefreshWritePreview();
+            
+            cmbSort.SelectedIndex = 0;
         }
 
         private void InitializeBackgroundWorker()
@@ -85,7 +100,7 @@ namespace YYTools
                 WriteLog("应用通用设置失败: " + ex.Message, LogLevel.Warning);
             }
         }
-        
+
         private void LoadMatcherSettings()
         {
             txtDelimiter.Text = settings.ConcatenationDelimiter;
@@ -126,7 +141,7 @@ namespace YYTools
         private void PopulateComboBoxes()
         {
             var displayNames = workbooks.Select(wb => wb.IsActive ? $"{wb.Name} [当前活动]" : wb.Name).ToArray();
-            
+
             string prevShipping = cmbShippingWorkbook.SelectedItem?.ToString();
             string prevBill = cmbBillWorkbook.SelectedItem?.ToString();
 
@@ -134,14 +149,16 @@ namespace YYTools
             cmbBillWorkbook.Items.Clear();
             cmbShippingWorkbook.Items.AddRange(displayNames);
             cmbBillWorkbook.Items.AddRange(displayNames);
-            
+            toolTip1.SetToolTip(cmbShippingWorkbook, "选择包含发货明细的工作簿");
+            toolTip1.SetToolTip(cmbBillWorkbook, "选择包含账单明细的工作簿");
+
             if (!string.IsNullOrEmpty(prevShipping) && cmbShippingWorkbook.Items.Contains(prevShipping))
                 cmbShippingWorkbook.SelectedItem = prevShipping;
             else if (workbooks.Any(w => w.IsActive))
                 cmbShippingWorkbook.SelectedIndex = workbooks.FindIndex(w => w.IsActive);
             else if (cmbShippingWorkbook.Items.Count > 0)
                 cmbShippingWorkbook.SelectedIndex = 0;
-            
+
             if (!string.IsNullOrEmpty(prevBill) && cmbBillWorkbook.Items.Contains(prevBill))
                 cmbBillWorkbook.SelectedItem = prevBill;
             else if (workbooks.Any(w => w.IsActive))
@@ -155,6 +172,8 @@ namespace YYTools
             gbShipping.Enabled = false;
             gbBill.Enabled = false;
             btnStart.Enabled = false;
+            gbOptions.Enabled = false;
+            gbWritePreview.Enabled = false;
             lblStatus.Text = "未检测到打开的Excel/WPS文件。请打开文件或从菜单栏选择文件。";
         }
 
@@ -163,25 +182,28 @@ namespace YYTools
             gbShipping.Enabled = true;
             gbBill.Enabled = true;
             btnStart.Enabled = true;
+            gbOptions.Enabled = true;
+            gbWritePreview.Enabled = true;
             lblStatus.Text = $"已加载 {workbooks.Count} 个工作簿。请配置并开始任务。";
         }
-        
+
         private void cmbShippingWorkbook_SelectedIndexChanged(object sender, EventArgs e) => LoadSheetsForWorkbook(cmbShippingWorkbook, cmbShippingSheet);
         private void cmbBillWorkbook_SelectedIndexChanged(object sender, EventArgs e) => LoadSheetsForWorkbook(cmbBillWorkbook, cmbBillSheet);
-        
+
         private void cmbShippingSheet_SelectedIndexChanged(object sender, EventArgs e)
         {
-            PopulateColumnComboBoxes(cmbShippingWorkbook, cmbShippingSheet, lblShippingInfo, cmbShippingTrackColumn, cmbShippingProductColumn, cmbShippingNameColumn);
+            PopulateColumnComboBoxes(cmbShippingWorkbook, cmbShippingSheet, cmbShippingTrackColumn, cmbShippingProductColumn, cmbShippingNameColumn);
         }
-        
+
         private void cmbBillSheet_SelectedIndexChanged(object sender, EventArgs e)
         {
-            PopulateColumnComboBoxes(cmbBillWorkbook, cmbBillSheet, lblBillInfo, cmbBillTrackColumn, cmbBillProductColumn, cmbBillNameColumn);
+            PopulateColumnComboBoxes(cmbBillWorkbook, cmbBillSheet, cmbBillTrackColumn, cmbBillProductColumn, cmbBillNameColumn);
         }
 
         private void LoadSheetsForWorkbook(ComboBox workbookCombo, ComboBox sheetCombo)
         {
             sheetCombo.Items.Clear();
+            toolTip1.SetToolTip(sheetCombo, "");
             if (workbookCombo.SelectedIndex < 0 || workbookCombo.SelectedIndex >= workbooks.Count) return;
 
             try
@@ -189,6 +211,7 @@ namespace YYTools
                 Excel.Workbook selectedWorkbook = workbooks[workbookCombo.SelectedIndex].Workbook;
                 List<string> sheetNames = ExcelAddin.GetWorksheetNames(selectedWorkbook);
                 sheetCombo.Items.AddRange(sheetNames.ToArray());
+                toolTip1.SetToolTip(sheetCombo, $"在工作簿 '{selectedWorkbook.Name}' 中选择一个工作表");
 
                 string[] keywords = sheetCombo == cmbShippingSheet ? new[] { "发货明细", "发货" } : new[] { "账单明细", "账单" };
                 SetDefaultSheet(sheetCombo, keywords);
@@ -198,11 +221,12 @@ namespace YYTools
                 WriteLog("加载工作表失败: " + ex.Message, LogLevel.Error);
             }
         }
-        
-        private void PopulateColumnComboBoxes(ComboBox wbCombo, ComboBox wsCombo, Label infoLabel, params ComboBox[] columnCombos)
+
+        private void PopulateColumnComboBoxes(ComboBox wbCombo, ComboBox wsCombo, params ComboBox[] columnCombos)
         {
             foreach (var combo in columnCombos) { combo.DataSource = null; combo.Items.Clear(); combo.Text = ""; }
-            infoLabel.Text = "";
+            toolTip1.SetToolTip(wsCombo, "请选择工作表");
+
             if (wbCombo.SelectedIndex < 0 || wsCombo.SelectedIndex < 0 || wsCombo.SelectedItem == null) return;
 
             try
@@ -211,102 +235,80 @@ namespace YYTools
                 var ws = wbInfo.Workbook.Worksheets[wsCombo.SelectedItem.ToString()] as Excel.Worksheet;
                 if (ws == null) return;
 
-                // 使用智能列选择服务获取列信息
-                ShowLoading(true, infoLabel);
+                ShowLoading(true);
                 var columns = SmartColumnService.GetColumnInfos(ws, 50);
                 var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
                 columnCache[cacheKey] = columns;
 
-                // 显示工作表信息 + tooltip
                 try
                 {
-                    var fileInfo = new FileInfo(wbInfo.Workbook.FullName);
-                    infoLabel.ForeColor = Color.FromArgb(120, 120, 120);
-                    infoLabel.Text = $"总行数: {ws.UsedRange.Rows.Count:N0} | 总列数: {ws.UsedRange.Columns.Count:N0} | 文件大小: {(double)fileInfo.Length / (1024 * 1024):F2} MB";
-                    toolTip1.SetToolTip(infoLabel, infoLabel.Text);
+                    var stats = ExcelHelper.GetWorksheetStats(ws);
+                    string statsString = $"总行数: {stats.rows:N0} | 总列数: {stats.columns:N0}";
+                    toolTip1.SetToolTip(wsCombo, statsString);
                 }
-                catch { infoLabel.Text = $"总行数: {ws.UsedRange.Rows.Count:N0} | 总列数: {ws.UsedRange.Columns.Count:N0}"; toolTip1.SetToolTip(infoLabel, infoLabel.Text); }
+                catch { /* ignore */ }
 
-                // 填充列下拉框，并开启可输入搜索
                 foreach (var combo in columnCombos)
                 {
                     combo.DisplayMember = "ToString";
                     combo.ValueMember = "ColumnLetter";
-                    combo.DropDownStyle = ComboBoxStyle.DropDown; // 允许手动输入
-                    combo.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-                    combo.AutoCompleteSource = AutoCompleteSource.ListItems;
                     combo.DataSource = new BindingSource(columns, null);
                     combo.SelectedIndex = -1;
-
-                    // 输入过滤：当文本变化时根据关键字过滤
-                    combo.TextChanged -= Combo_TextChanged;
-                    combo.TextChanged += Combo_TextChanged;
-                    combo.Validating -= Combo_Validating;
-                    combo.Validating += Combo_Validating;
                 }
 
-                // 智能匹配默认列（在绑定数据源之后设置SelectedValue，避免被覆盖）
                 if (settings.EnableSmartColumnSelection)
                 {
                     var matchedColumns = SmartColumnService.SmartMatchColumns(columns);
-                    ApplySmartColumnSelection(columnCombos, matchedColumns, cacheKey);
+                    ApplySmartColumnSelection(columnCombos, matchedColumns);
+                    
+                    foreach (var combo in columnCombos)
+                    {
+                        if (combo.SelectedItem != null && comboBoxColumnTypeMap.ContainsKey(combo))
+                        {
+                            ValidateAndUpdateColumnInfo(combo);
+                        }
+                    }
                 }
             }
             catch (Exception ex)
             {
-                 WriteLog("填充列下拉框失败: " + ex.Message, LogLevel.Error);
+                WriteLog("填充列下拉框失败: " + ex.Message, LogLevel.Error);
             }
             finally
             {
-                ShowLoading(false, infoLabel);
+                ShowLoading(false);
+                lblStatus.Text = $"已加载 {workbooks.Count} 个工作簿。请配置并开始任务。";
+                RefreshWritePreview();
             }
         }
 
-        private void ShowLoading(bool loading, Label infoLabel)
+        private void ShowLoading(bool loading)
         {
             try
             {
+                progressBar.Visible = loading;
                 progressBar.Style = loading ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
-                progressBar.Visible = loading || isProcessing;
-                if (loading) infoLabel.Text = "正在解析列信息，请稍候...";
+                if (loading)
+                {
+                    lblStatus.Text = "正在解析列信息...";
+                }
             }
             catch { }
         }
 
-        private void ApplySmartColumnSelection(ComboBox[] columnCombos, Dictionary<string, ColumnInfo> matchedColumns, string cacheKey)
+
+        private void ApplySmartColumnSelection(ComboBox[] columnCombos, Dictionary<string, ColumnInfo> matchedColumns)
         {
             try
             {
-                // 运单号列
                 if (matchedColumns.ContainsKey("TrackColumn"))
-                {
-                    var trackColumn = matchedColumns["TrackColumn"];
-                    SetColumnSelection(columnCombos[0], trackColumn, "TrackColumn");
-                }
+                    SetColumnSelection(columnCombos[0], matchedColumns["TrackColumn"]);
 
-                // 商品编码列
                 if (matchedColumns.ContainsKey("ProductColumn"))
-                {
-                    var productColumn = matchedColumns["ProductColumn"];
-                    SetColumnSelection(columnCombos[1], productColumn, "ProductColumn");
-                }
+                    SetColumnSelection(columnCombos[1], matchedColumns["ProductColumn"]);
 
-                // 商品名称列
                 if (matchedColumns.ContainsKey("NameColumn"))
-                {
-                    var nameColumn = matchedColumns["NameColumn"];
-                    SetColumnSelection(columnCombos[2], nameColumn, "NameColumn");
-                }
-
-                // 智能选择后清理可能残留的红色背景
-                foreach (var cb in columnCombos)
-                {
-                    if (cb.SelectedIndex >= 0)
-                    {
-                        cb.BackColor = SystemColors.Window;
-                        cb.ForeColor = SystemColors.WindowText;
-                    }
-                }
+                    SetColumnSelection(columnCombos[2], matchedColumns["NameColumn"]);
             }
             catch (Exception ex)
             {
@@ -314,11 +316,11 @@ namespace YYTools
             }
         }
 
-        private void SetColumnSelection(ComboBox combo, ColumnInfo columnInfo, string expectedType)
+        private void SetColumnSelection(ComboBox combo, ColumnInfo columnInfo)
         {
             try
             {
-                if (columnInfo != null && SmartColumnService.ValidateColumnSelection(columnInfo, expectedType))
+                if (columnInfo != null)
                 {
                     combo.SelectedValue = columnInfo.ColumnLetter;
                 }
@@ -352,14 +354,14 @@ namespace YYTools
                 settings.ConcatenationDelimiter = txtDelimiter.Text;
                 settings.RemoveDuplicateItems = chkRemoveDuplicates.Checked;
                 settings.Save();
-                
+
                 MultiWorkbookMatchConfig config = CreateMatchConfig();
                 SetUiProcessingState(true);
                 backgroundWorker.RunWorkerAsync(config);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"启动匹配失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"启动任务失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 SetUiProcessingState(false);
             }
         }
@@ -368,21 +370,22 @@ namespace YYTools
         {
             this.isProcessing = processing;
             menuStrip1.Enabled = !processing;
-            // 不整体禁用，以减少闪烁，仅禁用开始按钮
             btnStart.Enabled = !processing;
-            
+            gbShipping.Enabled = !processing;
+            gbBill.Enabled = !processing;
+            gbOptions.Enabled = !processing;
+
             progressBar.Visible = processing;
 
             if (processing)
             {
                 progressBar.Value = 0;
-                lblStatus.Text = "正在初始化匹配任务...";
+                lblStatus.Text = "正在初始化任务...";
                 btnClose.Text = "⏹️ 停止任务";
             }
             else
             {
                 btnClose.Text = "关闭";
-                // 不刷新列表，保持用户当前选择，避免闪烁
             }
         }
 
@@ -410,19 +413,19 @@ namespace YYTools
 
                 if (!AreColumnsValid(shippingWb.Workbook, cmbShippingSheet.Text, "发货", cmbShippingTrackColumn, cmbShippingProductColumn, cmbShippingNameColumn)) return false;
                 if (!AreColumnsValid(billWb.Workbook, cmbBillSheet.Text, "账单", cmbBillTrackColumn, cmbBillProductColumn, cmbBillNameColumn)) return false;
-                
+
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show($"验证列时发生错误: {ex.Message}", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
         }
-        
+
         private string GetSelectedColumn(ComboBox combo)
         {
-            if (combo.SelectedValue == null) return "";
+            if (combo.SelectedValue == null) return combo.Text;
             return combo.SelectedValue.ToString().ToUpper();
         }
 
@@ -433,16 +436,15 @@ namespace YYTools
                 foreach (var cb in columnCombos)
                 {
                     string colLetter = GetSelectedColumn(cb);
-                    bool isValid = !string.IsNullOrEmpty(colLetter) && ExcelHelper.IsValidColumnLetter(colLetter);
-                    
-                    // 检查列是否在缓存中存在
+                    bool isValidFormat = !string.IsNullOrEmpty(colLetter) && ExcelHelper.IsValidColumnLetter(colLetter);
+
                     var cacheKey = $"{wb.Name}_{sheetName}";
-                    bool existsInCache = columnCache.ContainsKey(cacheKey) && 
+                    bool existsInCache = columnCache.ContainsKey(cacheKey) &&
                                        columnCache[cacheKey].Any(col => col.ColumnLetter == colLetter);
 
-                    if (!isValid || !existsInCache)
+                    if (!isValidFormat || !existsInCache)
                     {
-                        MessageBox.Show($"您为\"{type}\"表选择的列\"{cb.Text}\"无效或不存在。", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show($"您为“{type}”表选择的列“{cb.Text}”无效或不存在。", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         cb.Focus();
                         return false;
                     }
@@ -474,7 +476,7 @@ namespace YYTools
         {
             try
             {
-                var text = cmbSort?.SelectedItem?.ToString() ?? "默认";
+                var text = cmbSort?.SelectedItem?.ToString() ?? "默认排序";
                 if (text == "升序") return SortOption.Asc;
                 if (text == "降序") return SortOption.Desc;
                 return SortOption.None;
@@ -487,8 +489,9 @@ namespace YYTools
             var config = e.Argument as MultiWorkbookMatchConfig;
             var service = new MatchService();
             service.CancellationCheck = () => backgroundWorker.CancellationPending;
-            
-            e.Result = service.ExecuteMatch(config, (progress, message) => {
+
+            e.Result = service.ExecuteMatch(config, (progress, message) =>
+            {
                 if (backgroundWorker.CancellationPending)
                 {
                     e.Cancel = true;
@@ -523,10 +526,10 @@ namespace YYTools
             {
                 if (!result.Success)
                 {
-                    lblStatus.Text = result.ErrorMessage == "任务被用户取消" ? "任务已由用户停止。" : "匹配失败！";
-                    if(result.ErrorMessage != "任务被用户取消")
+                    lblStatus.Text = result.ErrorMessage == "任务被用户取消" ? "任务已由用户停止。" : "任务失败！";
+                    if (result.ErrorMessage != "任务被用户取消")
                     {
-                        MessageBox.Show($"匹配失败：{result.ErrorMessage}\n\n请查看日志获取详细信息。", "匹配失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"任务失败：{result.ErrorMessage}\n\n请查看日志获取详细信息。", "任务失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
                 else
@@ -536,18 +539,18 @@ namespace YYTools
                 }
             }
         }
-        
+
         private void ShowResultDialog(MatchResult result)
         {
-             string summary = result.MatchedCount == 0
-                ? $"匹配完成，但没有找到匹配的运单！\n\n处理的账单行数：{result.ProcessedRows:N0}\n处理耗时：{result.ElapsedSeconds:F2} 秒"
-                : $"🎉 运单匹配任务完成！\n================================\n\n" +
-                  $"📊 处理统计：\n" +
-                  $"  • 处理账单行数：{result.ProcessedRows:N0} 行\n" +
-                  $"  • 成功匹配运单：{result.MatchedCount:N0} 个\n" +
-                  $"  • 填充数据单元格：{result.UpdatedCells:N0} 个\n\n" +
-                  $"⚡ 性能表现：\n" +
-                  $"  • 总处理时间：{result.ElapsedSeconds:F2} 秒";
+            string summary = result.MatchedCount == 0
+               ? $"任务完成，但没有找到匹配的运单！\n\n处理的账单行数：{result.ProcessedRows:N0}\n处理耗时：{result.ElapsedSeconds:F2} 秒"
+               : $"🎉 任务完成！\n================================\n\n" +
+                 $"📊 处理统计：\n" +
+                 $"  • 处理账单行数：{result.ProcessedRows:N0} 行\n" +
+                 $"  • 成功匹配运单：{result.MatchedCount:N0} 个\n" +
+                 $"  • 填充数据单元格：{result.UpdatedCells:N0} 个\n\n" +
+                 $"⚡ 性能表现：\n" +
+                 $"  • 总处理时间：{result.ElapsedSeconds:F2} 秒";
 
             MessageBox.Show(summary, "任务完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -575,13 +578,14 @@ namespace YYTools
         }
         private void refreshListToolStripMenuItem_Click(object sender, EventArgs e) => RefreshWorkbookList();
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) => this.Close();
+
         private void settingsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-             try
+            try
             {
                 using (SettingsForm settingsForm = new SettingsForm())
                 {
-                    if (settingsForm.ShowDialog() == DialogResult.OK)
+                    if (settingsForm.ShowDialog(this) == DialogResult.OK)
                     {
                         ApplySettings();
                     }
@@ -613,13 +617,13 @@ namespace YYTools
         }
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string aboutInfo = "YY 运单匹配工具 v2.6 (智能版)\n\n" +
+            string aboutInfo = "YY 运单匹配工具 v2.10 (稳定修复版)\n\n" +
                              "功能特点：\n" +
                              "• 智能运单匹配，支持灵活拼接\n" +
-                             "• 智能列选择，自动识别最佳列\n" +
+                             "• 优化智能列算法，提高准确率\n" +
                              "• 支持多工作簿操作与动态加载\n" +
                              "• 高性能处理，支持大数据量\n" +
-                             "• 完善的错误处理和日志记录\n\n" +
+                             "• 优化写入预览，配置更直观\n\n" +
                              "作者: 皮皮熊\n" +
                              "邮箱: oyxo@qq.com";
             MessageBox.Show(aboutInfo, "关于 YY工具", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -640,72 +644,19 @@ namespace YYTools
             }
         }
 
-        // 新增：列选择事件处理
-        private void cmbShippingTrackColumn_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ValidateAndUpdateColumnInfo(cmbShippingTrackColumn, "TrackColumn");
-        }
+        private void cmbShippingTrackColumn_SelectedIndexChanged(object sender, EventArgs e) { ValidateAndUpdateColumnInfo(cmbShippingTrackColumn); RefreshWritePreview(); }
+        private void cmbShippingProductColumn_SelectedIndexChanged(object sender, EventArgs e) { ValidateAndUpdateColumnInfo(cmbShippingProductColumn); RefreshWritePreview(); }
+        private void cmbShippingNameColumn_SelectedIndexChanged(object sender, EventArgs e) { ValidateAndUpdateColumnInfo(cmbShippingNameColumn); RefreshWritePreview(); }
+        private void cmbBillTrackColumn_SelectedIndexChanged(object sender, EventArgs e) => ValidateAndUpdateColumnInfo(cmbBillTrackColumn);
+        private void cmbBillProductColumn_SelectedIndexChanged(object sender, EventArgs e) => ValidateAndUpdateColumnInfo(cmbBillProductColumn);
+        private void cmbBillNameColumn_SelectedIndexChanged(object sender, EventArgs e) => ValidateAndUpdateColumnInfo(cmbBillNameColumn);
 
-        private void cmbShippingProductColumn_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ValidateAndUpdateColumnInfo(cmbShippingProductColumn, "ProductColumn");
-        }
-
-        private void cmbShippingNameColumn_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ValidateAndUpdateColumnInfo(cmbShippingNameColumn, "NameColumn");
-        }
-
-        private void cmbBillTrackColumn_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ValidateAndUpdateColumnInfo(cmbBillTrackColumn, "TrackColumn");
-        }
-
-        private void cmbBillProductColumn_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ValidateAndUpdateColumnInfo(cmbBillProductColumn, "ProductColumn");
-        }
-
-        private void cmbBillNameColumn_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ValidateAndUpdateColumnInfo(cmbBillNameColumn, "NameColumn");
-        }
-
-        private void ValidateAndUpdateColumnInfo(ComboBox combo, string expectedType)
+        private void ValidateAndUpdateColumnInfo(ComboBox combo)
         {
             try
             {
-                if (combo.SelectedItem is ColumnInfo columnInfo)
-                {
-                    bool isValid = SmartColumnService.ValidateColumnSelection(columnInfo, expectedType);
-                    
-                    // 小型预览只读框联动
-                    if (combo == cmbShippingTrackColumn || combo == cmbShippingProductColumn || combo == cmbShippingNameColumn)
-                    {
-                        txtShippingPreview.Text = $"{columnInfo.HeaderText} | {columnInfo.PreviewData}";
-                        toolTip1.SetToolTip(txtShippingPreview, txtShippingPreview.Text);
-                    }
-                    else if (combo == cmbBillTrackColumn || combo == cmbBillProductColumn || combo == cmbBillNameColumn)
-                    {
-                        txtBillPreview.Text = $"{columnInfo.HeaderText} | {columnInfo.PreviewData}";
-                        toolTip1.SetToolTip(txtBillPreview, txtBillPreview.Text);
-                    }
-
-                    // 动态刷新写入预览（示例预览，仅少量数据）
-                    RefreshWritePreview();
-
-                    // 根据验证结果更新UI状态
-                    if (!isValid)
-                    {
-                        combo.BackColor = Color.LightPink;
-                        // 可以在这里添加提示信息
-                    }
-                    else
-                    {
-                        combo.BackColor = SystemColors.Window;
-                        combo.ForeColor = SystemColors.WindowText;
-                    }
-                }
+                toolTip1.SetToolTip(combo, combo.Text);
+                combo.BackColor = SystemColors.Window;
             }
             catch (Exception ex)
             {
@@ -717,96 +668,107 @@ namespace YYTools
         {
             try
             {
-                if (cmbBillWorkbook.SelectedIndex < 0 || cmbBillSheet.SelectedIndex < 0) return;
-                var wbInfo = workbooks[cmbBillWorkbook.SelectedIndex];
-                var ws = wbInfo.Workbook.Worksheets[cmbBillSheet.SelectedItem.ToString()] as Excel.Worksheet;
+                txtWritePreview.Text = "";
+                if (cmbShippingWorkbook.SelectedIndex < 0 || cmbShippingSheet.SelectedIndex < 0 || cmbShippingSheet.SelectedItem == null)
+                {
+                    txtWritePreview.Text = "请先选择发货明细...";
+                    return;
+                }
+
+                string trackCol = GetSelectedColumn(cmbShippingTrackColumn);
+                string prodCol = GetSelectedColumn(cmbShippingProductColumn);
+                string nameCol = GetSelectedColumn(cmbShippingNameColumn);
+
+                if (string.IsNullOrEmpty(trackCol) || !ExcelHelper.IsValidColumnLetter(trackCol))
+                {
+                    txtWritePreview.Text = "请先选择有效的“发货”运单号列。";
+                    return;
+                }
+                if (string.IsNullOrEmpty(prodCol) && string.IsNullOrEmpty(nameCol))
+                {
+                    txtWritePreview.Text = "请选择“商品编码”或“商品名称”列以生成预览。";
+                    return;
+                }
+
+                var wbInfo = workbooks[cmbShippingWorkbook.SelectedIndex];
+                var ws = wbInfo.Workbook.Worksheets[cmbShippingSheet.SelectedItem.ToString()] as Excel.Worksheet;
                 if (ws == null) return;
 
-                string trackCol = GetSelectedColumn(cmbBillTrackColumn);
-                string prodCol = GetSelectedColumn(cmbBillProductColumn);
-                string nameCol = GetSelectedColumn(cmbBillNameColumn);
-                if (string.IsNullOrEmpty(trackCol) && string.IsNullOrEmpty(prodCol) && string.IsNullOrEmpty(nameCol)) return;
+                Dictionary<string, List<ShippingItem>> previewIndex = new Dictionary<string, List<ShippingItem>>();
+                int maxScanRows = Math.Min(100, ws.UsedRange.Rows.Count);
+                int trackColNum = ExcelHelper.GetColumnNumber(trackCol);
+                int prodColNum = !string.IsNullOrEmpty(prodCol) && ExcelHelper.IsValidColumnLetter(prodCol) ? ExcelHelper.GetColumnNumber(prodCol) : -1;
+                int nameColNum = !string.IsNullOrEmpty(nameCol) && ExcelHelper.IsValidColumnLetter(nameCol) ? ExcelHelper.GetColumnNumber(nameCol) : -1;
 
-                int first = 2; int last = Math.Min(6, ws.UsedRange.Rows.Count);
-                List<string> samples = new List<string>();
-                for (int r = first; r <= last; r++)
+                for (int r = 2; r <= maxScanRows; r++)
                 {
-                    var parts = new List<string>();
-                    if (!string.IsNullOrEmpty(prodCol)) parts.Add(ExcelHelper.GetCellValue(ws.Cells[r, ExcelHelper.GetColumnNumber(prodCol)]));
-                    if (!string.IsNullOrEmpty(nameCol)) parts.Add(ExcelHelper.GetCellValue(ws.Cells[r, ExcelHelper.GetColumnNumber(nameCol)]));
-                    parts = parts.Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
-                    if (parts.Count == 0) continue;
+                    string trackNumber = ExcelHelper.GetCellValue(ws.Cells[r, trackColNum]);
+                    if (string.IsNullOrWhiteSpace(trackNumber)) continue;
 
-                    IEnumerable<string> seq = parts;
-                    // 去重
-                    if (chkRemoveDuplicates.Checked) seq = seq.Distinct();
-                    // 排序
-                    var opt = GetSortOption();
-                    if (opt == SortOption.Asc) seq = seq.OrderBy(x => x, StringComparer.Ordinal);
-                    else if (opt == SortOption.Desc) seq = seq.OrderByDescending(x => x, StringComparer.Ordinal);
+                    if (!previewIndex.ContainsKey(trackNumber))
+                    {
+                        previewIndex[trackNumber] = new List<ShippingItem>();
+                    }
 
-                    string joined = string.Join(txtDelimiter.Text, seq);
-                    if (!string.IsNullOrWhiteSpace(joined)) samples.Add(joined);
-                    if (samples.Count >= 2) break; // 仅展示两条示例
+                    previewIndex[trackNumber].Add(new ShippingItem
+                    {
+                        ProductCode = prodColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, prodColNum]) : "",
+                        ProductName = nameColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, nameColNum]) : ""
+                    });
                 }
-                string preview = string.Join("  |  ", samples);
-                txtWritePreview.Text = preview;
-                toolTip1.SetToolTip(txtWritePreview, preview);
+                
+                var exampleEntry = previewIndex.FirstOrDefault(kvp => kvp.Value.Count > 1);
+                if (exampleEntry.Key == null) exampleEntry = previewIndex.FirstOrDefault();
+                if (exampleEntry.Key == null)
+                {
+                    txtWritePreview.Text = "（在前100行发货明细中未找到可预览的数据）";
+                    return;
+                }
+
+                List<string> previewLines = new List<string>();
+                List<ShippingItem> items = exampleEntry.Value;
+
+                if (prodColNum > 0)
+                {
+                    IEnumerable<string> productCodes = items.Select(i => i.ProductCode).Where(pc => !string.IsNullOrWhiteSpace(pc));
+                    if (productCodes.Any())
+                    {
+                        previewLines.Add(BuildPreviewLine(productCodes, "商品: "));
+                    }
+                }
+
+                if (nameColNum > 0)
+                {
+                    IEnumerable<string> productNames = items.Select(i => i.ProductName).Where(pn => !string.IsNullOrWhiteSpace(pn));
+                    if (productNames.Any())
+                    {
+                        previewLines.Add(BuildPreviewLine(productNames, "品名: "));
+                    }
+                }
+
+                txtWritePreview.Text = previewLines.Any() ? string.Join(Environment.NewLine, previewLines) : "（无有效数据可供预览）";
+                toolTip1.SetToolTip(txtWritePreview, "根据“发货明细”中的数据和下方选项，模拟匹配成功后将写入的数据效果。");
             }
             catch (Exception ex)
             {
-                WriteLog($"刷新写入预览失败: {ex.Message}", LogLevel.Warning);
+                WriteLog($"[MatchForm] 刷新写入预览失败: {ex.Message}", LogLevel.Warning);
+                txtWritePreview.Text = "生成预览时出错。";
             }
         }
-
-        // 文本输入过滤逻辑：支持多关键字如 "B(快递单号)" -> B 快递单号
-        private void Combo_TextChanged(object sender, EventArgs e)
+        
+        private string BuildPreviewLine(IEnumerable<string> data, string prefix)
         {
-            try
-            {
-                var combo = sender as ComboBox;
-                if (combo == null) return;
-                var wbCombo = combo == cmbShippingTrackColumn || combo == cmbShippingProductColumn || combo == cmbShippingNameColumn ? cmbShippingWorkbook : cmbBillWorkbook;
-                var wsCombo = combo == cmbShippingTrackColumn || combo == cmbShippingProductColumn || combo == cmbShippingNameColumn ? cmbShippingSheet : cmbBillSheet;
-                if (wbCombo.SelectedIndex < 0 || wsCombo.SelectedIndex < 0) return;
+            string delimiter = txtDelimiter.Text;
+            bool removeDuplicates = chkRemoveDuplicates.Checked;
+            SortOption sortOption = GetSortOption();
+            
+            IEnumerable<string> processedData = data;
 
-                var wbInfo = workbooks[wbCombo.SelectedIndex];
-                string cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
-                if (!columnCache.ContainsKey(cacheKey)) return;
-
-                string text = combo.Text;
-                var filtered = SmartColumnService.SearchColumns(columnCache[cacheKey], text);
-                var previous = combo.SelectedValue;
-
-                combo.DataSource = new BindingSource(filtered, null);
-                combo.DisplayMember = "ToString";
-                combo.ValueMember = "ColumnLetter";
-                combo.DroppedDown = true;
-                combo.IntegralHeight = true;
-                combo.SelectedIndex = -1;
-                combo.Text = text; // 保留用户输入
-                combo.SelectionStart = combo.Text.Length;
-            }
-            catch (Exception ex)
-            {
-                WriteLog($"下拉框过滤失败: {ex.Message}", LogLevel.Warning);
-            }
-        }
-
-        // 验证：必须选择列表中的项，否则清空
-        private void Combo_Validating(object sender, CancelEventArgs e)
-        {
-            var combo = sender as ComboBox;
-            if (combo == null) return;
-            if (combo.SelectedIndex < 0)
-            {
-                combo.Text = string.Empty;
-                combo.BackColor = Color.LightPink;
-            }
-            else
-            {
-                combo.BackColor = SystemColors.Window;
-            }
+            if (removeDuplicates) processedData = processedData.Distinct();
+            if (sortOption == SortOption.Asc) processedData = processedData.OrderBy(x => x, StringComparer.Ordinal);
+            else if (sortOption == SortOption.Desc) processedData = processedData.OrderByDescending(x => x, StringComparer.Ordinal);
+            
+            return prefix + string.Join(delimiter, processedData);
         }
 
         private void WriteLog(string message, LogLevel level) => MatchService.WriteLog($"[MatchForm] {message}", level);
