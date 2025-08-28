@@ -47,8 +47,16 @@ namespace YYTools
             this.Shown += (s, e) =>
             {
                 this.Activate();
-                // 启动后立即尝试轻量预解析：若无打开的文件则引导用户选择文件
-                try { StartInitialParsingIfNeeded(); } catch { }
+                // 将耗时初始化延后到显示之后执行，保障“秒开”
+                try
+                {
+                    this.BeginInvoke(new Action(() =>
+                    {
+                        try { LoadMatcherSettings(); } catch { }
+                        try { StartInitialParsingIfNeeded(); } catch { }
+                    }));
+                }
+                catch { }
             };
             try
             {
@@ -110,8 +118,7 @@ namespace YYTools
             {
                 settings = AppSettings.Instance;
                 ApplySettings();
-                LoadMatcherSettings();
-                RefreshWorkbookList();
+                // 将耗时初始化延后到 Shown 阶段
                 MatchService.CleanupOldLogs();
             }
             catch (Exception ex)
