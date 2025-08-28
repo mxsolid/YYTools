@@ -29,20 +29,20 @@ namespace YYTools
                 
                 Logger.LogInfo("StartupProgressForm.ShowStartupProgress()");
                 // 启动后台预热（解析已打开的Excel/WPS，填充缓存），并显示小型启动进度窗体
-                var progressForm = StartupProgressForm.ShowStartupProgress();
-                var cts = new System.Threading.CancellationTokenSource();
-                var progress = new Progress<YYTools.TaskProgress>(p => { try { progressForm?.UpdateProgress(p.Percentage, p.Message); } catch { } });
-
-                _taskManager.StartBackgroundTask(
-                    taskName: "StartupWarmup",
-                    taskFactory: async (token, reporter) =>
-                    {
-                        // 桥接到统一的进度对象
-                        await AsyncStartupManager.WarmUpAsync(cts.Token, progress);
-                        try { progressForm?.CompleteStartup(true, ""); } catch { }
-                    },
-                    allowMultiple: false
-                );
+                // var progressForm = StartupProgressForm.ShowStartupProgress();
+                // var cts = new System.Threading.CancellationTokenSource();
+                // var progress = new Progress<YYTools.TaskProgress>(p => { try { progressForm?.UpdateProgress(p.Percentage, p.Message); } catch { } });
+                //
+                // _taskManager.StartBackgroundTask(
+                //     taskName: "StartupWarmup",
+                //     taskFactory: async (token, reporter) =>
+                //     {
+                //         // 桥接到统一的进度对象
+                //         await AsyncStartupManager.WarmUpAsync(cts.Token, progress);
+                //         try { progressForm?.CompleteStartup(true, ""); } catch { }
+                //     },
+                //     allowMultiple: false
+                // );
                 Logger.LogInfo("Application.Run(mainForm) begin");
                 Application.Run(mainForm);
                 Logger.LogInfo("Application.Run(mainForm) end");

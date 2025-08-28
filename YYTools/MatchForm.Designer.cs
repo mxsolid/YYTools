@@ -568,6 +568,7 @@ namespace YYTools
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem taskOptionsToolStripMenuItem;
         private System.Windows.Forms.GroupBox gbShipping;
         private System.Windows.Forms.ComboBox cmbShippingWorkbook;
         private System.Windows.Forms.Label lblShippingWorkbook;
