@@ -1,4 +1,3 @@
-// --- 文件 4: ExcelHelper.cs ---
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -130,8 +129,7 @@ namespace YYTools
                 int rows = usedRange.Rows.Count;
                 int columns = usedRange.Columns.Count;
                 
-                // 估算数据大小（粗略计算）
-                long dataSize = (long)rows * columns * 50; // 假设每个单元格平均50字节
+                long dataSize = (long)rows * columns * 50; 
 
                 return (rows, columns, dataSize);
             }
@@ -141,63 +139,31 @@ namespace YYTools
                 return (0, 0, 0);
             }
         }
-
+        
         /// <summary>
-        /// 检查工作表是否过大（性能警告）
-        /// </summary>
-        public static bool IsWorksheetTooLarge(Excel.Worksheet worksheet, int maxRows = 100000, int maxColumns = 1000)
-        {
-            try
-            {
-                var stats = GetWorksheetStats(worksheet);
-                return stats.rows > maxRows || stats.columns > maxColumns;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 优化Excel应用程序性能
+        /// 优化Excel应用程序性能 (已增加异常处理)
         /// </summary>
         public static void OptimizeExcelPerformance(Excel.Application excelApp)
         {
-            try
-            {
-                if (excelApp == null) return;
-
-                excelApp.ScreenUpdating = false;
-                excelApp.Calculation = Excel.XlCalculation.xlCalculationManual;
-                excelApp.EnableEvents = false;
-                excelApp.DisplayStatusBar = false;
-                excelApp.DisplayAlerts = false;
-            }
-            catch (Exception ex)
-            {
-                MatchService.WriteLog($"优化Excel性能失败: {ex.Message}", LogLevel.Warning);
-            }
+            if (excelApp == null) return;
+            try { excelApp.ScreenUpdating = false; } catch { }
+            try { excelApp.Calculation = Excel.XlCalculation.xlCalculationManual; } catch { }
+            try { excelApp.EnableEvents = false; } catch { }
+            try { excelApp.DisplayStatusBar = false; } catch { }
+            try { excelApp.DisplayAlerts = false; } catch { }
         }
 
         /// <summary>
-        /// 恢复Excel应用程序性能设置
+        /// 恢复Excel应用程序性能设置 (已增加异常处理)
         /// </summary>
         public static void RestoreExcelPerformance(Excel.Application excelApp, bool originalScreenUpdating, Excel.XlCalculation originalCalculation)
         {
-            try
-            {
-                if (excelApp == null) return;
-
-                excelApp.ScreenUpdating = originalScreenUpdating;
-                excelApp.Calculation = originalCalculation;
-                excelApp.EnableEvents = true;
-                excelApp.DisplayStatusBar = true;
-                excelApp.DisplayAlerts = true;
-            }
-            catch (Exception ex)
-            {
-                MatchService.WriteLog($"恢复Excel性能设置失败: {ex.Message}", LogLevel.Warning);
-            }
+            if (excelApp == null) return;
+            try { excelApp.ScreenUpdating = originalScreenUpdating; } catch { }
+            try { excelApp.Calculation = originalCalculation; } catch { }
+            try { excelApp.EnableEvents = true; } catch { }
+            try { excelApp.DisplayStatusBar = true; } catch { }
+            try { excelApp.DisplayAlerts = true; } catch { }
         }
     }
 }

@@ -110,6 +110,7 @@ namespace YYTools
     /// </summary>
     public enum LogLevel
     {
+        Debug,
         Info,
         Warning,
         Error
