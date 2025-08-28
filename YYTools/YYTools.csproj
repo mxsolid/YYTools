@@ -64,6 +64,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppSettings.cs" />
+    <Compile Include="AsyncTaskManager.cs" />
+    <Compile Include="CacheManager.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="DataManager.cs" />
     <Compile Include="DataModels.cs" />
@@ -88,6 +90,11 @@
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="SmartColumnService.cs" />
+    <Compile Include="SmartMatchConfigManager.cs" />
+    <Compile Include="UIEnhancer.cs" />
+    <Compile Include="UserGuideForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="MatchForm.resx">
       <DependentUpon>MatchForm.cs</DependentUpon>
