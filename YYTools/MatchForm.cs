@@ -24,9 +24,16 @@ namespace YYTools
         public MatchForm()
         {
             InitializeComponent();
+            
+            // 启用DPI感知
+            DPIManager.EnableDpiAwarenessForAllControls(this);
+            
             InitializeCustomComponents();
             InitializeBackgroundWorker();
             InitializeForm();
+            
+            // 记录窗体创建日志
+            Logger.LogUserAction("主窗体创建", "MatchForm已初始化", "成功");
         }
 
         private void InitializeCustomComponents()
@@ -594,6 +601,28 @@ namespace YYTools
             catch (Exception ex)
             {
                 MessageBox.Show($"打开设置窗口失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void taskOptionsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 显示任务选项配置窗体
+                TaskOptionsForm.ShowTaskOptions(this);
+                
+                // 重新加载任务选项设置
+                LoadMatcherSettings();
+                
+                // 刷新写入预览
+                RefreshWritePreview();
+                
+                Logger.LogUserAction("打开任务选项配置", "任务选项配置已更新", "成功");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("打开任务选项配置失败", ex);
+                MessageBox.Show($"打开任务选项配置失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         private void viewLogsToolStripMenuItem_Click(object sender, EventArgs e)

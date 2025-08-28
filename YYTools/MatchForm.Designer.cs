@@ -37,6 +37,7 @@ namespace YYTools
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.taskOptionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewLogsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -133,7 +134,8 @@ namespace YYTools
             // toolsToolStripMenuItem
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.settingsToolStripMenuItem});
+            this.settingsToolStripMenuItem,
+            this.taskOptionsToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(59, 21);
             this.toolsToolStripMenuItem.Text = "工具(&T)";
@@ -144,6 +146,13 @@ namespace YYTools
             this.settingsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
             this.settingsToolStripMenuItem.Text = "设置(&S)";
             this.settingsToolStripMenuItem.Click += new System.EventHandler(this.settingsToolStripMenuItem_Click);
+            // 
+            // taskOptionsToolStripMenuItem
+            // 
+            this.taskOptionsToolStripMenuItem.Name = "taskOptionsToolStripMenuItem";
+            this.taskOptionsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.taskOptionsToolStripMenuItem.Text = "任务选项(&T)";
+            this.taskOptionsToolStripMenuItem.Click += new System.EventHandler(this.taskOptionsToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 
@@ -530,12 +539,13 @@ namespace YYTools
             this.Controls.Add(this.gbShipping);
             this.Controls.Add(this.menuStrip1);
             this.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.MainMenuStrip = this.menuStrip1;
             this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.MaximizeBox = false;
+            this.MaximizeBox = true;
+            this.MinimumSize = new System.Drawing.Size(500, 650);
             this.Name = "MatchForm";
-            this.Text = "YY 运单匹配工具 v2.10";
+            this.Text = "YY 运单匹配工具 v3.1 (性能优化版)";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.gbShipping.ResumeLayout(false);
@@ -584,6 +594,7 @@ namespace YYTools
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem taskOptionsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem viewLogsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         private System.Windows.Forms.Button btnStart;
