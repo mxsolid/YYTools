@@ -17,18 +17,19 @@ namespace YYTools
         /// </summary>
         public static class DefaultTheme
         {
-            public static Color PrimaryColor = Color.FromArgb(0, 122, 204);
-            public static Color SecondaryColor = Color.FromArgb(45, 45, 48);
-            public static Color AccentColor = Color.FromArgb(0, 153, 204);
-            public static Color SuccessColor = Color.FromArgb(76, 175, 80);
-            public static Color WarningColor = Color.FromArgb(255, 152, 0);
-            public static Color ErrorColor = Color.FromArgb(244, 67, 54);
-            public static Color BackgroundColor = Color.FromArgb(30, 30, 30);
-            public static Color SurfaceColor = Color.FromArgb(45, 45, 48);
-            public static Color TextColor = Color.FromArgb(241, 241, 241);
-            public static Color TextSecondaryColor = Color.FromArgb(200, 200, 200);
-            public static Color BorderColor = Color.FromArgb(60, 60, 60);
-            public static Color HighlightColor = Color.FromArgb(0, 122, 204);
+            // 切换为浅色主题以统一界面风格
+            public static Color PrimaryColor = LightTheme.PrimaryColor;
+            public static Color SecondaryColor = LightTheme.SecondaryColor;
+            public static Color AccentColor = LightTheme.AccentColor;
+            public static Color SuccessColor = LightTheme.SuccessColor;
+            public static Color WarningColor = LightTheme.WarningColor;
+            public static Color ErrorColor = LightTheme.ErrorColor;
+            public static Color BackgroundColor = LightTheme.BackgroundColor;
+            public static Color SurfaceColor = LightTheme.SurfaceColor;
+            public static Color TextColor = LightTheme.TextColor;
+            public static Color TextSecondaryColor = LightTheme.TextSecondaryColor;
+            public static Color BorderColor = LightTheme.BorderColor;
+            public static Color HighlightColor = LightTheme.HighlightColor;
         }
 
         /// <summary>

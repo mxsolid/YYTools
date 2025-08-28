@@ -414,6 +414,7 @@ namespace YYTools
             this.btnStart.Font = new System.Drawing.Font("微软雅黑", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnStart.ForeColor = System.Drawing.Color.ForestGreen;
             this.btnStart.Location = new System.Drawing.Point(259, 582);
+            this.btnStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(100, 30);
             this.btnStart.TabIndex = 5;
@@ -424,6 +425,7 @@ namespace YYTools
             // btnClose
             // 
             this.btnClose.Location = new System.Drawing.Point(372, 582);
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnClose.Name = "btnClose";
             this.btnClose.Size = new System.Drawing.Size(100, 30);
             this.btnClose.TabIndex = 6;
@@ -434,6 +436,9 @@ namespace YYTools
             // progressBar
             // 
             this.progressBar.Location = new System.Drawing.Point(12, 618);
+            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.progressBar.Height = 18;
             this.progressBar.Name = "progressBar";
             this.progressBar.Size = new System.Drawing.Size(460, 5);
             this.progressBar.TabIndex = 7;
@@ -442,6 +447,8 @@ namespace YYTools
             // 
             this.lblStatus.AutoSize = true;
             this.lblStatus.Location = new System.Drawing.Point(12, 592);
+            this.lblStatus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lblStatus.Name = "lblStatus";
             this.lblStatus.Size = new System.Drawing.Size(123, 17);
             this.lblStatus.TabIndex = 8;

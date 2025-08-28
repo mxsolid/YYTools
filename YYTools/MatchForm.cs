@@ -216,7 +216,8 @@ namespace YYTools
             try
             {
                 Excel.Workbook selectedWorkbook = workbooks[workbookCombo.SelectedIndex].Workbook;
-                List<string> sheetNames = ExcelAddin.GetWorksheetNames(selectedWorkbook);
+                // 使用 DataManager 缓存工作表列表
+                List<string> sheetNames = DataManager.GetSheetNames(selectedWorkbook);
                 sheetCombo.Items.AddRange(sheetNames.ToArray());
                 toolTip1.SetToolTip(sheetCombo, $"在工作簿 '{selectedWorkbook.Name}' 中选择一个工作表");
 
@@ -243,7 +244,8 @@ namespace YYTools
                 if (ws == null) return;
 
                 ShowLoading(true);
-                var columns = SmartColumnService.GetColumnInfos(ws, 50);
+                // 优先从统一的 DataManager 缓存获取列信息
+                var columns = DataManager.GetColumnInfos(ws);
                 var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
                 columnCache[cacheKey] = columns;
 
@@ -583,7 +585,22 @@ namespace YYTools
                 }
             }
         }
-        private void refreshListToolStripMenuItem_Click(object sender, EventArgs e) => RefreshWorkbookList();
+        private void refreshListToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Logger.LogUserAction("点击刷新列表", "清空缓存并重新加载工作簿", "开始");
+                DataManager.ClearCache();
+                columnCache.Clear();
+                RefreshWorkbookList();
+                Logger.LogUserAction("刷新列表完成", "", "成功");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("刷新列表失败", ex);
+                MessageBox.Show($"刷新失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) => this.Close();
 
         private void settingsToolStripMenuItem_Click(object sender, EventArgs e)

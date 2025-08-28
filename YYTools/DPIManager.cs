@@ -16,7 +16,8 @@ namespace YYTools
         [DllImport("user32.dll")]
         private static extern IntPtr GetDC(IntPtr hWnd);
 
-        [DllImport("user32.dll")]
+        // 注意: GetDeviceCaps 位于 gdi32.dll，而不是 user32.dll
+        [DllImport("gdi32.dll")]
         private static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
 
         [DllImport("user32.dll")]

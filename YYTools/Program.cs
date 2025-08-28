@@ -21,13 +21,31 @@ namespace YYTools
                 // 显示启动信息
                 // MessageBox.Show("正在启动YY工具...", "启动中", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                // 直接创建并显示主窗体（跳过所有复杂功能）
+                // 先显示主窗体，保证快速可见
                 var mainForm = new MatchForm();
-                
-                // 显示启动成功信息
-                // MessageBox.Show("主窗体创建成功，正在显示...", "启动成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                
-                // 运行主窗体
+
+                // 启动后台预热（解析已打开的Excel/WPS，填充缓存），并显示小型启动进度窗体
+                var progressForm = StartupProgressForm.ShowStartupProgress();
+                var cts = new System.Threading.CancellationTokenSource();
+                var progress = new Progress<YYTools.TaskProgress>(p =>
+                {
+                    try { progressForm?.UpdateProgress(p.Percentage, p.Message); } catch { }
+                });
+
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await AsyncStartupManager.WarmUpAsync(cts.Token, progress);
+                        progressForm?.CompleteStartup(true, "");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError("启动预热后台任务异常", ex);
+                        progressForm?.CompleteStartup(false, ex.Message);
+                    }
+                });
+
                 Application.Run(mainForm);
             }
             catch (Exception ex)
