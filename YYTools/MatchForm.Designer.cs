@@ -65,6 +65,7 @@ namespace YYTools
             this.cmbBillWorkbook = new System.Windows.Forms.ComboBox();
             this.btnStart = new System.Windows.Forms.Button();
             this.btnClose = new System.Windows.Forms.Button();
+            this.panelButtons = new System.Windows.Forms.Panel();
             this.panelStatus = new System.Windows.Forms.Panel();
             this.lblStatus = new System.Windows.Forms.Label();
             this.progressBar = new System.Windows.Forms.ProgressBar();
@@ -409,8 +410,8 @@ namespace YYTools
             // 
             this.btnStart.Font = new System.Drawing.Font("微软雅黑", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnStart.ForeColor = System.Drawing.Color.ForestGreen;
-            this.btnStart.Location = new System.Drawing.Point(259, 582);
-            this.btnStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnStart.Location = new System.Drawing.Point(259, 10);
+            this.btnStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(100, 30);
             this.btnStart.TabIndex = 5;
@@ -420,14 +421,23 @@ namespace YYTools
             // 
             // btnClose
             // 
-            this.btnClose.Location = new System.Drawing.Point(372, 582);
-            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnClose.Location = new System.Drawing.Point(372, 10);
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnClose.Name = "btnClose";
             this.btnClose.Size = new System.Drawing.Size(100, 30);
             this.btnClose.TabIndex = 6;
             this.btnClose.Text = "关闭";
             this.btnClose.UseVisualStyleBackColor = true;
             this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
+            // 
+            // panelButtons
+            // 
+            this.panelButtons.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panelButtons.Height = 50;
+            this.panelButtons.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
+            this.panelButtons.BackColor = System.Drawing.Color.Transparent;
+            this.panelButtons.Controls.Add(this.btnStart);
+            this.panelButtons.Controls.Add(this.btnClose);
             // 
             // panelStatus
             // 
@@ -545,11 +555,8 @@ namespace YYTools
             this.ClientSize = new System.Drawing.Size(484, 621);
             this.Controls.Add(this.gbWritePreview);
             this.Controls.Add(this.gbOptions);
+            this.Controls.Add(this.panelButtons);
             this.Controls.Add(this.panelStatus);
-            this.Controls.Add(this.lblStatus);
-            this.Controls.Add(this.progressBar);
-            this.Controls.Add(this.btnClose);
-            this.Controls.Add(this.btnStart);
             this.Controls.Add(this.gbBill);
             this.Controls.Add(this.gbShipping);
             this.Controls.Add(this.menuStrip1);
@@ -627,5 +634,6 @@ namespace YYTools
         private System.Windows.Forms.GroupBox gbWritePreview;
         private System.Windows.Forms.TextBox txtWritePreview;
         private System.Windows.Forms.Panel panelStatus;
+        private System.Windows.Forms.Panel panelButtons;
     }
 }
