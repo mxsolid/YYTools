@@ -14,16 +14,19 @@ namespace YYTools
         {
             try
             {
+                Logger.LogInfo("开始启动程序");
                 // 基本设置
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
 
                 // 显示启动信息
                 // MessageBox.Show("正在启动YY工具...", "启动中", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
+                Logger.LogInfo("new MatchForm begin");
                 // 先显示主窗体，保证快速可见
                 var mainForm = new MatchForm();
-
+                Logger.LogInfo("new MatchForm end");
+                
+                Logger.LogInfo("StartupProgressForm.ShowStartupProgress()");
                 // 启动后台预热（解析已打开的Excel/WPS，填充缓存），并显示小型启动进度窗体
                 var progressForm = StartupProgressForm.ShowStartupProgress();
                 var cts = new System.Threading.CancellationTokenSource();
@@ -45,8 +48,9 @@ namespace YYTools
                         progressForm?.CompleteStartup(false, ex.Message);
                     }
                 });
-
+                Logger.LogInfo("Application.Run(mainForm) begin");
                 Application.Run(mainForm);
+                Logger.LogInfo("Application.Run(mainForm) end");
             }
             catch (Exception ex)
             {
