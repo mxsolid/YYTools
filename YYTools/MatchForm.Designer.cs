@@ -555,8 +555,9 @@ namespace YYTools
             this.ClientSize = new System.Drawing.Size(484, 621);
             this.Controls.Add(this.gbWritePreview);
             this.Controls.Add(this.gbOptions);
-            this.Controls.Add(this.panelButtons);
+            // 先添加状态面板，再添加按钮面板，确保按钮面板位于状态区之上且可见
             this.Controls.Add(this.panelStatus);
+            this.Controls.Add(this.panelButtons);
             this.Controls.Add(this.gbBill);
             this.Controls.Add(this.gbShipping);
             this.Controls.Add(this.menuStrip1);
