@@ -18,7 +18,7 @@ namespace YYTools
             {
                 Logger.LogInfo("开始启动程序");
                 // 基本设置
-                TrySetPerMonitorV2DpiAwareness();
+                // TrySetPerMonitorV2DpiAwareness();
 
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);

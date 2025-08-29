@@ -1076,19 +1076,19 @@ namespace YYTools
         }
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string aboutInfo = $"YY 运单匹配工具 {Constants.AppVersion}\n" +
-                             $"版本哈希: {Constants.AppVersionHash}\n\n" +
-                             "功能特点：\n" +
-                             "• 智能运单匹配，支持灵活拼接\n" +
-                             "• 优化智能列算法，提高准确率\n" +
-                             "• 支持多工作簿操作与动态加载\n" +
-                             "• 高性能处理，支持大数据量\n" +
-                             "• 优化写入预览，配置更直观\n" +
-                             "• 多线程并行处理，提升性能\n" +
-                             "• 写入预览行数可配置\n\n" +
-                             "作者: 皮皮熊\n" +
-                             "邮箱: oyxo@qq.com";
-            MessageBox.Show(aboutInfo, "关于 YY工具", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            try
+            {
+                using (var aboutForm = new AboutForm())
+                {
+                    aboutForm.ShowDialog(this);
+                }
+                Logger.LogUserAction("查看关于信息", "打开关于窗体", "成功");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("打开关于窗体失败", ex);
+                MessageBox.Show($"打开关于窗体失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void btnClose_Click(object sender, EventArgs e)
