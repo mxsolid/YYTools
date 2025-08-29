@@ -1200,7 +1200,8 @@ namespace YYTools
                                         {
                                             try
                                             {
-                                                string trackNumber = ExcelHelper.GetCellValue(ws.Cells[r, trackColNum]);
+                                                var trackCell = ws.Cells[r, trackColNum] as Excel.Range;
+                                                string trackNumber = ExcelHelper.GetCellValue(trackCell);
                                                 if (string.IsNullOrWhiteSpace(trackNumber)) continue;
 
                                                 if (!batchIndex.ContainsKey(trackNumber))
@@ -1208,10 +1209,12 @@ namespace YYTools
                                                     batchIndex[trackNumber] = new List<ShippingItem>();
                                                 }
 
+                                                var prodCell = prodColNum > 0 ? ws.Cells[r, prodColNum] as Excel.Range : null;
+                                                var nameCell = nameColNum > 0 ? ws.Cells[r, nameColNum] as Excel.Range : null;
                                                 batchIndex[trackNumber].Add(new ShippingItem
                                                 {
-                                                    ProductCode = prodColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, prodColNum]) : "",
-                                                    ProductName = nameColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, nameColNum]) : ""
+                                                    ProductCode = prodCell != null ? ExcelHelper.GetCellValue(prodCell) : "",
+                                                    ProductName = nameCell != null ? ExcelHelper.GetCellValue(nameCell) : ""
                                                 });
                                             }
                                             catch (Exception ex)

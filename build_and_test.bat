@@ -21,7 +21,7 @@ if %errorlevel% neq 0 (
     pause
     exit /b 1
 )
-dotnet --info | findstr /i ".NET SDK" | head -n 1
+for /f "tokens=1-5*" %%a in ('dotnet --info ^| findstr /i ".NET SDKs installed"') do echo %%a %%b %%c %%d %%e %%f
 echo.
 
 echo [3/4] 编译项目 (.NET 8)...
@@ -49,7 +49,7 @@ if exist "YYTools\bin\Release\net8.0-windows10.0.19041.0\YYTools.exe" (
     set /p choice=
     if /i "%choice%"=="Y" (
         echo 启动程序...
-        start "" "YYTools\bin\Release\YYTools.exe"
+        start "" "YYTools\bin\Release\net8.0-windows10.0.19041.0\YYTools.exe"
     )
 ) else (
     echo 错误: 未找到编译后的可执行文件

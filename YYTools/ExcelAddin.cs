@@ -80,9 +80,31 @@ namespace YYTools
             }
         }
 
+        // 通过 P/Invoke 获取活动 COM 对象，兼容 .NET 8 环境
+        [DllImport("ole32.dll", CharSet = CharSet.Unicode, PreserveSig = true)]
+        private static extern int CLSIDFromProgID([MarshalAs(UnmanagedType.LPWStr)] string lpszProgID, out Guid pclsid);
+
+        [DllImport("oleaut32.dll", PreserveSig = true)]
+        private static extern int GetActiveObject(ref Guid rclsid, IntPtr reserved, [MarshalAs(UnmanagedType.IUnknown)] out object ppunk);
+
+        private static object GetActiveComObject(string progId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(progId)) return null;
+                Guid clsid;
+                if (CLSIDFromProgID(progId, out clsid) != 0) return null;
+                object obj;
+                int hr = GetActiveObject(ref clsid, IntPtr.Zero, out obj);
+                if (hr != 0) return null;
+                return obj;
+            }
+            catch { return null; }
+        }
+
         private static Excel.Application TryGetActiveApp(string progId)
         {
-            try { return (Excel.Application)Marshal.GetActiveObject(progId); }
+            try { return GetActiveComObject(progId) as Excel.Application; }
             catch { return null; }
         }
 
