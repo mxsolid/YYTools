@@ -21,6 +21,13 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
   </ItemGroup>
 
+  <!-- 确保嵌入互操作类型，避免运行时加载 office.dll 依赖 -->
+  <ItemGroup>
+    <Reference Update="Microsoft.Office.Interop.Excel">
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+    </Reference>
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Remove="ThisAddIn.Designer.cs" />
     <Compile Remove="Ribbon.Designer.cs" />
