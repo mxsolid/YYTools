@@ -36,7 +36,7 @@ namespace YYTools
         /// <summary>
         /// 获取工作表的列信息
         /// </summary>
-        public static List<ColumnInfo> GetColumnInfos(Excel.Worksheet worksheet, int maxRowsForPreview = 100)
+        public static List<ColumnInfo> GetColumnInfos(Excel.Worksheet worksheet, int maxRowsForPreview = 10)
         {
             var columns = new List<ColumnInfo>();
             
@@ -47,7 +47,7 @@ namespace YYTools
                 var usedRange = worksheet.UsedRange;
                 if (usedRange.Rows.Count == 0) return columns;
 
-                int colCount = Math.Min(usedRange.Columns.Count, 256); // 限制最大扫描列数防止卡顿
+                int colCount = Math.Min(usedRange.Columns.Count, 100); // 限制最大扫描列数防止卡顿
                 int rowCount = Math.Min(usedRange.Rows.Count, maxRowsForPreview);
 
                 for (int i = 1; i <= colCount; i++)

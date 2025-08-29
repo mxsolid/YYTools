@@ -850,7 +850,7 @@ namespace YYTools
         }
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string aboutInfo = "YY 运单匹配工具 v2.10 (稳定修复版)\n\n" +
+            string aboutInfo = "YY 运单匹配工具 v2.10\n\n" +
                              "功能特点：\n" +
                              "• 智能运单匹配，支持灵活拼接\n" +
                              "• 优化智能列算法，提高准确率\n" +
@@ -928,7 +928,7 @@ namespace YYTools
                 if (ws == null) return;
 
                 Dictionary<string, List<ShippingItem>> previewIndex = new Dictionary<string, List<ShippingItem>>();
-                int maxScanRows = Math.Min(100, ws.UsedRange.Rows.Count);
+                int maxScanRows = Math.Min(20, ws.UsedRange.Rows.Count);
                 int trackColNum = ExcelHelper.GetColumnNumber(trackCol);
                 int prodColNum = !string.IsNullOrEmpty(prodCol) && ExcelHelper.IsValidColumnLetter(prodCol) ? ExcelHelper.GetColumnNumber(prodCol) : -1;
                 int nameColNum = !string.IsNullOrEmpty(nameCol) && ExcelHelper.IsValidColumnLetter(nameCol) ? ExcelHelper.GetColumnNumber(nameCol) : -1;

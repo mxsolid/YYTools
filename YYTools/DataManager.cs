@@ -98,7 +98,7 @@ namespace YYTools
                     }
 
                     Logger.LogInfo($"从Excel读取列信息: {worksheet?.Name}");
-                    var infos = SmartColumnService.GetColumnInfos(worksheet, 50);
+                    var infos = SmartColumnService.GetColumnInfos(worksheet, 20);
                     lock (cacheLock)
                     {
                         columnInfoCache[key] = infos;

@@ -573,7 +573,7 @@ namespace YYTools
             this.MaximizeBox = true;
             this.MinimumSize = new System.Drawing.Size(500, 700);
             this.Name = "MatchForm";
-            this.Text = "YY 运单匹配工具 v3.1 (性能优化版)";
+            this.Text = "YY 运单匹配工具";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.gbShipping.ResumeLayout(false);
