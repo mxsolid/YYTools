@@ -1,15 +1,42 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using System.ComponentModel;
 
 namespace YYTools
 {
     /// <summary>
-    /// UI控件美化器
+    /// UI增强器 - 提供DPI感知的界面优化功能
+    /// 解决高DPI显示器下的界面显示问题
     /// </summary>
     public static class UIEnhancer
     {
+        #region 常量定义
+
+        /// <summary>
+        /// 最大字体缩放比例
+        /// </summary>
+        private const float MAX_FONT_SCALE = 1.5f;
+        
+        /// <summary>
+        /// 最小字体缩放比例
+        /// </summary>
+        private const float MIN_FONT_SCALE = 0.8f;
+        
+        /// <summary>
+        /// 最大控件宽度
+        /// </summary>
+        private const int MAX_CONTROL_WIDTH = 800;
+        
+        /// <summary>
+        /// 最大控件高度
+        /// </summary>
+        private const int MAX_CONTROL_HEIGHT = 600;
+
+        #endregion
+
         #region 颜色主题
 
         /// <summary>
@@ -49,6 +76,569 @@ namespace YYTools
             public static Color TextSecondaryColor = Color.FromArgb(100, 100, 100);
             public static Color BorderColor = Color.FromArgb(200, 200, 200);
             public static Color HighlightColor = Color.FromArgb(0, 122, 204);
+        }
+
+        #endregion
+
+        #region DPI感知的UI优化
+
+        /// <summary>
+        /// 为窗体启用完整的DPI感知优化
+        /// </summary>
+        public static void EnableDpiOptimization(Form form)
+        {
+            try
+            {
+                if (form == null) return;
+
+                Logger.LogInfo($"开始为窗体 {form.Name} 启用DPI优化");
+
+                // 设置窗体的DPI感知模式
+                form.AutoScaleMode = AutoScaleMode.Dpi;
+                form.AutoScaleDimensions = new SizeF(96F, 96F);
+
+                // 根据DPI调整窗体
+                AdjustFormForDpi(form);
+
+                // 为所有控件启用DPI优化
+                EnableDpiOptimizationForAllControls(form);
+
+                // 添加DPI变化事件处理
+                SetupDpiChangeHandling(form);
+
+                Logger.LogInfo($"窗体 {form.Name} DPI优化完成");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"启用窗体DPI优化失败: {form.Name}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 为所有控件启用DPI优化
+        /// </summary>
+        public static void EnableDpiOptimizationForAllControls(Form form)
+        {
+            try
+            {
+                if (form == null) return;
+
+                // 递归处理所有控件
+                ProcessControlRecursively(form);
+
+                Logger.LogInfo($"所有控件DPI优化完成: {form.Name}");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"启用所有控件DPI优化失败: {form.Name}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 递归处理控件
+        /// </summary>
+        private static void ProcessControlRecursively(Control control)
+        {
+            try
+            {
+                if (control == null) return;
+
+                // 为当前控件启用DPI优化
+                EnableDpiOptimizationForControl(control);
+
+                // 递归处理子控件
+                foreach (Control child in control.Controls)
+                {
+                    ProcessControlRecursively(child);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"处理控件DPI优化失败: {control.Name}, {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 为单个控件启用DPI优化
+        /// </summary>
+        private static void EnableDpiOptimizationForControl(Control control)
+        {
+            try
+            {
+                if (control == null) return;
+
+                // 根据控件类型进行特殊处理
+                if (control is ComboBox comboBox)
+                {
+                    OptimizeComboBoxForDpi(comboBox);
+                }
+                else if (control is TextBox textBox)
+                {
+                    OptimizeTextBoxForDpi(textBox);
+                }
+                else if (control is Button button)
+                {
+                    OptimizeButtonForDpi(button);
+                }
+                else if (control is Label label)
+                {
+                    OptimizeLabelForDpi(label);
+                }
+                else if (control is GroupBox groupBox)
+                {
+                    OptimizeGroupBoxForDpi(groupBox);
+                }
+                else if (control is Panel panel)
+                {
+                    OptimizePanelForDpi(panel);
+                }
+                else
+                {
+                    // 通用控件优化
+                    OptimizeGenericControlForDpi(control);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"优化控件DPI失败: {control.Name}, {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region 特定控件类型的DPI优化
+
+        /// <summary>
+        /// 优化ComboBox的DPI显示
+        /// </summary>
+        private static void OptimizeComboBoxForDpi(ComboBox comboBox)
+        {
+            try
+            {
+                // 调整字体大小
+                AdjustFontForDpi(comboBox);
+
+                // 调整控件大小
+                AdjustSizeForDpi(comboBox);
+
+                // 调整下拉列表宽度，确保文本不被截断
+                if (comboBox.DropDownWidth > 0)
+                {
+                    int newWidth = (int)(comboBox.DropDownWidth * DPIManager.PrimaryMonitorDpiScale);
+                    newWidth = Math.Min(newWidth, MAX_CONTROL_WIDTH);
+                    if (newWidth > comboBox.Width)
+                    {
+                        comboBox.DropDownWidth = newWidth;
+                    }
+                }
+
+                // 设置合适的项目高度
+                if (DPIManager.IsHighDpi)
+                {
+                    comboBox.ItemHeight = (int)(comboBox.ItemHeight * DPIManager.PrimaryMonitorDpiScale);
+                    comboBox.ItemHeight = Math.Min(comboBox.ItemHeight, 50);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"优化ComboBox DPI失败: {comboBox.Name}, {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 优化TextBox的DPI显示
+        /// </summary>
+        private static void OptimizeTextBoxForDpi(TextBox textBox)
+        {
+            try
+            {
+                // 调整字体大小
+                AdjustFontForDpi(textBox);
+
+                // 调整控件大小
+                AdjustSizeForDpi(textBox);
+
+                // 调整字符宽度相关的设置
+                if (textBox.MaxLength > 0 && DPIManager.IsHighDpi)
+                {
+                    // 根据DPI调整最大字符数，但保持合理范围
+                    int newMaxLength = (int)(textBox.MaxLength * DPIManager.PrimaryMonitorDpiScale);
+                    if (newMaxLength > 0 && newMaxLength < 10000)
+                    {
+                        textBox.MaxLength = newMaxLength;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"优化TextBox DPI失败: {textBox.Name}, {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 优化Button的DPI显示
+        /// </summary>
+        private static void OptimizeButtonForDpi(Button button)
+        {
+            try
+            {
+                // 调整字体大小
+                AdjustFontForDpi(button);
+
+                // 调整控件大小
+                AdjustSizeForDpi(button);
+
+                // 调整按钮的内边距
+                if (button.Padding != Padding.Empty)
+                {
+                    button.Padding = ScalePadding(button.Padding);
+                }
+
+                // 调整按钮的边距
+                if (button.Margin != Padding.Empty)
+                {
+                    button.Margin = ScalePadding(button.Margin);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"优化Button DPI失败: {button.Name}, {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 优化Label的DPI显示
+        /// </summary>
+        private static void OptimizeLabelForDpi(Label label)
+        {
+            try
+            {
+                // 调整字体大小
+                AdjustFontForDpi(label);
+
+                // 调整控件大小
+                AdjustSizeForDpi(label);
+
+                // 确保标签文本能够完整显示
+                if (label.AutoSize && !string.IsNullOrEmpty(label.Text))
+                {
+                    // 计算文本所需的最小尺寸
+                    using (Graphics g = label.CreateGraphics())
+                    {
+                        SizeF textSize = g.MeasureString(label.Text, label.Font);
+                        Size newSize = new Size(
+                            (int)Math.Ceiling(textSize.Width),
+                            (int)Math.Ceiling(textSize.Height)
+                        );
+                        
+                        // 限制最大尺寸
+                        newSize.Width = Math.Min(newSize.Width, MAX_CONTROL_WIDTH);
+                        newSize.Height = Math.Min(newSize.Height, MAX_CONTROL_HEIGHT);
+                        
+                        label.Size = newSize;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"优化Label DPI失败: {label.Name}, {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 优化GroupBox的DPI显示
+        /// </summary>
+        private static void OptimizeGroupBoxForDpi(GroupBox groupBox)
+        {
+            try
+            {
+                // 调整字体大小
+                AdjustFontForDpi(groupBox);
+
+                // 调整控件大小
+                AdjustSizeForDpi(groupBox);
+
+                // 调整GroupBox的标题位置
+                if (DPIManager.IsHighDpi)
+                {
+                    // 确保标题文本不被截断
+                    using (Graphics g = groupBox.CreateGraphics())
+                    {
+                        SizeF textSize = g.MeasureString(groupBox.Text, groupBox.Font);
+                        int minWidth = (int)Math.Ceiling(textSize.Width) + 20;
+                        if (groupBox.Width < minWidth)
+                        {
+                            groupBox.Width = Math.Min(minWidth, MAX_CONTROL_WIDTH);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"优化GroupBox DPI失败: {groupBox.Name}, {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 优化Panel的DPI显示
+        /// </summary>
+        private static void OptimizePanelForDpi(Panel panel)
+        {
+            try
+            {
+                // 调整控件大小
+                AdjustSizeForDpi(panel);
+
+                // 调整Panel的内边距
+                if (panel.Padding != Padding.Empty)
+                {
+                    panel.Padding = ScalePadding(panel.Padding);
+                }
+
+                // 调整Panel的边距
+                if (panel.Margin != Padding.Empty)
+                {
+                    panel.Margin = ScalePadding(panel.Margin);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"优化Panel DPI失败: {panel.Name}, {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 通用控件的DPI优化
+        /// </summary>
+        private static void OptimizeGenericControlForDpi(Control control)
+        {
+            try
+            {
+                // 调整字体大小
+                AdjustFontForDpi(control);
+
+                // 调整控件大小
+                AdjustSizeForDpi(control);
+
+                // 调整控件位置
+                AdjustLocationForDpi(control);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"优化通用控件DPI失败: {control.Name}, {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region 通用DPI调整方法
+
+        /// <summary>
+        /// 调整字体大小以适应DPI
+        /// </summary>
+        private static void AdjustFontForDpi(Control control)
+        {
+            try
+            {
+                if (control.Font == null) return;
+
+                float newSize = DPIManager.ScaleFontSize(control.Font.Size);
+                
+                // 限制字体大小范围
+                newSize = Math.Max(newSize, control.Font.Size * MIN_FONT_SCALE);
+                newSize = Math.Min(newSize, control.Font.Size * MAX_FONT_SCALE);
+
+                if (Math.Abs(newSize - control.Font.Size) > 0.1f)
+                {
+                    control.Font = new Font(control.Font.FontFamily, newSize, control.Font.Style);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"调整字体DPI失败: {control.Name}, {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 调整控件大小以适应DPI
+        /// </summary>
+        private static void AdjustSizeForDpi(Control control)
+        {
+            try
+            {
+                if (control.Size.Width <= 0 || control.Size.Height <= 0) return;
+
+                Size newSize = DPIManager.ScaleSize(control.Size);
+                
+                // 限制最大尺寸
+                newSize.Width = Math.Min(newSize.Width, MAX_CONTROL_WIDTH);
+                newSize.Height = Math.Min(newSize.Height, MAX_CONTROL_HEIGHT);
+
+                control.Size = newSize;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"调整控件大小DPI失败: {control.Name}, {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 调整控件位置以适应DPI
+        /// </summary>
+        private static void AdjustLocationForDpi(Control control)
+        {
+            try
+            {
+                if (control.Location.X < 0 && control.Location.Y < 0) return;
+
+                Point newLocation = DPIManager.ScalePoint(control.Location);
+                
+                // 确保位置不为负数
+                newLocation.X = Math.Max(0, newLocation.X);
+                newLocation.Y = Math.Max(0, newLocation.Y);
+
+                control.Location = newLocation;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"调整控件位置DPI失败: {control.Name}, {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 缩放Padding
+        /// </summary>
+        private static Padding ScalePadding(Padding padding)
+        {
+            try
+            {
+                if (padding == Padding.Empty) return padding;
+
+                return new Padding(
+                    (int)(padding.Left * DPIManager.PrimaryMonitorDpiScale),
+                    (int)(padding.Top * DPIManager.PrimaryMonitorDpiScale),
+                    (int)(padding.Right * DPIManager.PrimaryMonitorDpiScale),
+                    (int)(padding.Bottom * DPIManager.PrimaryMonitorDpiScale)
+                );
+            }
+            catch
+            {
+                return padding;
+            }
+        }
+
+        #endregion
+
+        #region 窗体DPI调整
+
+        /// <summary>
+        /// 根据DPI调整窗体
+        /// </summary>
+        private static void AdjustFormForDpi(Form form)
+        {
+            try
+            {
+                if (form == null) return;
+
+                // 调整窗体最小尺寸
+                if (form.MinimumSize != Size.Empty)
+                {
+                    Size newMinSize = DPIManager.ScaleSize(form.MinimumSize);
+                    newMinSize.Width = Math.Min(newMinSize.Width, MAX_CONTROL_WIDTH);
+                    newMinSize.Height = Math.Min(newMinSize.Height, MAX_CONTROL_HEIGHT);
+                    form.MinimumSize = newMinSize;
+                }
+
+                // 调整窗体大小
+                if (form.Size.Width > 0 && form.Size.Height > 0)
+                {
+                    Size newSize = DPIManager.ScaleSize(form.Size);
+                    
+                    // 确保窗体不会超出屏幕边界
+                    Rectangle screenBounds = Screen.GetWorkingArea(form);
+                    if (newSize.Width > screenBounds.Width)
+                    {
+                        newSize.Width = screenBounds.Width - 100;
+                    }
+                    if (newSize.Height > screenBounds.Height)
+                    {
+                        newSize.Height = screenBounds.Height - 100;
+                    }
+                    
+                    // 限制最大尺寸
+                    newSize.Width = Math.Min(newSize.Width, MAX_CONTROL_WIDTH);
+                    newSize.Height = Math.Min(newSize.Height, MAX_CONTROL_HEIGHT);
+                    
+                    form.Size = newSize;
+                }
+
+                // 调整窗体位置
+                if (form.StartPosition == FormStartPosition.CenterScreen)
+                {
+                    form.StartPosition = FormStartPosition.CenterScreen;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"调整窗体DPI失败: {form.Name}, {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region DPI变化事件处理
+
+        /// <summary>
+        /// 设置DPI变化事件处理
+        /// </summary>
+        private static void SetupDpiChangeHandling(Form form)
+        {
+            try
+            {
+                // 监听DPI变化事件
+                DPIManager.DpiChanged += (sender, e) => OnDpiChanged(form, e);
+                
+                Logger.LogInfo($"窗体 {form.Name} DPI变化事件处理已设置");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"设置DPI变化事件处理失败: {form.Name}, {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// DPI变化事件处理
+        /// </summary>
+        private static void OnDpiChanged(Form form, DPIManager.DpiChangedEventArgs e)
+        {
+            try
+            {
+                Logger.LogInfo($"检测到DPI变化: {e.OldDpiScale:F2} -> {e.NewDpiScale:F2}");
+
+                // 在UI线程中处理DPI变化
+                if (form.InvokeRequired)
+                {
+                    form.BeginInvoke(new Action(() => OnDpiChanged(form, e)));
+                    return;
+                }
+
+                // 刷新显示器DPI信息
+                DPIManager.RefreshMonitorDpiInfo();
+
+                // 重新调整界面布局
+                AdjustFormForDpi(form);
+                EnableDpiOptimizationForAllControls(form);
+
+                // 强制重绘
+                form.Invalidate();
+                form.Update();
+
+                Logger.LogInfo($"窗体 {form.Name} DPI变化处理完成");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"处理DPI变化事件失败: {form.Name}", ex);
+            }
         }
 
         #endregion
@@ -505,6 +1095,34 @@ namespace YYTools
             Success,
             Warning,
             Error
+        }
+
+        #endregion
+
+        #region 工具方法
+
+        /// <summary>
+        /// 获取DPI信息字符串
+        /// </summary>
+        public static string GetDpiInfo()
+        {
+            return DPIManager.GetDpiInfo();
+        }
+
+        /// <summary>
+        /// 检查是否为高DPI显示器
+        /// </summary>
+        public static bool IsHighDpi
+        {
+            get { return DPIManager.IsHighDpi; }
+        }
+
+        /// <summary>
+        /// 获取当前DPI缩放比例
+        /// </summary>
+        public static float CurrentDpiScale
+        {
+            get { return DPIManager.PrimaryMonitorDpiScale; }
         }
 
         #endregion
