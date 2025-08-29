@@ -17,7 +17,7 @@ fi
 echo "清理完成"
 echo
 
-echo "[2/4] 检查.NET Framework版本..."
+echo "[2/4] 检查 .NET SDK 版本..."
 if command -v dotnet &> /dev/null; then
     dotnet --version
     echo ".NET检查通过"
@@ -27,12 +27,15 @@ else
 fi
 echo
 
-echo "[3/4] 编译项目..."
+echo "[3/4] 编译项目 (.NET 8)..."
 cd YYTools
 
 # 尝试使用dotnet编译
 if command -v dotnet &> /dev/null; then
-    dotnet build YYTools.csproj -c Release --verbosity minimal
+    export DOTNET_CLI_UI_LANGUAGE=zh-Hans
+    export DOTNET_CLI_TELEMETRY_OPTOUT=1
+    dotnet restore --nologo --verbosity minimal
+    dotnet build YYTools.csproj -c Release -p:ContinuousIntegrationBuild=true --nologo --verbosity minimal
     BUILD_SUCCESS=$?
 else
     # 尝试使用mono编译
