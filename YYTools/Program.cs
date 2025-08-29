@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -17,8 +18,11 @@ namespace YYTools
             {
                 Logger.LogInfo("开始启动程序");
                 // 基本设置
+                TrySetPerMonitorV2DpiAwareness();
+
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
+
 
                 // 显示启动信息
                 // MessageBox.Show("正在启动YY工具...", "启动中", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -27,26 +31,6 @@ namespace YYTools
                 var mainForm = new MatchForm();
                 Logger.LogInfo("new MatchForm end");
 
-                // // 显示启动进度窗体（轻量：仅抓取已打开文件名）
-                // var progressForm = StartupProgressForm.ShowStartupProgress();
-                // var cts = new System.Threading.CancellationTokenSource();
-                // var progress = new Progress<YYTools.TaskProgress>(p => { try { progressForm?.UpdateProgress(p.Percentage, p.Message); } catch { } });
-                // ((IProgress<YYTools.TaskProgress>)progress)
-                //     .Report(new YYTools.TaskProgress(5, "正在检测已打开的Excel/WPS..."));
-                //
-                //
-                // var namesTask = AsyncStartupManager.FetchOpenWorkbookNamesAsync(cts.Token);
-                // try
-                // {
-                //     var names = namesTask.GetAwaiter().GetResult();
-                //     Logger.LogInfo($"已获取打开的工作簿数量: {names.Names.Count}, 活动: {names.ActiveName}");
-                // }
-                // catch (Exception exFetch)
-                // {
-                //     Logger.LogWarning($"获取打开的工作簿名称失败: {exFetch.Message}");
-                // }
-
-                // try { progressForm?.CompleteStartup(true, ""); } catch { }
                 Logger.LogInfo("Application.Run(mainForm) begin");
                 Application.Run(mainForm);
                 Logger.LogInfo("Application.Run(mainForm) end");
@@ -85,5 +69,63 @@ namespace YYTools
                 Application.Exit();
             }
         }
+        
+        
+        static void TrySetPerMonitorV2DpiAwareness()
+        {
+            // 先尝试 SetProcessDpiAwarenessContext (Per-Monitor V2)
+            if (SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
+            {
+                Log("SetProcessDpiAwarenessContext -> PER_MONITOR_AWARE_V2");
+                return;
+            }
+
+            // 回退：SetProcessDpiAwareness (shcore.dll) -> PROCESS_PER_MONITOR_DPI_AWARE
+            try
+            {
+                var result = SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE);
+                if (result == 0) // S_OK
+                {
+                    Log("SetProcessDpiAwareness -> PROCESS_PER_MONITOR_DPI_AWARE");
+                    return;
+                }
+            }
+            catch { /* shcore.dll 可能不存在 */ }
+
+            // 最后回退：SetProcessDPIAware (legacy)
+            if (SetProcessDPIAware())
+            {
+                Log("SetProcessDPIAware -> success");
+                return;
+            }
+
+            Log("Failed to set any DPI awareness API (falling back to default).");
+        }
+
+        static void Log(string msg)
+        {
+            try { System.Diagnostics.Debug.WriteLine("[DPI] " + msg); } catch { }
+        }
+
+        // P/Invoke declarations
+        private static readonly IntPtr DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = new IntPtr(-4);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetProcessDpiAwarenessContext(IntPtr dpiContext);
+
+        // shcore.dll
+        private enum PROCESS_DPI_AWARENESS
+        {
+            PROCESS_DPI_UNAWARE = 0,
+            PROCESS_SYSTEM_DPI_AWARE = 1,
+            PROCESS_PER_MONITOR_DPI_AWARE = 2
+        }
+
+        [DllImport("shcore.dll")]
+        private static extern int SetProcessDpiAwareness(PROCESS_DPI_AWARENESS value);
+
+        // legacy
+        [DllImport("user32.dll")]
+        private static extern bool SetProcessDPIAware();
     }
 }
