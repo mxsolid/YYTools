@@ -138,7 +138,7 @@ namespace YYTools
                         var combo = ctl as ComboBox;
                         if (combo != null)
                         {
-                            combo.Width = availableWidth - 88 - rightPadding; // 左侧标签约88宽
+                            combo.Width = availableWidth - 110 - rightPadding; // 左侧标签约110宽
                             // 留出右边距更美观
                             combo.Anchor = ((AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right));
                         }
@@ -157,7 +157,7 @@ namespace YYTools
                         var combo = ctl as ComboBox;
                         if (combo != null)
                         {
-                            combo.Width = availableWidth - 88 - rightPadding;
+                            combo.Width = availableWidth - 110 - rightPadding;
                             combo.Anchor = ((AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right));
                         }
                     }
