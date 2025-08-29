@@ -450,7 +450,8 @@ namespace YYTools
                             {
                                 try
                                 {
-                                    return ExcelHelper.GetWorksheetStats(ws);
+                                    var stats = ExcelHelper.GetWorksheetStats(ws);
+                                    return new { rows = stats.rows, columns = stats.columns };
                                 }
                                 catch
                                 {
@@ -1105,12 +1106,12 @@ namespace YYTools
 
                 if (string.IsNullOrEmpty(trackCol) || !ExcelHelper.IsValidColumnLetter(trackCol))
                 {
-                    txtWritePreview.Text = "请先选择有效的"发货"运单号列。";
+                    txtWritePreview.Text = "请先选择有效的\"发货\"运单号列。";
                     return;
                 }
                 if (string.IsNullOrEmpty(prodCol) && string.IsNullOrEmpty(nameCol))
                 {
-                    txtWritePreview.Text = "请选择"商品编码"或"商品名称"列以生成预览。";
+                    txtWritePreview.Text = "请选择\"商品编码\"或\"商品名称\"列以生成预览。";
                     return;
                 }
 
@@ -1221,7 +1222,7 @@ namespace YYTools
                 }
 
                 txtWritePreview.Text = previewLines.Any() ? string.Join(Environment.NewLine, previewLines) : "（无有效数据可供预览）";
-                toolTip1.SetToolTip(txtWritePreview, $"根据"发货明细"中的数据和下方选项，模拟匹配成功后将写入的数据效果。预览解析了前{maxScanRows}行数据。");
+                toolTip1.SetToolTip(txtWritePreview, $"根据\"发货明细\"中的数据和下方选项，模拟匹配成功后将写入的数据效果。预览解析了前{maxScanRows}行数据。");
             }
             catch (Exception ex)
             {
