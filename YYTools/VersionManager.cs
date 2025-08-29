@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.IO;
+using YYTools.Utils;
 
 namespace YYTools
 {
@@ -17,7 +18,7 @@ namespace YYTools
         /// <summary>
         /// 主版本号
         /// </summary>
-        public const int MajorVersion = 3;
+        public const int MajorVersion = 2;
 
         /// <summary>
         /// 次版本号
@@ -32,7 +33,7 @@ namespace YYTools
         /// <summary>
         /// 构建版本号（自动递增）
         /// </summary>
-        public static readonly int BuildVersion = GetBuildNumber();
+        public static readonly String BuildVersion = GetBuildNumber();
 
         /// <summary>
         /// 版本标识（Release/Beta/Alpha）
@@ -153,19 +154,15 @@ namespace YYTools
         /// <summary>
         /// 获取构建号
         /// </summary>
-        private static int GetBuildNumber()
+        private static String GetBuildNumber()
         {
             try
             {
-                // 基于当前日期生成构建号，确保递增
-                var baseDate = new DateTime(2025, 1, 1);
-                var daysSince = (DateTime.Now - baseDate).Days;
-                var minutesToday = DateTime.Now.Hour * 60 + DateTime.Now.Minute;
-                return daysSince * 1000 + minutesToday / 10; // 每10分钟递增1
+                return GetBuildGuid();
             }
             catch
             {
-                return 1;
+                return "1";
             }
         }
 
@@ -314,7 +311,7 @@ namespace YYTools
         public int Major { get; set; }
         public int Minor { get; set; }
         public int Patch { get; set; }
-        public int Build { get; set; }
+        public String Build { get; set; }
         public string Tag { get; set; }
         public DateTime BuildDate { get; set; }
         public string FullVersion { get; set; }

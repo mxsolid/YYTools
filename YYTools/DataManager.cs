@@ -60,6 +60,9 @@ namespace YYTools
                 }
             }
 
+             // 从AppSettings获取最新的预览设置
+            bool enablePreview = AppSettings.Instance.EnableColumnDataPreview;
+            int maxRowsForPreview = AppSettings.Instance.MaxRowsForPreview;
             // 并发限制，避免内存与COM对象压力
             parseSemaphore.Wait();
             try
@@ -98,7 +101,7 @@ namespace YYTools
                     }
 
                     Logger.LogInfo($"从Excel读取列信息: {worksheet?.Name}");
-                    var infos = SmartColumnService.GetColumnInfos(worksheet, 20);
+                    var infos = SmartColumnService.GetColumnInfos(worksheet, maxRowsForPreview,enablePreview);
                     lock (cacheLock)
                     {
                         columnInfoCache[key] = infos;

@@ -12,10 +12,12 @@ namespace YYTools
         private AppSettings _settings;
         private bool _isInitializing = true;
 
+        // 标志位，用于通知主窗体设置变更后是否需要刷新数据
+        public bool SettingsChangedNeedRefresh { get; private set; } = false;
+
         public TaskOptionsForm()
         {
             InitializeComponent(); // 由 Designer.cs 文件提供
-            // 初始化时加载当前设置
             LoadSettings();
         }
 
@@ -27,42 +29,49 @@ namespace YYTools
             try
             {
                 _settings = AppSettings.Instance;
-                _isInitializing = true; // 标记正在初始化，防止触发不必要的事件
+                _isInitializing = true;
 
                 // === 拼接设置 Tab ===
-                // 加载分隔符选项
                 cmbDelimiter.Items.Clear();
-                cmbDelimiter.Items.AddRange(_settings.GetDelimiterOptions());
+                // **修正点**: 直接从 Constants 类加载选项，而不是通过 AppSettings 实例的方法
+                cmbDelimiter.Items.AddRange(Constants.DelimiterOptions);
                 cmbDelimiter.SelectedItem = _settings.ConcatenationDelimiter;
 
-                // 加载排序选项 (这里简化处理，您可以根据需要扩展)
                 cmbSort.Items.Clear();
                 cmbSort.Items.AddRange(new string[] { "默认", "升序", "降序" });
-                cmbSort.SelectedIndex = 0; // 默认为“默认”
+                switch (_settings.SortOption)
+                {
+                    case SortOption.Asc:
+                        cmbSort.SelectedItem = "升序";
+                        break;
+                    case SortOption.Desc:
+                        cmbSort.SelectedItem = "降序";
+                        break;
+                    default:
+                        cmbSort.SelectedItem = "默认";
+                        break;
+                }
 
-                // 去除重复项
                 chkRemoveDuplicates.Checked = _settings.RemoveDuplicateItems;
 
                 // === 性能与预览 Tab ===
+                chkEnableColumnPreview.Checked = _settings.EnableColumnDataPreview;
+                chkEnableWritePreview.Checked = _settings.EnableWritePreview;
                 numBatchSize.Value = Math.Max(numBatchSize.Minimum, Math.Min(numBatchSize.Maximum, _settings.BatchSize));
                 numMaxPreviewRows.Value = Math.Max(numMaxPreviewRows.Minimum, Math.Min(numMaxPreviewRows.Maximum, _settings.MaxRowsForPreview));
                 chkEnableProgressReporting.Checked = _settings.EnableProgressReporting;
 
-                // 加载预览行数选项
                 cmbPreviewRows.Items.Clear();
-                cmbPreviewRows.Items.AddRange(_settings.GetPreviewRowOptions().Cast<object>().ToArray());
+                // **修正点**: 直接从 Constants 类加载选项
+                cmbPreviewRows.Items.AddRange(Constants.PreviewRowOptions.Cast<object>().ToArray());
                 cmbPreviewRows.SelectedItem = _settings.PreviewParseRows;
                 
                 // === 智能匹配 Tab ===
                 chkEnableSmartMatching.Checked = _settings.EnableSmartMatching;
                 chkEnableExactMatchPriority.Checked = _settings.EnableExactMatchPriority;
-                // 设置滑块值，并确保在0-100范围内
                 int scoreValue = (int)(_settings.MinMatchScore * 100);
                 trkMinMatchScore.Value = Math.Max(trkMinMatchScore.Minimum, Math.Min(trkMinMatchScore.Maximum, scoreValue));
-                // 手动更新一次标签文本
                 lblMinMatchScoreValue.Text = (_settings.MinMatchScore).ToString("F2");
-
-
             }
             catch (Exception ex)
             {
@@ -71,7 +80,7 @@ namespace YYTools
             }
             finally
             {
-                _isInitializing = false; // 初始化完成
+                _isInitializing = false;
             }
         }
 
@@ -84,15 +93,35 @@ namespace YYTools
             {
                 if (_isInitializing) return;
 
+                // 检查关键设置（列预览）是否有变动，如有则通知主窗体刷新
+                if (_settings.EnableColumnDataPreview != chkEnableColumnPreview.Checked)
+                {
+                    SettingsChangedNeedRefresh = true;
+                }
+
                 // === 保存拼接设置 ===
                 if (cmbDelimiter.SelectedItem != null)
                 {
                     _settings.ConcatenationDelimiter = cmbDelimiter.SelectedItem.ToString();
                 }
                 _settings.RemoveDuplicateItems = chkRemoveDuplicates.Checked;
-                // 根据需要保存排序设置...
-
+                
+                switch (cmbSort.SelectedItem.ToString())
+                {
+                    case "升序":
+                        _settings.SortOption = SortOption.Asc;
+                        break;
+                    case "降序":
+                        _settings.SortOption = SortOption.Desc;
+                        break;
+                    default:
+                        _settings.SortOption = SortOption.None;
+                        break;
+                }
+                
                 // === 保存性能与预览设置 ===
+                _settings.EnableColumnDataPreview = chkEnableColumnPreview.Checked;
+                _settings.EnableWritePreview = chkEnableWritePreview.Checked;
                 _settings.BatchSize = (int)numBatchSize.Value;
                 _settings.MaxRowsForPreview = (int)numMaxPreviewRows.Value;
                 _settings.EnableProgressReporting = chkEnableProgressReporting.Checked;
@@ -139,8 +168,8 @@ namespace YYTools
                 if (MessageBox.Show("您确定要将所有任务选项重置为默认值吗？", "确认重置",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
-                    _settings.ResetToDefaults(); // 调用重置方法
-                    LoadSettings(); // 重新加载默认设置到界面
+                    _settings.ResetToDefaults();
+                    LoadSettings();
                     Logger.LogUserAction("任务选项已重置为默认值");
                     MessageBox.Show("设置已成功重置为默认值。", "操作成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -154,7 +183,6 @@ namespace YYTools
 
         private void trkMinMatchScore_ValueChanged(object sender, EventArgs e)
         {
-            // 只有在非初始化阶段才更新，避免加载时触发
             if (!_isInitializing)
             {
                 double value = trkMinMatchScore.Value / 100.0;
@@ -171,13 +199,21 @@ namespace YYTools
             {
                 using (var form = new TaskOptionsForm())
                 {
-                    form.ShowDialog(owner);
+                    // 将 ShowDialog 的结果传递给主窗体，以便判断是否需要刷新
+                    if (form.ShowDialog(owner) == DialogResult.OK && form.SettingsChangedNeedRefresh)
+                    {
+                        if (owner is MatchForm matchForm)
+                        {
+                            matchForm.TriggerRefresh();
+                        }
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Logger.LogError("显示任务选项配置窗体失败", ex);
-                MessageBox.Show("无法打开任务选项配置窗体：" + ex.Message, "严重错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // 抛出异常，让调用方（MatchForm）来处理弹窗
+                throw;
             }
         }
     }

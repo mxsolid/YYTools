@@ -28,14 +28,14 @@ namespace YYTools
         public MatchForm()
         {
             InitializeComponent();
-            
+
             // 启用DPI感知
             DPIManager.EnableDpiAwarenessForAllControls(this);
-            
+
             InitializeCustomComponents();
             InitializeBackgroundWorker();
             InitializeForm();
-            
+
             // 记录窗体创建日志
             Logger.LogUserAction("主窗体创建", "MatchForm已初始化", "成功");
         }
@@ -44,10 +44,10 @@ namespace YYTools
         {
             this.StartPosition = FormStartPosition.CenterScreen;
             this.ShowInTaskbar = true;
-            
+
             // 添加窗体大小调整事件
             this.Resize += MatchForm_Resize;
-            
+
             this.Shown += (s, e) =>
             {
                 this.Activate();
@@ -56,18 +56,27 @@ namespace YYTools
                 {
                     this.BeginInvoke(new Action(() =>
                     {
-                        try { LoadMatcherSettings(); } catch { }
-                        try { StartInitialParsingIfNeeded(); } catch { }
+                        try
+                        {
+                            StartInitialParsingIfNeeded();
+                        }
+                        catch
+                        {
+                        }
                     }));
                 }
-                catch { }
+                catch
+                {
+                }
             };
             try
             {
                 this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
                 this.UpdateStyles();
             }
-            catch { }
+            catch
+            {
+            }
 
             comboBoxColumnTypeMap = new Dictionary<ComboBox, string>
             {
@@ -81,15 +90,19 @@ namespace YYTools
 
             // 初始化防抖定时器（避免输入未完成就触发重算造成卡顿）
             _debounceTimer = new System.Windows.Forms.Timer { Interval = 300 };
-            _debounceTimer.Tick += (s, e) => { _debounceTimer.Stop(); RefreshWritePreview(); };
+            _debounceTimer.Tick += (s, e) =>
+            {
+                _debounceTimer.Stop();
+                RefreshWritePreview();
+            };
             // 为分隔符输入增加防抖
-            txtDelimiter.TextChanged += (s, e) => DebounceRefreshWritePreview();
-            chkRemoveDuplicates.CheckedChanged += (s, e) => RefreshWritePreview();
-            cmbSort.SelectedIndexChanged += (s, e) => RefreshWritePreview();
-            
-            cmbSort.SelectedIndex = 0;
+            // txtDelimiter.TextChanged += (s, e) => DebounceRefreshWritePreview();
+            // chkRemoveDuplicates.CheckedChanged += (s, e) => RefreshWritePreview();
+            // cmbSort.SelectedIndexChanged += (s, e) => RefreshWritePreview();
+
+            // cmbSort.SelectedIndex = 0;
         }
-        
+
         private void MatchForm_Resize(object sender, EventArgs e)
         {
             try
@@ -97,31 +110,25 @@ namespace YYTools
                 // 确保所有面板能够正确跟随窗体大小变化
                 int margin = 12;
                 int availableWidth = this.ClientSize.Width - (margin * 2);
-                
+
                 // 调整发货明细配置面板
                 if (gbShipping != null)
                 {
                     gbShipping.Width = availableWidth;
                 }
-                
+
                 // 调整账单明细配置面板
                 if (gbBill != null)
                 {
                     gbBill.Width = availableWidth;
                 }
-                
-                // 调整任务配置面板
-                if (gbOptions != null)
-                {
-                    gbOptions.Width = availableWidth;
-                }
-                
+
                 // 调整写入预览面板
                 if (gbWritePreview != null)
                 {
                     gbWritePreview.Width = availableWidth;
                 }
-                
+
                 // 调整按钮面板
                 if (panelButtons != null)
                 {
@@ -130,7 +137,7 @@ namespace YYTools
                     btnClose.Left = panelButtons.Width - btnClose.Width - margin;
                     btnStart.Left = btnClose.Left - btnStart.Width - 10;
                 }
-                
+
                 // 调整状态面板
                 if (panelStatus != null)
                 {
@@ -157,7 +164,9 @@ namespace YYTools
                     RefreshWritePreview();
                 }
             }
-            catch { }
+            catch
+            {
+            }
         }
 
         private void InitializeBackgroundWorker()
@@ -178,7 +187,14 @@ namespace YYTools
                 ApplySettings();
                 // 将耗时初始化延后到 Shown 阶段
                 // 同时更新列解析最大并发
-                try { DataManager.UpdateMaxConcurrency(settings.MaxThreads); } catch { }
+                try
+                {
+                    DataManager.UpdateMaxConcurrency(settings.MaxThreads);
+                }
+                catch
+                {
+                }
+
                 MatchService.CleanupOldLogs();
             }
             catch (Exception ex)
@@ -204,11 +220,11 @@ namespace YYTools
             }
         }
 
-        private void LoadMatcherSettings()
-        {
-            txtDelimiter.Text = settings.ConcatenationDelimiter;
-            chkRemoveDuplicates.Checked = settings.RemoveDuplicateItems;
-        }
+        // private void LoadMatcherSettings()
+        // {
+        //     txtDelimiter.Text = settings.ConcatenationDelimiter;
+        //     chkRemoveDuplicates.Checked = settings.RemoveDuplicateItems;
+        // }
 
         private void RefreshWorkbookList()
         {
@@ -243,6 +259,12 @@ namespace YYTools
 
         private void PopulateComboBoxes()
         {
+            var workbookItems = workbooks.Select(wb => new
+            {
+                DisplayName = wb.IsActive ? $"{wb.Name} [当前活动]" : wb.Name,
+                FullPath = wb.Workbook.FullName
+            }).ToList();
+
             var displayNames = workbooks.Select(wb => wb.IsActive ? $"{wb.Name} [当前活动]" : wb.Name).ToArray();
 
             string prevShipping = cmbShippingWorkbook.SelectedItem?.ToString();
@@ -268,6 +290,15 @@ namespace YYTools
                 cmbBillWorkbook.SelectedIndex = workbooks.FindIndex(w => w.IsActive);
             else if (cmbBillWorkbook.Items.Count > 0)
                 cmbBillWorkbook.SelectedIndex = 0;
+
+            // 更新 ToolTip 以显示完整路径
+            foreach (var t in cmbShippingWorkbook.Items)
+            {
+                var item = workbookItems.FirstOrDefault(w => w.DisplayName == t.ToString());
+                if (item == null) continue;
+                toolTip1.SetToolTip(cmbShippingWorkbook, item.FullPath);
+                toolTip1.SetToolTip(cmbBillWorkbook, item.FullPath);
+            }
         }
 
         private void UpdateUIForNoWorkbooks()
@@ -275,7 +306,7 @@ namespace YYTools
             gbShipping.Enabled = false;
             gbBill.Enabled = false;
             btnStart.Enabled = false;
-            gbOptions.Enabled = false;
+            // gbOptions.Enabled = false;
             gbWritePreview.Enabled = false;
             lblStatus.Text = "未检测到打开的Excel/WPS文件。请打开文件或从菜单栏选择文件。";
         }
@@ -285,7 +316,7 @@ namespace YYTools
             gbShipping.Enabled = true;
             gbBill.Enabled = true;
             btnStart.Enabled = true;
-            gbOptions.Enabled = true;
+            // gbOptions.Enabled = true;
             gbWritePreview.Enabled = true;
             lblStatus.Text = $"已加载 {workbooks.Count} 个工作簿。请配置并开始任务。";
         }
@@ -325,7 +356,7 @@ namespace YYTools
 
                 // 使用线程池统一调度管理，避免创建过多线程
                 int maxThreads = Math.Max(1, Math.Min(AppSettings.Instance.MaxThreads, Environment.ProcessorCount));
-                
+
                 // 使用异步任务管理器，避免阻塞UI
                 _uiTaskManager.StartBackgroundTask(
                     taskName: "ParallelPrefetchColumns",
@@ -334,7 +365,7 @@ namespace YYTools
                         try
                         {
                             progress?.Report(new TaskProgress(10, "正在并行预取列信息..."));
-                            
+
                             // 在UI线程中预取列信息，确保Excel COM对象访问的线程安全
                             if (IsHandleCreated && !IsDisposed)
                             {
@@ -355,6 +386,7 @@ namespace YYTools
                                     {
                                         Logger.LogWarning($"并行预取失败: {shipWb.Name}/{shipSheetName} - {ex.Message}");
                                     }
+
                                     return new List<ColumnInfo>();
                                 }));
 
@@ -375,6 +407,7 @@ namespace YYTools
                                     {
                                         Logger.LogWarning($"并行预取失败: {billWb.Name}/{billSheetName} - {ex.Message}");
                                     }
+
                                     return new List<ColumnInfo>();
                                 }));
                             }
@@ -386,7 +419,7 @@ namespace YYTools
                         {
                             Logger.LogWarning($"并行预取初始化失败: {ex.Message}");
                         }
-                        
+
                         return System.Threading.Tasks.Task.CompletedTask;
                     },
                     allowMultiple: false
@@ -409,15 +442,28 @@ namespace YYTools
                     toolTip1.SetToolTip(sheetCombo, "");
                 }));
             }
-            
+
             if (workbookCombo.SelectedIndex < 0 || workbookCombo.SelectedIndex >= workbooks.Count) return;
 
             try
             {
+                var selectedWorkbookInfo = workbooks[workbookCombo.SelectedIndex];
                 Excel.Workbook selectedWorkbook = workbooks[workbookCombo.SelectedIndex].Workbook;
                 // 使用 DataManager 缓存工作表列表
                 List<string> sheetNames = DataManager.GetSheetNames(selectedWorkbook);
-                
+
+                // 获取文件大小
+                string fileSizeInfo = "";
+                try
+                {
+                    long fileSize = new FileInfo(selectedWorkbook.FullName).Length;
+                    fileSizeInfo = $"{(double)fileSize / 1024 / 1024:F2} MB | ";
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning($"获取文件大小失败: {ex.Message}");
+                }
+
                 // 在UI线程中更新工作表列表
                 if (IsHandleCreated && !IsDisposed)
                 {
@@ -430,7 +476,7 @@ namespace YYTools
 
                             string[] keywords = sheetCombo == cmbShippingSheet ? new[] { "发货明细", "发货" } : new[] { "账单明细", "账单" };
                             SetDefaultSheet(sheetCombo, keywords);
-                            
+
                             // 重要：在设置默认工作表后，手动触发列信息更新
                             // 这样可以确保账单明细的列信息能够正确显示
                             if (sheetCombo == cmbBillSheet && sheetCombo.SelectedIndex >= 0)
@@ -466,18 +512,19 @@ namespace YYTools
         {
             // 添加调试日志，帮助诊断问题
             Logger.LogInfo($"PopulateColumnComboBoxes 开始 - 工作簿索引: {wbCombo.SelectedIndex}, 工作表索引: {wsCombo.SelectedIndex}, 工作表项: {wsCombo.SelectedItem?.ToString() ?? "null"}");
-            
+
             // 确保在UI线程中执行初始清理操作
             if (IsHandleCreated && !IsDisposed)
             {
                 BeginInvoke(new Action(() =>
                 {
-                    foreach (var combo in columnCombos) 
-                    { 
-                        combo.DataSource = null; 
-                        combo.Items.Clear(); 
-                        combo.Text = ""; 
+                    foreach (var combo in columnCombos)
+                    {
+                        combo.DataSource = null;
+                        combo.Items.Clear();
+                        combo.Text = "";
                     }
+
                     toolTip1.SetToolTip(wsCombo, "请选择工作表");
                 }));
             }
@@ -505,7 +552,7 @@ namespace YYTools
                 {
                     BeginInvoke(new Action(() => ShowLoading(true)));
                 }
-                
+
                 // 重要：直接在UI线程中处理所有Excel操作，避免线程安全问题
                 if (IsHandleCreated && !IsDisposed)
                 {
@@ -516,13 +563,13 @@ namespace YYTools
                             // 在UI线程中获取列信息
                             var columns = DataManager.GetColumnInfos(ws);
                             var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
-                            
+
                             // 线程安全地更新缓存
                             lock (columnCache)
                             {
                                 columnCache[cacheKey] = columns;
                             }
-                            
+
                             if (columns == null || columns.Count == 0)
                             {
                                 Logger.LogWarning("未能获取到列信息");
@@ -531,11 +578,20 @@ namespace YYTools
 
                             // 获取工作表统计信息
                             var worksheetStats = ExcelHelper.GetWorksheetStats(ws);
-                            
+                            string fileSizeInfo = ""; // 复用文件大小逻辑
+                            try
+                            {
+                                long fileSize = new FileInfo(wbInfo.Workbook.FullName).Length;
+                                fileSizeInfo = $"{(double)fileSize / 1024 / 1024:F2} MB | ";
+                            }
+                            catch
+                            {
+                            }
+
                             // 更新统计信息提示
                             if (worksheetStats.rows > 0 || worksheetStats.columns > 0)
                             {
-                                string statsString = $"总行数: {worksheetStats.rows:N0} | 总列数: {worksheetStats.columns:N0}";
+                                string statsString = $"{fileSizeInfo}总行数: {worksheetStats.rows:N0} | 总列数: {worksheetStats.columns:N0}";
                                 toolTip1.SetToolTip(wsCombo, statsString);
                             }
 
@@ -555,7 +611,7 @@ namespace YYTools
                                 if (matchedColumns.Count > 0)
                                 {
                                     ApplySmartColumnSelection(columnCombos, matchedColumns);
-                                    
+
                                     foreach (var combo in columnCombos)
                                     {
                                         if (combo.SelectedItem != null && comboBoxColumnTypeMap.ContainsKey(combo))
@@ -569,7 +625,7 @@ namespace YYTools
                             // 更新状态和预览
                             lblStatus.Text = $"已加载 {workbooks.Count} 个工作簿。请配置并开始任务。";
                             RefreshWritePreview();
-                            
+
                             Logger.LogInfo($"列信息更新完成: {wbInfo.Name}/{wsCombo.SelectedItem} 列数: {columns?.Count ?? 0}");
                         }
                         catch (Exception ex)
@@ -606,7 +662,9 @@ namespace YYTools
                     lblStatus.Text = "正在解析列信息...";
                 }
             }
-            catch { }
+            catch
+            {
+            }
         }
 
 
@@ -647,7 +705,7 @@ namespace YYTools
         private void SetDefaultSheet(ComboBox combo, string[] keywords)
         {
             if (combo.Items.Count == 0) return;
-            
+
             // 第一优先级：完全匹配
             foreach (string item in combo.Items)
             {
@@ -657,7 +715,7 @@ namespace YYTools
                     return;
                 }
             }
-            
+
             // 第二优先级：包含关键字的模糊匹配
             foreach (string item in combo.Items)
             {
@@ -667,7 +725,7 @@ namespace YYTools
                     return;
                 }
             }
-            
+
             // 第三优先级：选择第一个可用项
             if (combo.Items.Count > 0) combo.SelectedIndex = 0;
         }
@@ -678,8 +736,8 @@ namespace YYTools
 
             try
             {
-                settings.ConcatenationDelimiter = txtDelimiter.Text;
-                settings.RemoveDuplicateItems = chkRemoveDuplicates.Checked;
+                // settings.ConcatenationDelimiter = txtDelimiter.Text;
+                // settings.RemoveDuplicateItems = chkRemoveDuplicates.Checked;
                 settings.Save();
 
                 MultiWorkbookMatchConfig config = CreateMatchConfig();
@@ -700,7 +758,7 @@ namespace YYTools
             btnStart.Enabled = !processing;
             gbShipping.Enabled = !processing;
             gbBill.Enabled = !processing;
-            gbOptions.Enabled = !processing;
+            // gbOptions.Enabled = !processing;
 
             progressBar.Visible = processing;
 
@@ -723,11 +781,13 @@ namespace YYTools
                 MessageBox.Show("请选择工作簿！", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
+
             if (cmbShippingSheet.SelectedIndex < 0 || cmbBillSheet.SelectedIndex < 0)
             {
                 MessageBox.Show("请选择工作表！", "验证失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
+
             return true;
         }
 
@@ -767,7 +827,7 @@ namespace YYTools
 
                     var cacheKey = $"{wb.Name}_{sheetName}";
                     bool existsInCache = columnCache.ContainsKey(cacheKey) &&
-                                       columnCache[cacheKey].Any(col => col.ColumnLetter == colLetter);
+                                         columnCache[cacheKey].Any(col => col.ColumnLetter == colLetter);
 
                     if (!isValidFormat || !existsInCache)
                     {
@@ -776,8 +836,10 @@ namespace YYTools
                         return false;
                     }
                 }
+
                 return true;
             }
+
             return false;
         }
 
@@ -795,21 +857,10 @@ namespace YYTools
                 BillTrackColumn = GetSelectedColumn(cmbBillTrackColumn),
                 BillProductColumn = GetSelectedColumn(cmbBillProductColumn),
                 BillNameColumn = GetSelectedColumn(cmbBillNameColumn),
-                SortOption = GetSortOption()
+                SortOption = settings.SortOption
             };
         }
 
-        private SortOption GetSortOption()
-        {
-            try
-            {
-                var text = cmbSort?.SelectedItem?.ToString() ?? "默认排序";
-                if (text == "升序") return SortOption.Asc;
-                if (text == "降序") return SortOption.Desc;
-                return SortOption.None;
-            }
-            catch { return SortOption.None; }
-        }
 
         private void BackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
@@ -824,6 +875,7 @@ namespace YYTools
                     e.Cancel = true;
                     return;
                 }
+
                 backgroundWorker.ReportProgress(progress, message);
             });
         }
@@ -842,6 +894,7 @@ namespace YYTools
                 lblStatus.Text = "任务已由用户停止。";
                 return;
             }
+
             if (e.Error != null)
             {
                 lblStatus.Text = "处理出错！";
@@ -870,14 +923,14 @@ namespace YYTools
         private void ShowResultDialog(MatchResult result)
         {
             string summary = result.MatchedCount == 0
-               ? $"任务完成，但没有找到匹配的运单！\n\n处理的账单行数：{result.ProcessedRows:N0}\n处理耗时：{result.ElapsedSeconds:F2} 秒"
-               : $"🎉 任务完成！\n================================\n\n" +
-                 $"📊 处理统计：\n" +
-                 $"  • 处理账单行数：{result.ProcessedRows:N0} 行\n" +
-                 $"  • 成功匹配运单：{result.MatchedCount:N0} 个\n" +
-                 $"  • 填充数据单元格：{result.UpdatedCells:N0} 个\n\n" +
-                 $"⚡ 性能表现：\n" +
-                 $"  • 总处理时间：{result.ElapsedSeconds:F2} 秒";
+                ? $"任务完成，但没有找到匹配的运单！\n\n处理的账单行数：{result.ProcessedRows:N0}\n处理耗时：{result.ElapsedSeconds:F2} 秒"
+                : $"🎉 任务完成！\n================================\n\n" +
+                  $"📊 处理统计：\n" +
+                  $"  • 处理账单行数：{result.ProcessedRows:N0} 行\n" +
+                  $"  • 成功匹配运单：{result.MatchedCount:N0} 个\n" +
+                  $"  • 填充数据单元格：{result.UpdatedCells:N0} 个\n\n" +
+                  $"⚡ 性能表现：\n" +
+                  $"  • 总处理时间：{result.ElapsedSeconds:F2} 秒";
 
             MessageBox.Show(summary, "任务完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -903,6 +956,7 @@ namespace YYTools
                 }
             }
         }
+
         private void refreshListToolStripMenuItem_Click(object sender, EventArgs e)
         {
             try
@@ -919,6 +973,7 @@ namespace YYTools
                 MessageBox.Show($"刷新失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) => this.Close();
 
         private void settingsToolStripMenuItem_Click(object sender, EventArgs e)
@@ -938,14 +993,14 @@ namespace YYTools
                 MessageBox.Show($"打开设置窗口失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        
+
         private void taskOptionsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             try
             {
+                // 直接调用静态方法，该方法现在内部处理了刷新逻辑
                 TaskOptionsForm.ShowTaskOptions(this);
-                // 重新加载设置
-                LoadMatcherSettings();
+                // 主动刷新写入预览，以同步分隔符、排序等即时生效的设置
                 RefreshWritePreview();
             }
             catch (Exception ex)
@@ -954,9 +1009,17 @@ namespace YYTools
             }
         }
 
+
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            try { _uiTaskManager?.Dispose(); } catch { }
+            try
+            {
+                _uiTaskManager?.Dispose();
+            }
+            catch
+            {
+            }
+
             base.OnFormClosed(e);
         }
 
@@ -992,7 +1055,14 @@ namespace YYTools
                             if (app == null || !ExcelAddin.HasOpenWorkbooks(app)) return;
 
                             Excel.Workbook activeWb = null;
-                            try { activeWb = app.ActiveWorkbook; } catch { }
+                            try
+                            {
+                                activeWb = app.ActiveWorkbook;
+                            }
+                            catch
+                            {
+                            }
+
                             if (activeWb == null) return;
 
                             var wbName = activeWb.Name;
@@ -1004,7 +1074,14 @@ namespace YYTools
 
                             // 获取活动工作表
                             Excel.Worksheet activeSheet = null;
-                            try { activeSheet = app.ActiveSheet as Excel.Worksheet; } catch { }
+                            try
+                            {
+                                activeSheet = app.ActiveSheet as Excel.Worksheet;
+                            }
+                            catch
+                            {
+                            }
+
                             if (activeSheet != null)
                             {
                                 progress?.Report(new TaskProgress(40, $"解析工作表列: {activeSheet.Name}"));
@@ -1038,7 +1115,9 @@ namespace YYTools
                                     }));
                                 }
                             }
-                            catch { }
+                            catch
+                            {
+                            }
                         }
                     },
                     allowMultiple: false
@@ -1074,6 +1153,7 @@ namespace YYTools
                 MessageBox.Show($"打开日志文件夹时发生错误：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             try
@@ -1082,6 +1162,7 @@ namespace YYTools
                 {
                     aboutForm.ShowDialog(this);
                 }
+
                 Logger.LogUserAction("查看关于信息", "打开关于窗体", "成功");
             }
             catch (Exception ex)
@@ -1106,9 +1187,24 @@ namespace YYTools
             }
         }
 
-        private void cmbShippingTrackColumn_SelectedIndexChanged(object sender, EventArgs e) { ValidateAndUpdateColumnInfo(cmbShippingTrackColumn); RefreshWritePreview(); }
-        private void cmbShippingProductColumn_SelectedIndexChanged(object sender, EventArgs e) { ValidateAndUpdateColumnInfo(cmbShippingProductColumn); RefreshWritePreview(); }
-        private void cmbShippingNameColumn_SelectedIndexChanged(object sender, EventArgs e) { ValidateAndUpdateColumnInfo(cmbShippingNameColumn); RefreshWritePreview(); }
+        private void cmbShippingTrackColumn_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ValidateAndUpdateColumnInfo(cmbShippingTrackColumn);
+            RefreshWritePreview();
+        }
+
+        private void cmbShippingProductColumn_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ValidateAndUpdateColumnInfo(cmbShippingProductColumn);
+            RefreshWritePreview();
+        }
+
+        private void cmbShippingNameColumn_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ValidateAndUpdateColumnInfo(cmbShippingNameColumn);
+            RefreshWritePreview();
+        }
+
         private void cmbBillTrackColumn_SelectedIndexChanged(object sender, EventArgs e) => ValidateAndUpdateColumnInfo(cmbBillTrackColumn);
         private void cmbBillProductColumn_SelectedIndexChanged(object sender, EventArgs e) => ValidateAndUpdateColumnInfo(cmbBillProductColumn);
         private void cmbBillNameColumn_SelectedIndexChanged(object sender, EventArgs e) => ValidateAndUpdateColumnInfo(cmbBillNameColumn);
@@ -1117,7 +1213,15 @@ namespace YYTools
         {
             try
             {
-                toolTip1.SetToolTip(combo, combo.Text);
+                // 为所有下拉框设置 ToolTip
+                if (combo.SelectedItem is ColumnInfo colInfo)
+                {
+                    toolTip1.SetToolTip(combo, colInfo.ToString());
+                }
+                else
+                {
+                    toolTip1.SetToolTip(combo, combo.Text);
+                }
                 combo.BackColor = SystemColors.Window;
             }
             catch (Exception ex)
@@ -1132,11 +1236,17 @@ namespace YYTools
             {
                 // 确保在UI线程中执行所有UI操作
                 if (!IsHandleCreated || IsDisposed) return;
-                
+
                 txtWritePreview.Text = "";
                 if (cmbShippingWorkbook.SelectedIndex < 0 || cmbShippingSheet.SelectedIndex < 0 || cmbShippingSheet.SelectedItem == null)
                 {
                     txtWritePreview.Text = "请先选择发货明细...";
+                    return;
+                }
+                if (!settings.EnableWritePreview)
+                {
+                    txtWritePreview.Text = "写入效果预览已在“任务选项”中被禁用。";
+                    toolTip1.SetToolTip(txtWritePreview, "请在 菜单 -> 工具 -> 任务选项 中开启此功能。");
                     return;
                 }
 
@@ -1149,6 +1259,7 @@ namespace YYTools
                     txtWritePreview.Text = "请先选择有效的\"发货\"运单号列。";
                     return;
                 }
+
                 if (string.IsNullOrEmpty(prodCol) && string.IsNullOrEmpty(nameCol))
                 {
                     txtWritePreview.Text = "请选择\"商品编码\"或\"商品名称\"列以生成预览。";
@@ -1167,7 +1278,7 @@ namespace YYTools
                         try
                         {
                             progress?.Report(new TaskProgress(10, "正在解析预览数据..."));
-                            
+
                             Dictionary<string, List<ShippingItem>> previewIndex = new Dictionary<string, List<ShippingItem>>();
                             // 使用配置的预览行数，默认为20行
                             int maxScanRows = Math.Min(settings.PreviewParseRows, ws.UsedRange.Rows.Count);
@@ -1180,7 +1291,7 @@ namespace YYTools
                             // 多线程并行解析预览数据
                             var tasks = new List<System.Threading.Tasks.Task>();
                             var semaphore = new System.Threading.SemaphoreSlim(Math.Min(4, Environment.ProcessorCount));
-                            
+
                             // 分批处理，每批处理一部分行
                             int batchSize = Math.Max(1, maxScanRows / 4);
                             for (int batchStart = 2; batchStart <= maxScanRows; batchStart += batchSize)
@@ -1188,14 +1299,14 @@ namespace YYTools
                                 int batchEnd = Math.Min(batchStart + batchSize - 1, maxScanRows);
                                 int startRow = batchStart;
                                 int endRow = batchEnd;
-                                
+
                                 tasks.Add(System.Threading.Tasks.Task.Run(async () =>
                                 {
                                     await semaphore.WaitAsync();
                                     try
                                     {
                                         var batchIndex = new Dictionary<string, List<ShippingItem>>();
-                                        
+
                                         for (int r = startRow; r <= endRow; r++)
                                         {
                                             try
@@ -1219,7 +1330,7 @@ namespace YYTools
                                                 Logger.LogWarning($"预览解析行 {r} 失败: {ex.Message}");
                                             }
                                         }
-                                        
+
                                         // 线程安全地合并结果
                                         lock (previewIndex)
                                         {
@@ -1229,6 +1340,7 @@ namespace YYTools
                                                 {
                                                     previewIndex[kvp.Key] = new List<ShippingItem>();
                                                 }
+
                                                 previewIndex[kvp.Key].AddRange(kvp.Value);
                                             }
                                         }
@@ -1244,9 +1356,9 @@ namespace YYTools
 
                             // 等待所有任务完成
                             await System.Threading.Tasks.Task.WhenAll(tasks);
-                            
+
                             progress?.Report(new TaskProgress(90, "正在生成预览..."));
-                            
+
                             var exampleEntry = previewIndex.FirstOrDefault(kvp => kvp.Value.Count > 1);
                             if (exampleEntry.Key == null) exampleEntry = previewIndex.FirstOrDefault();
                             if (exampleEntry.Key == null)
@@ -1254,11 +1366,9 @@ namespace YYTools
                                 // 在UI线程中更新预览文本
                                 if (IsHandleCreated && !IsDisposed)
                                 {
-                                    BeginInvoke(new Action(() =>
-                                    {
-                                        txtWritePreview.Text = $"（在前{maxScanRows}行发货明细中未找到可预览的数据）";
-                                    }));
+                                    BeginInvoke(new Action(() => { txtWritePreview.Text = $"（在前{maxScanRows}行发货明细中未找到可预览的数据）"; }));
                                 }
+
                                 return;
                             }
 
@@ -1284,7 +1394,7 @@ namespace YYTools
                             }
 
                             string previewText = previewLines.Any() ? string.Join(Environment.NewLine, previewLines) : "（无有效数据可供预览）";
-                            
+
                             // 在UI线程中更新预览文本和提示
                             if (IsHandleCreated && !IsDisposed)
                             {
@@ -1294,7 +1404,7 @@ namespace YYTools
                                     toolTip1.SetToolTip(txtWritePreview, $"根据\"发货明细\"中的数据和下方选项，模拟匹配成功后将写入的数据效果。预览解析了前{maxScanRows}行数据。");
                                 }));
                             }
-                            
+
                             progress?.Report(new TaskProgress(100, "预览生成完成"));
                         }
                         catch (Exception ex)
@@ -1303,10 +1413,7 @@ namespace YYTools
                             // 在UI线程中显示错误信息
                             if (IsHandleCreated && !IsDisposed)
                             {
-                                BeginInvoke(new Action(() =>
-                                {
-                                    txtWritePreview.Text = "生成预览时出错。";
-                                }));
+                                BeginInvoke(new Action(() => { txtWritePreview.Text = "生成预览时出错。"; }));
                             }
                         }
                     },
@@ -1319,19 +1426,20 @@ namespace YYTools
                 txtWritePreview.Text = "生成预览时出错。";
             }
         }
-        
+
         private string BuildPreviewLine(IEnumerable<string> data, string prefix)
         {
-            string delimiter = txtDelimiter.Text;
-            bool removeDuplicates = chkRemoveDuplicates.Checked;
-            SortOption sortOption = GetSortOption();
-            
+            // 从 AppSettings 读取配置，而不是UI控件
+            string delimiter = settings.ConcatenationDelimiter;
+            bool removeDuplicates = settings.RemoveDuplicateItems;
+            SortOption sortOption = settings.SortOption;
+
             IEnumerable<string> processedData = data;
 
             if (removeDuplicates) processedData = processedData.Distinct();
             if (sortOption == SortOption.Asc) processedData = processedData.OrderBy(x => x, StringComparer.Ordinal);
             else if (sortOption == SortOption.Desc) processedData = processedData.OrderByDescending(x => x, StringComparer.Ordinal);
-            
+
             return prefix + string.Join(delimiter, processedData);
         }
 
@@ -1350,7 +1458,15 @@ namespace YYTools
                     if (backgroundWorker.IsBusy) backgroundWorker.CancelAsync();
                 }
             }
+
             base.OnFormClosing(e);
+        }
+        
+        public void TriggerRefresh()
+        {
+            MessageBox.Show("列解析设置已更改，将刷新工作簿列表和界面。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // 调用现有的刷新功能
+            refreshListToolStripMenuItem_Click(this, EventArgs.Empty);
         }
     }
 }

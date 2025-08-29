@@ -169,9 +169,33 @@ namespace YYTools
             this.lblDelimiter.Size = new System.Drawing.Size(83, 17);
             this.lblDelimiter.TabIndex = 0;
             this.lblDelimiter.Text = "多项分隔符:";
+            
+            this.chkEnableColumnPreview = new System.Windows.Forms.CheckBox();
+            this.chkEnableWritePreview = new System.Windows.Forms.CheckBox();
+            
+            
+            this.chkEnableColumnPreview.AutoSize = true;
+            this.chkEnableColumnPreview.Location = new System.Drawing.Point(18, 128);
+            this.chkEnableColumnPreview.Name = "chkEnableColumnPreview";
+            this.chkEnableColumnPreview.Size = new System.Drawing.Size(195, 21);
+            this.chkEnableColumnPreview.TabIndex = 4;
+            this.chkEnableColumnPreview.Text = "启用列数据解析与示例预览";
+            this.chkEnableColumnPreview.UseVisualStyleBackColor = true;
+            
+            // 
+            // chkEnableWritePreview
+            // 
+            this.chkEnableWritePreview.AutoSize = true;
+            this.chkEnableWritePreview.Location = new System.Drawing.Point(18, 155);
+            this.chkEnableWritePreview.Name = "chkEnableWritePreview";
+            this.chkEnableWritePreview.Size = new System.Drawing.Size(147, 21);
+            this.chkEnableWritePreview.TabIndex = 5;
+            this.chkEnableWritePreview.Text = "启用写入效果实时预览";
+            this.chkEnableWritePreview.UseVisualStyleBackColor = true;
             // 
             // tabPerformance
             // 
+         
             this.tabPerformance.Controls.Add(this.cmbPreviewRows);
             this.tabPerformance.Controls.Add(this.lblPreviewRows);
             this.tabPerformance.Controls.Add(this.chkEnableProgressReporting);
@@ -179,6 +203,8 @@ namespace YYTools
             this.tabPerformance.Controls.Add(this.lblMaxPreviewRows);
             this.tabPerformance.Controls.Add(this.numBatchSize);
             this.tabPerformance.Controls.Add(this.lblBatchSize);
+            this.tabPerformance.Controls.Add(this.chkEnableWritePreview); // 新增
+            this.tabPerformance.Controls.Add(this.chkEnableColumnPreview); // 新增
             this.tabPerformance.Location = new System.Drawing.Point(4, 26);
             this.tabPerformance.Name = "tabPerformance";
             this.tabPerformance.Padding = new System.Windows.Forms.Padding(10);
@@ -380,5 +406,7 @@ namespace YYTools
         private System.Windows.Forms.Label lblMinMatchScore;
         private System.Windows.Forms.TrackBar trkMinMatchScore;
         private System.Windows.Forms.Label lblMinMatchScoreValue;
+        private System.Windows.Forms.CheckBox chkEnableColumnPreview;
+        private System.Windows.Forms.CheckBox chkEnableWritePreview;
     }
 }

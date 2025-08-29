@@ -1,4 +1,5 @@
 // --- 文件 1: DataModels.cs ---
+
 using Excel = Microsoft.Office.Interop.Excel;
 
 namespace YYTools
@@ -26,7 +27,7 @@ namespace YYTools
         public Excel.Workbook ShippingWorkbook { get; set; }
         public Excel.Workbook BillWorkbook { get; set; }
         public SortOption SortOption { get; set; }
-        
+
         // 添加拼接和去重配置
         public string ConcatenationDelimiter { get; set; } = "、";
         public bool RemoveDuplicateItems { get; set; } = true;
@@ -78,17 +79,22 @@ namespace YYTools
     {
         public string ColumnLetter { get; set; }
         public string HeaderText { get; set; }
-        public string PreviewData { get; set; }
+        public string PreviewData { get; set; } // 此字段在禁用预览时可能为空
         public int RowCount { get; set; }
         public bool IsValid { get; set; }
-        
+
         public override string ToString()
         {
-            string title = string.IsNullOrWhiteSpace(HeaderText) ? "" : HeaderText;
-            string preview = string.IsNullOrWhiteSpace(PreviewData) ? "" : $" | 示例: {PreviewData}";
-            return string.IsNullOrWhiteSpace(title)
-                ? ColumnLetter
-                : $"{ColumnLetter} ({title}){preview}";
+            // 如果预览数据为空 (因为功能被禁用或确实没有数据)，则显示简化模式
+            if (string.IsNullOrWhiteSpace(PreviewData))
+            {
+                return string.IsNullOrWhiteSpace(HeaderText)
+                    ? $"{ColumnLetter}"
+                    : $"{ColumnLetter}: {HeaderText}";
+            }
+
+            // 完整预览模式
+            return $"{ColumnLetter}: {HeaderText} (示例: {PreviewData})";
         }
     }
 
@@ -100,7 +106,7 @@ namespace YYTools
         public string[] Keywords { get; set; }
         public string[] ColumnTypes { get; set; }
         public int Priority { get; set; }
-        
+
         public SmartColumnRule(string[] keywords, string[] columnTypes, int priority = 1)
         {
             Keywords = keywords;
@@ -129,17 +135,17 @@ namespace YYTools
         /// 运单号
         /// </summary>
         public string TrackNumber { get; set; }
-        
+
         /// <summary>
         /// 商品编码列号
         /// </summary>
         public int ProductColumn { get; set; }
-        
+
         /// <summary>
         /// 商品名称列号
         /// </summary>
         public int NameColumn { get; set; }
-        
+
         /// <summary>
         /// 行号
         /// </summary>

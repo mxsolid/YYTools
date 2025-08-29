@@ -70,18 +70,18 @@ namespace YYTools
             this.lblStatus = new System.Windows.Forms.Label();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.gbOptions = new System.Windows.Forms.GroupBox();
-            this.cmbSort = new System.Windows.Forms.ComboBox();
-            this.chkRemoveDuplicates = new System.Windows.Forms.CheckBox();
-            this.txtDelimiter = new System.Windows.Forms.TextBox();
-            this.label13 = new System.Windows.Forms.Label();
+            // this.gbOptions = new System.Windows.Forms.GroupBox();
+            // this.cmbSort = new System.Windows.Forms.ComboBox();
+            // this.chkRemoveDuplicates = new System.Windows.Forms.CheckBox();
+            // this.txtDelimiter = new System.Windows.Forms.TextBox();
+            // this.label13 = new System.Windows.Forms.Label();
             this.gbWritePreview = new System.Windows.Forms.GroupBox();
             this.txtWritePreview = new System.Windows.Forms.TextBox();
             this.menuStrip1.SuspendLayout();
             this.gbShipping.SuspendLayout();
             this.gbBill.SuspendLayout();
             this.panelStatus.SuspendLayout();
-            this.gbOptions.SuspendLayout();
+            // this.gbOptions.SuspendLayout();
             this.gbWritePreview.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -482,65 +482,65 @@ namespace YYTools
             // 
             // gbOptions
             // 
-            this.gbOptions.Controls.Add(this.cmbSort);
-            // 隐藏“去重”按钮，避免干扰输入预览性能
-            this.chkRemoveDuplicates.Visible = false;
-            // this.gbOptions.Controls.Add(this.chkRemoveDuplicates);
-            this.gbOptions.Controls.Add(this.txtDelimiter);
-            this.gbOptions.Controls.Add(this.label13);
-            this.gbOptions.Location = new System.Drawing.Point(12, 417);
-            this.gbOptions.Name = "gbOptions";
-            this.gbOptions.Size = new System.Drawing.Size(460, 65);
-            this.gbOptions.TabIndex = 2;
-            this.gbOptions.TabStop = false;
-            this.gbOptions.Text = "任务配置";
-            // 
-            // cmbSort
-            // 
-            this.cmbSort.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbSort.FormattingEnabled = true;
-            this.cmbSort.Items.AddRange(new object[] {
-            "默认排序",
-            "升序",
-            "降序"});
-            this.cmbSort.Location = new System.Drawing.Point(324, 25);
-            this.cmbSort.Name = "cmbSort";
-            this.cmbSort.Size = new System.Drawing.Size(120, 25);
-            this.cmbSort.TabIndex = 2;
-            this.toolTip1.SetToolTip(this.cmbSort, "对拼接的多个商品编码或名称进行排序");
-            // 
-            // chkRemoveDuplicates
-            // 
-            this.chkRemoveDuplicates.AutoSize = true;
-            this.chkRemoveDuplicates.Location = new System.Drawing.Point(179, 27);
-            this.chkRemoveDuplicates.Name = "chkRemoveDuplicates";
-            this.chkRemoveDuplicates.Size = new System.Drawing.Size(123, 21);
-            this.chkRemoveDuplicates.TabIndex = 1;
-            this.chkRemoveDuplicates.Text = "拼接时自动去重";
-            this.toolTip1.SetToolTip(this.chkRemoveDuplicates, "如果匹配到多个相同的商品，只保留一个");
-            this.chkRemoveDuplicates.UseVisualStyleBackColor = true;
-            // 
-            // txtDelimiter
-            // 
-            this.txtDelimiter.Location = new System.Drawing.Point(88, 25);
-            this.txtDelimiter.Name = "txtDelimiter";
-            this.txtDelimiter.Size = new System.Drawing.Size(65, 23);
-            this.txtDelimiter.TabIndex = 0;
-            this.toolTip1.SetToolTip(this.txtDelimiter, "当一个运单匹配到多个商品时，用此符号连接");
-            // 
-            // label13
-            // 
-            this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(12, 28);
-            this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(80, 17);
-            this.label13.TabIndex = 0;
-            this.label13.Text = "拼接分隔符：";
+            // this.gbOptions.Controls.Add(this.cmbSort);
+            // // 隐藏“去重”按钮，避免干扰输入预览性能
+            // this.chkRemoveDuplicates.Visible = false;
+            // // this.gbOptions.Controls.Add(this.chkRemoveDuplicates);
+            // this.gbOptions.Controls.Add(this.txtDelimiter);
+            // this.gbOptions.Controls.Add(this.label13);
+            // this.gbOptions.Location = new System.Drawing.Point(12, 417);
+            // this.gbOptions.Name = "gbOptions";
+            // this.gbOptions.Size = new System.Drawing.Size(460, 65);
+            // this.gbOptions.TabIndex = 2;
+            // this.gbOptions.TabStop = false;
+            // this.gbOptions.Text = "任务配置";
+            // // 
+            // // cmbSort
+            // // 
+            // this.cmbSort.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            // this.cmbSort.FormattingEnabled = true;
+            // this.cmbSort.Items.AddRange(new object[] {
+            // "默认排序",
+            // "升序",
+            // "降序"});
+            // this.cmbSort.Location = new System.Drawing.Point(324, 25);
+            // this.cmbSort.Name = "cmbSort";
+            // this.cmbSort.Size = new System.Drawing.Size(120, 25);
+            // this.cmbSort.TabIndex = 2;
+            // this.toolTip1.SetToolTip(this.cmbSort, "对拼接的多个商品编码或名称进行排序");
+            // // 
+            // // chkRemoveDuplicates
+            // // 
+            // this.chkRemoveDuplicates.AutoSize = true;
+            // this.chkRemoveDuplicates.Location = new System.Drawing.Point(179, 27);
+            // this.chkRemoveDuplicates.Name = "chkRemoveDuplicates";
+            // this.chkRemoveDuplicates.Size = new System.Drawing.Size(123, 21);
+            // this.chkRemoveDuplicates.TabIndex = 1;
+            // this.chkRemoveDuplicates.Text = "拼接时自动去重";
+            // this.toolTip1.SetToolTip(this.chkRemoveDuplicates, "如果匹配到多个相同的商品，只保留一个");
+            // this.chkRemoveDuplicates.UseVisualStyleBackColor = true;
+            // // 
+            // // txtDelimiter
+            // // 
+            // this.txtDelimiter.Location = new System.Drawing.Point(88, 25);
+            // this.txtDelimiter.Name = "txtDelimiter";
+            // this.txtDelimiter.Size = new System.Drawing.Size(65, 23);
+            // this.txtDelimiter.TabIndex = 0;
+            // this.toolTip1.SetToolTip(this.txtDelimiter, "当一个运单匹配到多个商品时，用此符号连接");
+            // // 
+            // // label13
+            // // 
+            // this.label13.AutoSize = true;
+            // this.label13.Location = new System.Drawing.Point(12, 28);
+            // this.label13.Name = "label13";
+            // this.label13.Size = new System.Drawing.Size(80, 17);
+            // this.label13.TabIndex = 0;
+            // this.label13.Text = "拼接分隔符：";
             // 
             // gbWritePreview
             // 
             this.gbWritePreview.Controls.Add(this.txtWritePreview);
-            this.gbWritePreview.Location = new System.Drawing.Point(12, 488);
+            this.gbWritePreview.Location = new System.Drawing.Point(12, 417);
             this.gbWritePreview.Name = "gbWritePreview";
             this.gbWritePreview.Size = new System.Drawing.Size(460, 80);
             this.gbWritePreview.TabIndex = 4;
@@ -563,9 +563,9 @@ namespace YYTools
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(484, 621);
+            this.ClientSize = new System.Drawing.Size(484, 620); // 调整窗体总高度
             this.Controls.Add(this.gbWritePreview);
-            this.Controls.Add(this.gbOptions);
+            // this.Controls.Add(this.gbOptions);
             // 先添加按钮面板，再添加状态面板，使状态面板处于最底部
             this.Controls.Add(this.panelButtons);
             this.Controls.Add(this.panelStatus);
@@ -577,7 +577,7 @@ namespace YYTools
             this.MainMenuStrip = this.menuStrip1;
             this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.MaximizeBox = true;
-            this.MinimumSize = new System.Drawing.Size(500, 700);
+            this.MinimumSize = new System.Drawing.Size(400, 500);
             this.Name = "MatchForm";
             this.Text = "YY 运单匹配工具";
             this.menuStrip1.ResumeLayout(false);
@@ -586,8 +586,8 @@ namespace YYTools
             this.gbShipping.PerformLayout();
             this.gbBill.ResumeLayout(false);
             this.gbBill.PerformLayout();
-            this.gbOptions.ResumeLayout(false);
-            this.gbOptions.PerformLayout();
+            // this.gbOptions.ResumeLayout(false);
+            // this.gbOptions.PerformLayout();
             this.panelStatus.ResumeLayout(false);
             this.gbWritePreview.ResumeLayout(false);
             this.gbWritePreview.PerformLayout();
@@ -638,11 +638,11 @@ namespace YYTools
         private System.Windows.Forms.ProgressBar progressBar;
         private System.Windows.Forms.Label lblStatus;
         private System.Windows.Forms.ToolTip toolTip1;
-        private System.Windows.Forms.GroupBox gbOptions;
-        private System.Windows.Forms.ComboBox cmbSort;
-        private System.Windows.Forms.CheckBox chkRemoveDuplicates;
-        private System.Windows.Forms.TextBox txtDelimiter;
-        private System.Windows.Forms.Label label13;
+        // private System.Windows.Forms.GroupBox gbOptions;
+        // private System.Windows.Forms.ComboBox cmbSort;
+        // private System.Windows.Forms.CheckBox chkRemoveDuplicates;
+        // private System.Windows.Forms.TextBox txtDelimiter;
+        // private System.Windows.Forms.Label label13;
         private System.Windows.Forms.GroupBox gbWritePreview;
         private System.Windows.Forms.TextBox txtWritePreview;
         private System.Windows.Forms.Panel panelStatus;

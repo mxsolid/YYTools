@@ -40,11 +40,16 @@ namespace YYTools
         public string ConcatenationDelimiter { get; set; }
         public bool RemoveDuplicateItems { get; set; }
         public int MaxThreads { get; set; }
+        public SortOption SortOption { get; set; } // 新增：排序选项
         
         // 智能列选择设置
         public bool EnableSmartColumnSelection { get; set; }
         public bool EnableColumnPreview { get; set; }
         public bool EnableColumnSearch { get; set; }
+        
+        // --- 新增和修改的属性 ---
+        public bool EnableColumnDataPreview { get; set; } // 新增：控制是否解析列数据进行预览
+        public bool EnableWritePreview { get; set; }      // 新增：控制是否启用写入效果预览
         
         // 性能优化设置
         public int BatchSize { get; set; }
@@ -106,6 +111,14 @@ namespace YYTools
                 GetValue(settingsDict, "ConcatenationDelimiter", v => ConcatenationDelimiter = v);
                 GetValue(settingsDict, "RemoveDuplicateItems", v => RemoveDuplicateItems = bool.Parse(v));
                 GetValue(settingsDict, "MaxThreads", v => MaxThreads = int.Parse(v));
+                // 修改：加载 SortOption 枚举
+                GetValue(settingsDict, "SortOption", v => 
+                {
+                    if (Enum.TryParse<SortOption>(v, true, out var parsed))
+                    {
+                        SortOption = parsed;
+                    }
+                });
                 
                 // 智能列选择设置
                 GetValue(settingsDict, "EnableSmartColumnSelection", v => EnableSmartColumnSelection = bool.Parse(v));
@@ -135,6 +148,9 @@ namespace YYTools
                 GetValue(settingsDict, "AsyncTaskTimeoutSeconds", v => AsyncTaskTimeoutSeconds = int.Parse(v));
                 GetValue(settingsDict, "EnableBackgroundTasks", v => EnableBackgroundTasks = bool.Parse(v));
 
+                // 在性能优化设置部分，新增加载项
+                GetValue(settingsDict, "EnableColumnDataPreview", v => EnableColumnDataPreview = bool.Parse(v));
+                GetValue(settingsDict, "EnableWritePreview", v => EnableWritePreview = bool.Parse(v));
             }
             catch (Exception ex)
             {
@@ -176,6 +192,7 @@ namespace YYTools
                     $"ConcatenationDelimiter={ConcatenationDelimiter}",
                     $"RemoveDuplicateItems={RemoveDuplicateItems}",
                     $"MaxThreads={MaxThreads}",
+                    $"SortOption={SortOption}",
                     "",
                     "# 智能列选择设置",
                     $"EnableSmartColumnSelection={EnableSmartColumnSelection}",
@@ -204,6 +221,11 @@ namespace YYTools
                     $"EnableAsyncProcessing={EnableAsyncProcessing}",
                     $"AsyncTaskTimeoutSeconds={AsyncTaskTimeoutSeconds}",
                     $"EnableBackgroundTasks={EnableBackgroundTasks}",
+                    "",
+                    "# 性能优化设置",
+                    $"EnableColumnDataPreview={EnableColumnDataPreview}", // 新增
+                    $"EnableWritePreview={EnableWritePreview}",         // 新增
+                    $"BatchSize={BatchSize}",
                 };
                 File.WriteAllLines(ConfigPath, lines, System.Text.Encoding.UTF8);
                 
@@ -226,6 +248,7 @@ namespace YYTools
             MaxThreads = Environment.ProcessorCount;
             ConcatenationDelimiter = "、";
             RemoveDuplicateItems = true;
+            SortOption = SortOption.None;
             
             // 智能列选择默认值
             EnableSmartColumnSelection = true;
@@ -254,6 +277,11 @@ namespace YYTools
             EnableAsyncProcessing = true;
             AsyncTaskTimeoutSeconds = 300; // 5分钟
             EnableBackgroundTasks = true;
+            
+            // 性能优化默认值
+            EnableColumnDataPreview = true; // 新增：默认开启列数据预览
+            EnableWritePreview = true;      // 新增：默认开启写入效果预览
+            BatchSize = Constants.DefaultBatchSize;
         }
         
         /// <summary>

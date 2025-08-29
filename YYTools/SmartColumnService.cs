@@ -36,54 +36,64 @@ namespace YYTools
         /// <summary>
         /// 获取工作表的列信息（性能优化版本）
         /// </summary>
-        public static List<ColumnInfo> GetColumnInfos(Excel.Worksheet worksheet, int maxRowsForPreview = 10)
+        /// <param name="worksheet">要解析的工作表</param>
+        /// <param name="enableDataPreview">是否启用数据预览</param>
+        public static List<ColumnInfo> GetColumnInfos(Excel.Worksheet worksheet, int maxRowsForPreview, bool enableDataPreview)
         {
             var columns = new List<ColumnInfo>();
-            
             try
             {
                 if (worksheet == null) return columns;
 
-                // 性能优化：减少锁的使用，提高性能
                 var usedRange = worksheet.UsedRange;
                 if (usedRange.Rows.Count == 0) return columns;
-
-                int colCount = Math.Min(usedRange.Columns.Count, 100); // 限制最大扫描列数防止卡顿
-                int rowCount = Math.Min(usedRange.Rows.Count, maxRowsForPreview);
+                
+                int colCount = Math.Min(usedRange.Columns.Count, 256); // 限制最大扫描列数
+                
+                // 根据是否启用预览，决定扫描深度
+                int headerScanDepth = 3; // 最多扫描3行来找标题
+                int dataPreviewScanDepth = maxRowsForPreview; // 扫描20行来找预览数据
 
                 for (int i = 1; i <= colCount; i++)
                 {
                     string colLetter = ExcelHelper.GetColumnLetter(i);
                     string headerText = "";
                     string previewData = "";
-                    int found = 0;
-                    int maxScan = Math.Min(usedRange.Rows.Count, rowCount);
-                    bool firstFiveAllEmpty = true;
-                    for (int row = 1; row <= maxScan; row++)
+
+                    // 步骤1: 查找标题 (最多扫描3行)
+                    for (int row = 1; row <= headerScanDepth; row++)
                     {
-                        var cell = worksheet.Cells[row, i] as Excel.Range;
-                        string value = cell?.Value2?.ToString().Trim() ?? "";
-                        if (row <= 5 && !string.IsNullOrWhiteSpace(value)) firstFiveAllEmpty = false;
-                        if (!string.IsNullOrWhiteSpace(value))
+                        if (row > usedRange.Rows.Count) break;
+                        var cellValue = (worksheet.Cells[row, i] as Excel.Range)?.Value2?.ToString().Trim() ?? "";
+                        if (!string.IsNullOrWhiteSpace(cellValue))
                         {
-                            found++;
-                            if (found == 1) headerText = value;
-                            else if (found == 2) { previewData = value.Length > 50 ? value.Substring(0, 50) + "..." : value; break; }
-                        }
-                        if (row == 5 && firstFiveAllEmpty)
-                        {
-                            break;
+                            headerText = cellValue;
+                            break; // 找到第一个非空单元格作为标题
                         }
                     }
-                    bool isValid = !string.IsNullOrWhiteSpace(headerText) || !string.IsNullOrWhiteSpace(previewData);
+
+                    // 步骤2: 如果启用预览，则查找预览数据
+                    if (enableDataPreview && usedRange.Rows.Count > 1)
+                    {
+                        for (int row = 2; row <= dataPreviewScanDepth; row++) // 从第二行开始找数据
+                        {
+                            if (row > usedRange.Rows.Count) break;
+                            var cellValue = (worksheet.Cells[row, i] as Excel.Range)?.Value2?.ToString().Trim() ?? "";
+                            // 确保预览数据和标题不一样
+                            if (!string.IsNullOrWhiteSpace(cellValue) && cellValue != headerText)
+                            {
+                                previewData = cellValue.Length > 50 ? cellValue.Substring(0, 50) + "..." : cellValue;
+                                break;
+                            }
+                        }
+                    }
 
                     columns.Add(new ColumnInfo
                     {
                         ColumnLetter = colLetter,
                         HeaderText = headerText,
-                        PreviewData = previewData,
-                        RowCount = usedRange.Rows.Count,
-                        IsValid = isValid
+                        PreviewData = previewData, // 如果未启用预览，此项为空
+                        IsValid = !string.IsNullOrWhiteSpace(headerText) || !string.IsNullOrWhiteSpace(previewData)
                     });
                 }
             }
@@ -94,6 +104,7 @@ namespace YYTools
 
             return columns;
         }
+    
 
         /// <summary>
         /// 智能匹配列
