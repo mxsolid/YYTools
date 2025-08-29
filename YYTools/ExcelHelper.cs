@@ -67,7 +67,7 @@ namespace YYTools
         }
 
         /// <summary>
-        /// 批量获取列数据（性能优化，线程安全版本）
+        /// 批量获取列数据（性能优化版本）
         /// </summary>
         public static List<string> GetColumnDataBatch(Excel.Worksheet worksheet, string columnLetter, int startRow, int endRow)
         {
@@ -76,20 +76,17 @@ namespace YYTools
             {
                 if (worksheet == null || string.IsNullOrWhiteSpace(columnLetter)) return data;
 
-                // 使用线程同步锁确保COM对象访问的线程安全
-                lock (worksheet)
-                {
-                    var range = worksheet.Range[$"{columnLetter}{startRow}:{columnLetter}{endRow}"];
-                    if (range == null) return data;
+                // 性能优化：减少锁的使用，提高性能
+                var range = worksheet.Range[$"{columnLetter}{startRow}:{columnLetter}{endRow}"];
+                if (range == null) return data;
 
-                    var values = range.Value2 as object[,];
-                    if (values != null)
+                var values = range.Value2 as object[,];
+                if (values != null)
+                {
+                    for (int i = 1; i <= values.GetLength(0); i++)
                     {
-                        for (int i = 1; i <= values.GetLength(0); i++)
-                        {
-                            var value = values[i, 1]?.ToString().Trim() ?? "";
-                            data.Add(value);
-                        }
+                        var value = values[i, 1]?.ToString().Trim() ?? "";
+                        data.Add(value);
                     }
                 }
             }
@@ -119,7 +116,7 @@ namespace YYTools
         }
 
         /// <summary>
-        /// 获取工作表的统计信息（线程安全版本）
+        /// 获取工作表的统计信息（性能优化版本）
         /// </summary>
         public static (int rows, int columns, long dataSize) GetWorksheetStats(Excel.Worksheet worksheet)
         {
@@ -127,19 +124,16 @@ namespace YYTools
             {
                 if (worksheet == null) return (0, 0, 0);
 
-                // 使用线程同步锁确保COM对象访问的线程安全
-                lock (worksheet)
-                {
-                    var usedRange = worksheet.UsedRange;
-                    if (usedRange == null) return (0, 0, 0);
+                // 性能优化：只在必要时使用锁，减少性能开销
+                var usedRange = worksheet.UsedRange;
+                if (usedRange == null) return (0, 0, 0);
 
-                    int rows = usedRange.Rows.Count;
-                    int columns = usedRange.Columns.Count;
-                    
-                    long dataSize = (long)rows * columns * 50; 
+                int rows = usedRange.Rows.Count;
+                int columns = usedRange.Columns.Count;
+                
+                long dataSize = (long)rows * columns * 50; 
 
-                    return (rows, columns, dataSize);
-                }
+                return (rows, columns, dataSize);
             }
             catch (Exception ex)
             {

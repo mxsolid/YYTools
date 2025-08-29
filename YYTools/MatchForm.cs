@@ -506,161 +506,83 @@ namespace YYTools
                     BeginInvoke(new Action(() => ShowLoading(true)));
                 }
                 
-                // 使用异步任务管理器并行处理列信息
-                _uiTaskManager.StartBackgroundTask(
-                    taskName: "PopulateColumns",
-                    taskFactory: (token, progress) =>
+                // 重要：直接在UI线程中处理所有Excel操作，避免线程安全问题
+                if (IsHandleCreated && !IsDisposed)
+                {
+                    BeginInvoke(new Action(() =>
                     {
                         try
                         {
-                            progress?.Report(new TaskProgress(10, "正在解析列信息..."));
+                            // 在UI线程中获取列信息
+                            var columns = DataManager.GetColumnInfos(ws);
+                            var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
                             
-                            // 在UI线程中获取列信息，确保Excel COM对象访问的线程安全
-                            List<ColumnInfo> columns = null;
-                            if (IsHandleCreated && !IsDisposed)
+                            // 线程安全地更新缓存
+                            lock (columnCache)
                             {
-                                // 使用Invoke确保在UI线程中执行Excel操作
-                                columns = (List<ColumnInfo>)Invoke(new Func<List<ColumnInfo>>(() =>
-                                {
-                                    try
-                                    {
-                                        // 优先从统一的 DataManager 缓存获取列信息
-                                        var cols = DataManager.GetColumnInfos(ws);
-                                        var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
-                                        
-                                        // 线程安全地更新缓存
-                                        lock (columnCache)
-                                        {
-                                            columnCache[cacheKey] = cols;
-                                        }
-                                        
-                                        return cols;
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Logger.LogError($"获取列信息失败: {ex.Message}");
-                                        return new List<ColumnInfo>();
-                                    }
-                                }));
+                                columnCache[cacheKey] = columns;
                             }
                             
                             if (columns == null || columns.Count == 0)
                             {
                                 Logger.LogWarning("未能获取到列信息");
-                                return System.Threading.Tasks.Task.CompletedTask;
+                                return;
                             }
 
-                            progress?.Report(new TaskProgress(50, "正在获取工作表统计信息..."));
+                            // 获取工作表统计信息
+                            var worksheetStats = ExcelHelper.GetWorksheetStats(ws);
                             
-                            // 在UI线程中获取工作表统计信息
-                            var worksheetStats = new { rows = 0, columns = 0 };
-                            if (IsHandleCreated && !IsDisposed)
+                            // 更新统计信息提示
+                            if (worksheetStats.rows > 0 || worksheetStats.columns > 0)
                             {
-                                worksheetStats = (dynamic)Invoke(new Func<object>(() =>
-                                {
-                                    try
-                                    {
-                                        var stats = ExcelHelper.GetWorksheetStats(ws);
-                                        return new { rows = stats.rows, columns = stats.columns };
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Logger.LogError($"获取工作表统计信息失败: {ex.Message}");
-                                        return new { rows = 0, columns = 0 };
-                                    }
-                                }));
+                                string statsString = $"总行数: {worksheetStats.rows:N0} | 总列数: {worksheetStats.columns:N0}";
+                                toolTip1.SetToolTip(wsCombo, statsString);
                             }
 
-                            progress?.Report(new TaskProgress(70, "正在处理智能列匹配..."));
-                            
-                            // 在UI线程中处理智能列匹配
-                            Dictionary<string, ColumnInfo> matchedColumns = new Dictionary<string, ColumnInfo>();
-                            if (IsHandleCreated && !IsDisposed && settings.EnableSmartColumnSelection)
+                            // 更新列下拉框
+                            foreach (var combo in columnCombos)
                             {
-                                matchedColumns = (Dictionary<string, ColumnInfo>)Invoke(new Func<Dictionary<string, ColumnInfo>>(() =>
-                                {
-                                    try
-                                    {
-                                        return SmartColumnService.SmartMatchColumns(columns);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Logger.LogError($"智能列匹配失败: {ex.Message}");
-                                        return new Dictionary<string, ColumnInfo>();
-                                    }
-                                }));
+                                combo.DisplayMember = "ToString";
+                                combo.ValueMember = "ColumnLetter";
+                                combo.DataSource = new BindingSource(columns, null);
+                                combo.SelectedIndex = -1;
                             }
 
-                            progress?.Report(new TaskProgress(80, "正在更新UI..."));
-                            
-                            // 在UI线程中更新界面
-                            if (IsHandleCreated && !IsDisposed)
+                            // 应用智能列选择
+                            if (settings.EnableSmartColumnSelection)
                             {
-                                BeginInvoke(new Action(() =>
+                                var matchedColumns = SmartColumnService.SmartMatchColumns(columns);
+                                if (matchedColumns.Count > 0)
                                 {
-                                    try
+                                    ApplySmartColumnSelection(columnCombos, matchedColumns);
+                                    
+                                    foreach (var combo in columnCombos)
                                     {
-                                        // 更新统计信息提示
-                                        if (worksheetStats.rows > 0 || worksheetStats.columns > 0)
+                                        if (combo.SelectedItem != null && comboBoxColumnTypeMap.ContainsKey(combo))
                                         {
-                                            string statsString = $"总行数: {worksheetStats.rows:N0} | 总列数: {worksheetStats.columns:N0}";
-                                            toolTip1.SetToolTip(wsCombo, statsString);
+                                            ValidateAndUpdateColumnInfo(combo);
                                         }
-
-                                        // 更新列下拉框
-                                        foreach (var combo in columnCombos)
-                                        {
-                                            combo.DisplayMember = "ToString";
-                                            combo.ValueMember = "ColumnLetter";
-                                            combo.DataSource = new BindingSource(columns, null);
-                                            combo.SelectedIndex = -1;
-                                        }
-
-                                        // 应用智能列选择
-                                        if (matchedColumns.Count > 0)
-                                        {
-                                            ApplySmartColumnSelection(columnCombos, matchedColumns);
-                                            
-                                            foreach (var combo in columnCombos)
-                                            {
-                                                if (combo.SelectedItem != null && comboBoxColumnTypeMap.ContainsKey(combo))
-                                                {
-                                                    ValidateAndUpdateColumnInfo(combo);
-                                                }
-                                            }
-                                        }
-
-                                        // 更新状态和预览
-                                        lblStatus.Text = $"已加载 {workbooks.Count} 个工作簿。请配置并开始任务。";
-                                        RefreshWritePreview();
                                     }
-                                    catch (Exception ex)
-                                    {
-                                        Logger.LogError($"更新列下拉框UI失败: {ex.Message}");
-                                    }
-                                }));
+                                }
                             }
+
+                            // 更新状态和预览
+                            lblStatus.Text = $"已加载 {workbooks.Count} 个工作簿。请配置并开始任务。";
+                            RefreshWritePreview();
                             
-                            progress?.Report(new TaskProgress(100, "列信息加载完成"));
-                            Logger.LogInfo($"列信息加载完成: {wbInfo.Name}/{wsCombo.SelectedItem} 列数: {columns?.Count ?? 0}");
+                            Logger.LogInfo($"列信息更新完成: {wbInfo.Name}/{wsCombo.SelectedItem} 列数: {columns?.Count ?? 0}");
                         }
                         catch (Exception ex)
                         {
-                            Logger.LogError($"并行处理列信息失败: {ex.Message}");
+                            Logger.LogError($"更新列下拉框UI失败: {ex.Message}");
                         }
                         finally
                         {
-                            // 在UI线程中隐藏加载状态
-                            if (IsHandleCreated && !IsDisposed)
-                            {
-                                BeginInvoke(new Action(() => ShowLoading(false)));
-                            }
+                            // 隐藏加载状态
+                            ShowLoading(false);
                         }
-                        
-                        return System.Threading.Tasks.Task.CompletedTask;
-                    },
-                    allowMultiple: false
-                );
+                    }));
+                }
             }
             catch (Exception ex)
             {

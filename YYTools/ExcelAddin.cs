@@ -158,16 +158,13 @@ namespace YYTools
                 Excel.Workbook activeWorkbook = null;
                 try { activeWorkbook = app.ActiveWorkbook; } catch { }
 
-                // 使用线程同步锁确保COM对象访问的线程安全
-                lock (app)
+                // 性能优化：减少锁的使用，提高性能
+                foreach (Excel.Workbook wb in app.Workbooks)
                 {
-                    foreach (Excel.Workbook wb in app.Workbooks)
+                    if (wb != null && !string.IsNullOrEmpty(wb.Name))
                     {
-                        if (wb != null && !string.IsNullOrEmpty(wb.Name))
-                        {
-                            bool isActive = activeWorkbook != null && string.Equals(wb.Name, activeWorkbook.Name, StringComparison.OrdinalIgnoreCase);
-                            result.Add(new WorkbookInfo { Name = wb.Name, Workbook = wb, IsActive = isActive });
-                        }
+                        bool isActive = activeWorkbook != null && string.Equals(wb.Name, activeWorkbook.Name, StringComparison.OrdinalIgnoreCase);
+                        result.Add(new WorkbookInfo { Name = wb.Name, Workbook = wb, IsActive = isActive });
                     }
                 }
                 if (result.Count > 0 && result.All(r => !r.IsActive))
@@ -189,13 +186,10 @@ namespace YYTools
             {
                 if (workbook?.Worksheets != null)
                 {
-                    // 使用线程同步锁确保COM对象访问的线程安全
-                    lock (workbook)
+                    // 性能优化：减少锁的使用，提高性能
+                    foreach (Excel.Worksheet ws in workbook.Worksheets)
                     {
-                        foreach (Excel.Worksheet ws in workbook.Worksheets)
-                        {
-                            if (ws != null) list.Add(ws.Name);
-                        }
+                        if (ws != null) list.Add(ws.Name);
                     }
                 }
             }
