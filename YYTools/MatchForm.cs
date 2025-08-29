@@ -35,6 +35,8 @@ namespace YYTools
             InitializeCustomComponents();
             InitializeBackgroundWorker();
             InitializeForm();
+            // 初始化完成后强制一次布局，消除隐藏面板造成的空白
+            try { this.BeginInvoke(new Action(() => MatchForm_Resize(this, EventArgs.Empty))); } catch { }
             
             // 记录窗体创建日志
             Logger.LogUserAction("主窗体创建", "MatchForm已初始化", "成功");
@@ -58,6 +60,7 @@ namespace YYTools
                     {
                         try { LoadMatcherSettings(); } catch { }
                         try { StartInitialParsingIfNeeded(); } catch { }
+                        try { MatchForm_Resize(this, EventArgs.Empty); } catch { }
                     }));
                 }
                 catch { }
@@ -88,6 +91,27 @@ namespace YYTools
             cmbSort.SelectedIndexChanged += (s, e) => RefreshWritePreview();
             
             cmbSort.SelectedIndex = 0;
+            // 初始化时根据设置标识预览框标题
+            try
+            {
+                if (gbWritePreview != null)
+                {
+                    gbWritePreview.Text = AppSettings.Instance.EnableWritePreview ? "写入效果预览" : "写入效果预览（未开启）";
+                }
+            }
+            catch { }
+
+            // 统一为所有下拉框增加悬浮提示与下拉宽度调整
+            AttachTooltipForCombo(cmbShippingWorkbook, () => GetSelectedWorkbookFullPath(cmbShippingWorkbook));
+            AttachTooltipForCombo(cmbBillWorkbook, () => GetSelectedWorkbookFullPath(cmbBillWorkbook));
+            AttachTooltipForCombo(cmbShippingSheet, () => cmbShippingSheet.SelectedItem?.ToString() ?? "");
+            AttachTooltipForCombo(cmbBillSheet, () => cmbBillSheet.SelectedItem?.ToString() ?? "");
+            AttachTooltipForCombo(cmbShippingTrackColumn, () => cmbShippingTrackColumn.SelectedItem?.ToString() ?? "");
+            AttachTooltipForCombo(cmbShippingProductColumn, () => cmbShippingProductColumn.SelectedItem?.ToString() ?? "");
+            AttachTooltipForCombo(cmbShippingNameColumn, () => cmbShippingNameColumn.SelectedItem?.ToString() ?? "");
+            AttachTooltipForCombo(cmbBillTrackColumn, () => cmbBillTrackColumn.SelectedItem?.ToString() ?? "");
+            AttachTooltipForCombo(cmbBillProductColumn, () => cmbBillProductColumn.SelectedItem?.ToString() ?? "");
+            AttachTooltipForCombo(cmbBillNameColumn, () => cmbBillNameColumn.SelectedItem?.ToString() ?? "");
         }
         
         private void MatchForm_Resize(object sender, EventArgs e)
@@ -97,29 +121,74 @@ namespace YYTools
                 // 确保所有面板能够正确跟随窗体大小变化
                 int margin = 12;
                 int availableWidth = this.ClientSize.Width - (margin * 2);
+                int rightPadding = margin;
+                int top = menuStrip1.Height + margin;
+                int bottomReserved = (panelButtons?.Height ?? 0) + (panelStatus?.Height ?? 0) + margin;
                 
                 // 调整发货明细配置面板
                 if (gbShipping != null)
                 {
                     gbShipping.Width = availableWidth;
+                    gbShipping.Left = margin;
+                    gbShipping.Top = top;
+                    top = gbShipping.Bottom + margin;
+                    // 让下拉框自适应宽度
+                    foreach (var ctl in gbShipping.Controls)
+                    {
+                        var combo = ctl as ComboBox;
+                        if (combo != null)
+                        {
+                            combo.Width = availableWidth - 110 - rightPadding; // 左侧标签约110宽
+                            // 留出右边距更美观
+                            combo.Anchor = ((AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right));
+                        }
+                    }
                 }
                 
                 // 调整账单明细配置面板
                 if (gbBill != null)
                 {
                     gbBill.Width = availableWidth;
+                    gbBill.Left = margin;
+                    gbBill.Top = top;
+                    top = gbBill.Bottom + margin;
+                    foreach (var ctl in gbBill.Controls)
+                    {
+                        var combo = ctl as ComboBox;
+                        if (combo != null)
+                        {
+                            combo.Width = availableWidth - 110 - rightPadding;
+                            combo.Anchor = ((AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right));
+                        }
+                    }
                 }
                 
-                // 调整任务配置面板
+                // 调整任务配置面板（已隐藏，不占位）
                 if (gbOptions != null)
                 {
                     gbOptions.Width = availableWidth;
+                    if (gbOptions.Visible)
+                    {
+                        gbOptions.Left = margin;
+                        gbOptions.Top = top;
+                        top = gbOptions.Bottom + margin;
+                    }
                 }
                 
                 // 调整写入预览面板
                 if (gbWritePreview != null)
                 {
                     gbWritePreview.Width = availableWidth;
+                    gbWritePreview.Left = margin;
+                    gbWritePreview.Top = top;
+                    int maxHeight = this.ClientSize.Height - bottomReserved - gbWritePreview.Top;
+                    if (maxHeight < 80) maxHeight = 80; // 保底高度
+                    if (gbWritePreview.Height > maxHeight) gbWritePreview.Height = maxHeight;
+                    // 文本框宽度随之变化
+                    if (txtWritePreview != null)
+                    {
+                        txtWritePreview.Width = availableWidth - 31; // 留内边距
+                    }
                 }
                 
                 // 调整按钮面板
@@ -147,6 +216,11 @@ namespace YYTools
         {
             try
             {
+                if (!AppSettings.Instance.EnableWritePreview)
+                {
+                    // 未开启预览则不刷新
+                    return;
+                }
                 if (_debounceTimer != null)
                 {
                     _debounceTimer.Stop();
@@ -208,6 +282,11 @@ namespace YYTools
         {
             txtDelimiter.Text = settings.ConcatenationDelimiter;
             chkRemoveDuplicates.Checked = settings.RemoveDuplicateItems;
+            // 当未启用写入预览时，给出提示
+            if (!settings.EnableWritePreview && txtWritePreview != null)
+            {
+                txtWritePreview.Text = "提示：未开启写入预览。可在 菜单-工具-任务选项-性能与预览 中开启。";
+            }
         }
 
         private void RefreshWorkbookList()
@@ -232,6 +311,15 @@ namespace YYTools
 
                 UpdateUIWithWorkbooks();
                 PopulateComboBoxes();
+                // 根据设置更新写入预览分组标题
+                try
+                {
+                    if (gbWritePreview != null)
+                    {
+                        gbWritePreview.Text = AppSettings.Instance.EnableWritePreview ? "写入效果预览" : "写入效果预览（未开启）";
+                    }
+                }
+                catch { }
             }
             catch (Exception ex)
             {
@@ -252,8 +340,25 @@ namespace YYTools
             cmbBillWorkbook.Items.Clear();
             cmbShippingWorkbook.Items.AddRange(displayNames);
             cmbBillWorkbook.Items.AddRange(displayNames);
-            toolTip1.SetToolTip(cmbShippingWorkbook, "选择包含发货明细的工作簿");
-            toolTip1.SetToolTip(cmbBillWorkbook, "选择包含账单明细的工作簿");
+            // 设置悬浮提示显示全路径（鼠标悬浮显示所有已打开工作簿全路径，便于辨识）
+            try
+            {
+                if (workbooks.Count > 0)
+                {
+                    string[] fullPaths = workbooks.Select(wb => wb.Workbook.FullName ?? wb.Workbook.Name).ToArray();
+                    toolTip1.SetToolTip(cmbShippingWorkbook, string.Join("\n", fullPaths));
+                    toolTip1.SetToolTip(cmbBillWorkbook, string.Join("\n", fullPaths));
+                }
+            }
+            catch { }
+            // 工具提示显示全路径
+            try
+            {
+                string[] fullPaths = workbooks.Select(wb => wb.Workbook.FullName ?? wb.Workbook.Name).ToArray();
+                toolTip1.SetToolTip(cmbShippingWorkbook, string.Join("\n", fullPaths));
+                toolTip1.SetToolTip(cmbBillWorkbook, string.Join("\n", fullPaths));
+            }
+            catch { }
 
             if (!string.IsNullOrEmpty(prevShipping) && cmbShippingWorkbook.Items.Contains(prevShipping))
                 cmbShippingWorkbook.SelectedItem = prevShipping;
@@ -290,8 +395,16 @@ namespace YYTools
             lblStatus.Text = $"已加载 {workbooks.Count} 个工作簿。请配置并开始任务。";
         }
 
-        private void cmbShippingWorkbook_SelectedIndexChanged(object sender, EventArgs e) => LoadSheetsForWorkbook(cmbShippingWorkbook, cmbShippingSheet);
-        private void cmbBillWorkbook_SelectedIndexChanged(object sender, EventArgs e) => LoadSheetsForWorkbook(cmbBillWorkbook, cmbBillSheet);
+        private void cmbShippingWorkbook_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            UpdateComboTooltipWithSelectedPath(cmbShippingWorkbook);
+            LoadSheetsForWorkbook(cmbShippingWorkbook, cmbShippingSheet);
+        }
+        private void cmbBillWorkbook_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            UpdateComboTooltipWithSelectedPath(cmbBillWorkbook);
+            LoadSheetsForWorkbook(cmbBillWorkbook, cmbBillSheet);
+        }
 
         private void cmbShippingSheet_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -426,7 +539,20 @@ namespace YYTools
                         try
                         {
                             sheetCombo.Items.AddRange(sheetNames.ToArray());
-                            toolTip1.SetToolTip(sheetCombo, $"在工作簿 '{selectedWorkbook.Name}' 中选择一个工作表");
+                            // 计算当前文件大小（MB）并显示在提示最前面（仅针对选中项提示）
+                            string sizePrefix = "";
+                            try
+                            {
+                                var fi = new System.IO.FileInfo(selectedWorkbook.FullName ?? selectedWorkbook.Name);
+                                if (fi.Exists)
+                                {
+                                    double mb = fi.Length / 1024.0 / 1024.0;
+                                    sizePrefix = $"{mb:F2} MB\n";
+                                }
+                            }
+                            catch { }
+                            toolTip1.SetToolTip(sheetCombo, sizePrefix + (sheetCombo.SelectedItem?.ToString() ?? $"在工作簿 '{selectedWorkbook.Name}' 中选择一个工作表"));
+                            TryAdjustComboDropDownWidth(sheetCombo);
 
                             string[] keywords = sheetCombo == cmbShippingSheet ? new[] { "发货明细", "发货" } : new[] { "账单明细", "账单" };
                             SetDefaultSheet(sheetCombo, keywords);
@@ -946,6 +1072,8 @@ namespace YYTools
                 TaskOptionsForm.ShowTaskOptions(this);
                 // 重新加载设置
                 LoadMatcherSettings();
+                // 任务选项中切换列数据预览时需要刷新列表与界面
+                RefreshWorkbookList();
                 RefreshWritePreview();
             }
             catch (Exception ex)
@@ -1130,6 +1258,10 @@ namespace YYTools
         {
             try
             {
+                if (!AppSettings.Instance.EnableWritePreview)
+                {
+                    return;
+                }
                 // 确保在UI线程中执行所有UI操作
                 if (!IsHandleCreated || IsDisposed) return;
                 
@@ -1351,6 +1483,94 @@ namespace YYTools
                 }
             }
             base.OnFormClosing(e);
+        }
+
+        private void TryAdjustComboDropDownWidth(ComboBox combo)
+        {
+            try
+            {
+                if (combo == null || combo.Items.Count == 0) return;
+                using (var g = combo.CreateGraphics())
+                {
+                    int max = combo.DropDownWidth;
+                    int maxLimit = Math.Max(200, this.ClientSize.Width - 40);
+                    for (int i = 0; i < combo.Items.Count; i++)
+                    {
+                        string text = combo.GetItemText(combo.Items[i]);
+                        int width = (int)g.MeasureString(text, combo.Font).Width + 25;
+                        if (width > max) max = width;
+                        if (max > maxLimit) { max = maxLimit; break; }
+                    }
+                    combo.DropDownWidth = max;
+                }
+            }
+            catch { }
+        }
+
+        private void UpdateComboTooltipWithSelectedPath(ComboBox combo)
+        {
+            try
+            {
+                string tip = string.Empty;
+                if (combo == cmbShippingWorkbook || combo == cmbBillWorkbook)
+                {
+                    int idx = combo.SelectedIndex;
+                    if (idx >= 0 && idx < workbooks.Count)
+                    {
+                        var wb = workbooks[idx].Workbook;
+                        tip = wb.FullName ?? wb.Name;
+                    }
+                }
+                else
+                {
+                    tip = combo.SelectedItem?.ToString() ?? string.Empty;
+                }
+                if (!string.IsNullOrEmpty(tip)) toolTip1.SetToolTip(combo, tip);
+            }
+            catch { }
+        }
+
+        private string GetSelectedWorkbookFullPath(ComboBox combo)
+        {
+            try
+            {
+                int idx = combo.SelectedIndex;
+                if (idx >= 0 && idx < workbooks.Count)
+                {
+                    var wb = workbooks[idx].Workbook;
+                    return wb.FullName ?? wb.Name;
+                }
+            }
+            catch { }
+            return string.Empty;
+        }
+
+        private void AttachTooltipForCombo(ComboBox combo, Func<string> textProvider)
+        {
+            try
+            {
+                if (combo == null) return;
+                combo.MouseMove += (s, e) =>
+                {
+                    try
+                    {
+                        string tip = textProvider?.Invoke() ?? string.Empty;
+                        if (!string.IsNullOrEmpty(tip)) toolTip1.SetToolTip(combo, tip);
+                    }
+                    catch { }
+                };
+                combo.DropDown += (s, e) => TryAdjustComboDropDownWidth(combo);
+                combo.SelectedIndexChanged += (s, e) =>
+                {
+                    try
+                    {
+                        string tip = textProvider?.Invoke() ?? string.Empty;
+                        if (!string.IsNullOrEmpty(tip)) toolTip1.SetToolTip(combo, tip);
+                    }
+                    catch { }
+                };
+            }
+            catch { }
         }
     }
 }

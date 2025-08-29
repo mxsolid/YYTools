@@ -1,3 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+
+# 使用 msbuild 编译 .NET Framework 4.8 解决方案/项目
+# 注意：在非Windows环境下仅做语法/结构检查；Windows下应使用 Developer Command Prompt
+
+echo "==> 开始编译 (UTF-8)"
+PROJECTS=("YYTools/YYTools.csproj" "TestApp/TestApp.csproj")
+
+for proj in "${PROJECTS[@]}"; do
+  if [ -f "$proj" ]; then
+    echo "-- 编译: $proj"
+    msbuild "$proj" -t:Rebuild -p:Configuration=Release -p:Platform="Any CPU" -verbosity:minimal | cat
+  else
+    echo "-- 跳过: $proj (未找到)"
+  fi
+done
+
+echo "==> 编译完成"
+exit 0
+
 #!/bin/bash
 
 echo "========================================"

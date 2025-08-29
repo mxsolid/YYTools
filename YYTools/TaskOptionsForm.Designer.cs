@@ -39,6 +39,8 @@ namespace YYTools
             this.cmbDelimiter = new System.Windows.Forms.ComboBox();
             this.lblDelimiter = new System.Windows.Forms.Label();
             this.tabPerformance = new System.Windows.Forms.TabPage();
+            this.chkEnableColumnDataPreview = new System.Windows.Forms.CheckBox();
+            this.chkEnableWritePreview = new System.Windows.Forms.CheckBox();
             this.cmbPreviewRows = new System.Windows.Forms.ComboBox();
             this.lblPreviewRows = new System.Windows.Forms.Label();
             this.chkEnableProgressReporting = new System.Windows.Forms.CheckBox();
@@ -172,6 +174,8 @@ namespace YYTools
             // 
             // tabPerformance
             // 
+            this.tabPerformance.Controls.Add(this.chkEnableWritePreview);
+            this.tabPerformance.Controls.Add(this.chkEnableColumnDataPreview);
             this.tabPerformance.Controls.Add(this.cmbPreviewRows);
             this.tabPerformance.Controls.Add(this.lblPreviewRows);
             this.tabPerformance.Controls.Add(this.chkEnableProgressReporting);
@@ -179,6 +183,26 @@ namespace YYTools
             this.tabPerformance.Controls.Add(this.lblMaxPreviewRows);
             this.tabPerformance.Controls.Add(this.numBatchSize);
             this.tabPerformance.Controls.Add(this.lblBatchSize);
+            // chkEnableColumnDataPreview
+            // 
+            this.chkEnableColumnDataPreview.AutoSize = true;
+            this.chkEnableColumnDataPreview.Location = new System.Drawing.Point(18, 165);
+            this.chkEnableColumnDataPreview.Name = "chkEnableColumnDataPreview";
+            this.chkEnableColumnDataPreview.Size = new System.Drawing.Size(171, 21);
+            this.chkEnableColumnDataPreview.TabIndex = 6;
+            this.chkEnableColumnDataPreview.Text = "启用列数据解析与示例预览";
+            this.chkEnableColumnDataPreview.UseVisualStyleBackColor = true;
+            // 
+            // chkEnableWritePreview
+            // 
+            this.chkEnableWritePreview.AutoSize = true;
+            this.chkEnableWritePreview.Location = new System.Drawing.Point(18, 200);
+            this.chkEnableWritePreview.Name = "chkEnableWritePreview";
+            this.chkEnableWritePreview.Size = new System.Drawing.Size(147, 21);
+            this.chkEnableWritePreview.TabIndex = 7;
+            this.chkEnableWritePreview.Text = "启用实时写入效果预览";
+            this.chkEnableWritePreview.UseVisualStyleBackColor = true;
+            // 
             this.tabPerformance.Location = new System.Drawing.Point(4, 26);
             this.tabPerformance.Name = "tabPerformance";
             this.tabPerformance.Padding = new System.Windows.Forms.Padding(10);
@@ -380,5 +404,7 @@ namespace YYTools
         private System.Windows.Forms.Label lblMinMatchScore;
         private System.Windows.Forms.TrackBar trkMinMatchScore;
         private System.Windows.Forms.Label lblMinMatchScoreValue;
+        private System.Windows.Forms.CheckBox chkEnableColumnDataPreview;
+        private System.Windows.Forms.CheckBox chkEnableWritePreview;
     }
 }

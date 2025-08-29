@@ -50,14 +50,15 @@ namespace YYTools
 
                 int colCount = Math.Min(usedRange.Columns.Count, 100); // 限制最大扫描列数防止卡顿
                 int rowCount = Math.Min(usedRange.Rows.Count, maxRowsForPreview);
+                bool enableDataPreview = AppSettings.Instance.EnableColumnDataPreview;
 
                 for (int i = 1; i <= colCount; i++)
                 {
                     string colLetter = ExcelHelper.GetColumnLetter(i);
                     string headerText = "";
                     string previewData = "";
+                    int maxScan = Math.Min(usedRange.Rows.Count, Math.Max(1, enableDataPreview ? rowCount : 5));
                     int found = 0;
-                    int maxScan = Math.Min(usedRange.Rows.Count, rowCount);
                     bool firstFiveAllEmpty = true;
                     for (int row = 1; row <= maxScan; row++)
                     {
@@ -67,8 +68,13 @@ namespace YYTools
                         if (!string.IsNullOrWhiteSpace(value))
                         {
                             found++;
-                            if (found == 1) headerText = value;
-                            else if (found == 2) { previewData = value.Length > 50 ? value.Substring(0, 50) + "..." : value; break; }
+                            if (found == 1) headerText = value; // 第一条非空作为标题
+                            else if (enableDataPreview && found == 2)
+                            {
+                                // 仅在启用数据预览时填充示例
+                                previewData = value.Length > 50 ? value.Substring(0, 50) + "..." : value;
+                                break;
+                            }
                         }
                         if (row == 5 && firstFiveAllEmpty)
                         {
