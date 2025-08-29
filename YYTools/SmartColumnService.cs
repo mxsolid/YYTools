@@ -57,26 +57,28 @@ namespace YYTools
                     string colLetter = ExcelHelper.GetColumnLetter(i);
                     string headerText = "";
                     string previewData = "";
-                    if (enableDataPreview)
+                    int maxScan = Math.Min(usedRange.Rows.Count, Math.Max(1, enableDataPreview ? rowCount : 5));
+                    int found = 0;
+                    bool firstFiveAllEmpty = true;
+                    for (int row = 1; row <= maxScan; row++)
                     {
-                        int found = 0;
-                        int maxScan = Math.Min(usedRange.Rows.Count, rowCount);
-                        bool firstFiveAllEmpty = true;
-                        for (int row = 1; row <= maxScan; row++)
+                        var cell = worksheet.Cells[row, i] as Excel.Range;
+                        string value = cell?.Value2?.ToString().Trim() ?? "";
+                        if (row <= 5 && !string.IsNullOrWhiteSpace(value)) firstFiveAllEmpty = false;
+                        if (!string.IsNullOrWhiteSpace(value))
                         {
-                            var cell = worksheet.Cells[row, i] as Excel.Range;
-                            string value = cell?.Value2?.ToString().Trim() ?? "";
-                            if (row <= 5 && !string.IsNullOrWhiteSpace(value)) firstFiveAllEmpty = false;
-                            if (!string.IsNullOrWhiteSpace(value))
+                            found++;
+                            if (found == 1) headerText = value; // 第一条非空作为标题
+                            else if (enableDataPreview && found == 2)
                             {
-                                found++;
-                                if (found == 1) headerText = value;
-                                else if (found == 2) { previewData = value.Length > 50 ? value.Substring(0, 50) + "..." : value; break; }
-                            }
-                            if (row == 5 && firstFiveAllEmpty)
-                            {
+                                // 仅在启用数据预览时填充示例
+                                previewData = value.Length > 50 ? value.Substring(0, 50) + "..." : value;
                                 break;
                             }
+                        }
+                        if (row == 5 && firstFiveAllEmpty)
+                        {
+                            break;
                         }
                     }
                     bool isValid = !string.IsNullOrWhiteSpace(headerText) || !string.IsNullOrWhiteSpace(previewData);
