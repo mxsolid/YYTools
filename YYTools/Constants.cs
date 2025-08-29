@@ -74,6 +74,7 @@ namespace YYTools
         // 写入预览解析行数选项
         public static readonly int[] PreviewRowOptions = { 5, 10, 20, 50, 100 };
         public const int DefaultPreviewRows = 20; // 默认选择20行
+        public const int DefaultPreviewParseRows = 20; // 默认预览解析行数
         
         // 文件大小限制 (MB)
         public const long MaxFileSizeMB = 500;

@@ -95,12 +95,12 @@ namespace YYTools
                 
                 // 获取结果
                 shippingIndex = shippingTask.Result;
-                var billData = billPreprocessTask.Result;
+                var processedBillData = billPreprocessTask.Result;
                 
                 progressCallback?.Invoke(60, "正在处理账单明细...");
                 
                 // 使用预处理的数据处理账单明细
-                ProcessBillDetailsWithPreprocessedData(billSheet, config, shippingIndex, billData, result, progressCallback);
+                ProcessBillDetailsWithPreprocessedData(billSheet, config, shippingIndex, processedBillData, result, progressCallback);
                 
                 if (CancellationCheck?.Invoke() == true) { result.ErrorMessage = "任务被用户取消"; return result; }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Linq; // Added for Cast<object>()
 
 namespace YYTools
 {
@@ -295,7 +296,7 @@ namespace YYTools
 
                 // 加载预览配置
                 cmbPreviewRows.Items.Clear();
-                cmbPreviewRows.Items.AddRange(_settings.GetPreviewRowOptions());
+                cmbPreviewRows.Items.AddRange(_settings.GetPreviewRowOptions().Cast<object>().ToArray());
                 // 设置选中的预览行数
                 for (int i = 0; i < cmbPreviewRows.Items.Count; i++)
                 {

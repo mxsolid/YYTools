@@ -26,6 +26,10 @@ namespace YYTools
         public Excel.Workbook ShippingWorkbook { get; set; }
         public Excel.Workbook BillWorkbook { get; set; }
         public SortOption SortOption { get; set; }
+        
+        // 添加拼接和去重配置
+        public string ConcatenationDelimiter { get; set; } = "、";
+        public bool RemoveDuplicateItems { get; set; } = true;
     }
 
     /// <summary>

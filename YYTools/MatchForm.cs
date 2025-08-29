@@ -479,7 +479,7 @@ namespace YYTools
                             // 等待并行任务完成
                             await System.Threading.Tasks.Task.WhenAll(statsTask, smartMatchTask);
                             
-                            var stats = statsTask.Result;
+                            var worksheetStats = statsTask.Result;
                             var matchedColumns = smartMatchTask.Result;
 
                             progress?.Report(new TaskProgress(80, "正在更新UI..."));
@@ -492,9 +492,9 @@ namespace YYTools
                                     try
                                     {
                                         // 更新统计信息提示
-                                        if (stats.rows > 0 || stats.columns > 0)
+                                        if (worksheetStats.rows > 0 || worksheetStats.columns > 0)
                                         {
-                                            string statsString = $"总行数: {stats.rows:N0} | 总列数: {stats.columns:N0}";
+                                            string statsString = $"总行数: {worksheetStats.rows:N0} | 总列数: {worksheetStats.columns:N0}";
                                             toolTip1.SetToolTip(wsCombo, statsString);
                                         }
 
