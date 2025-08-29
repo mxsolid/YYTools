@@ -388,8 +388,16 @@ namespace YYTools
 
         private void LoadSheetsForWorkbook(ComboBox workbookCombo, ComboBox sheetCombo)
         {
-            sheetCombo.Items.Clear();
-            toolTip1.SetToolTip(sheetCombo, "");
+            // 确保在UI线程中执行UI操作
+            if (IsHandleCreated && !IsDisposed)
+            {
+                BeginInvoke(new Action(() =>
+                {
+                    sheetCombo.Items.Clear();
+                    toolTip1.SetToolTip(sheetCombo, "");
+                }));
+            }
+            
             if (workbookCombo.SelectedIndex < 0 || workbookCombo.SelectedIndex >= workbooks.Count) return;
 
             try
@@ -397,11 +405,26 @@ namespace YYTools
                 Excel.Workbook selectedWorkbook = workbooks[workbookCombo.SelectedIndex].Workbook;
                 // 使用 DataManager 缓存工作表列表
                 List<string> sheetNames = DataManager.GetSheetNames(selectedWorkbook);
-                sheetCombo.Items.AddRange(sheetNames.ToArray());
-                toolTip1.SetToolTip(sheetCombo, $"在工作簿 '{selectedWorkbook.Name}' 中选择一个工作表");
+                
+                // 在UI线程中更新工作表列表
+                if (IsHandleCreated && !IsDisposed)
+                {
+                    BeginInvoke(new Action(() =>
+                    {
+                        try
+                        {
+                            sheetCombo.Items.AddRange(sheetNames.ToArray());
+                            toolTip1.SetToolTip(sheetCombo, $"在工作簿 '{selectedWorkbook.Name}' 中选择一个工作表");
 
-                string[] keywords = sheetCombo == cmbShippingSheet ? new[] { "发货明细", "发货" } : new[] { "账单明细", "账单" };
-                SetDefaultSheet(sheetCombo, keywords);
+                            string[] keywords = sheetCombo == cmbShippingSheet ? new[] { "发货明细", "发货" } : new[] { "账单明细", "账单" };
+                            SetDefaultSheet(sheetCombo, keywords);
+                        }
+                        catch (Exception ex)
+                        {
+                            WriteLog("加载工作表失败: " + ex.Message, LogLevel.Error);
+                        }
+                    }));
+                }
             }
             catch (Exception ex)
             {
@@ -411,8 +434,20 @@ namespace YYTools
 
         private void PopulateColumnComboBoxes(ComboBox wbCombo, ComboBox wsCombo, params ComboBox[] columnCombos)
         {
-            foreach (var combo in columnCombos) { combo.DataSource = null; combo.Items.Clear(); combo.Text = ""; }
-            toolTip1.SetToolTip(wsCombo, "请选择工作表");
+            // 确保在UI线程中执行初始清理操作
+            if (IsHandleCreated && !IsDisposed)
+            {
+                BeginInvoke(new Action(() =>
+                {
+                    foreach (var combo in columnCombos) 
+                    { 
+                        combo.DataSource = null; 
+                        combo.Items.Clear(); 
+                        combo.Text = ""; 
+                    }
+                    toolTip1.SetToolTip(wsCombo, "请选择工作表");
+                }));
+            }
 
             if (wbCombo.SelectedIndex < 0 || wsCombo.SelectedIndex < 0 || wsCombo.SelectedItem == null) return;
 
@@ -422,7 +457,11 @@ namespace YYTools
                 var ws = wbInfo.Workbook.Worksheets[wsCombo.SelectedItem.ToString()] as Excel.Worksheet;
                 if (ws == null) return;
 
-                ShowLoading(true);
+                // 在UI线程中显示加载状态
+                if (IsHandleCreated && !IsDisposed)
+                {
+                    BeginInvoke(new Action(() => ShowLoading(true)));
+                }
                 
                 // 使用异步任务管理器并行处理列信息
                 _uiTaskManager.StartBackgroundTask(
@@ -554,7 +593,11 @@ namespace YYTools
             catch (Exception ex)
             {
                 WriteLog("填充列下拉框失败: " + ex.Message, LogLevel.Error);
-                ShowLoading(false);
+                // 在UI线程中隐藏加载状态
+                if (IsHandleCreated && !IsDisposed)
+                {
+                    BeginInvoke(new Action(() => ShowLoading(false)));
+                }
             }
         }
 
@@ -1093,6 +1136,9 @@ namespace YYTools
         {
             try
             {
+                // 确保在UI线程中执行所有UI操作
+                if (!IsHandleCreated || IsDisposed) return;
+                
                 txtWritePreview.Text = "";
                 if (cmbShippingWorkbook.SelectedIndex < 0 || cmbShippingSheet.SelectedIndex < 0 || cmbShippingSheet.SelectedItem == null)
                 {
@@ -1119,110 +1165,159 @@ namespace YYTools
                 var ws = wbInfo.Workbook.Worksheets[cmbShippingSheet.SelectedItem.ToString()] as Excel.Worksheet;
                 if (ws == null) return;
 
-                Dictionary<string, List<ShippingItem>> previewIndex = new Dictionary<string, List<ShippingItem>>();
-                // 使用配置的预览行数，默认为20行
-                int maxScanRows = Math.Min(settings.PreviewParseRows, ws.UsedRange.Rows.Count);
-                int trackColNum = ExcelHelper.GetColumnNumber(trackCol);
-                int prodColNum = !string.IsNullOrEmpty(prodCol) && ExcelHelper.IsValidColumnLetter(prodCol) ? ExcelHelper.GetColumnNumber(prodCol) : -1;
-                int nameColNum = !string.IsNullOrEmpty(nameCol) && ExcelHelper.IsValidColumnLetter(nameCol) ? ExcelHelper.GetColumnNumber(nameCol) : -1;
-
-                // 多线程并行解析预览数据
-                var tasks = new List<System.Threading.Tasks.Task>();
-                var semaphore = new System.Threading.SemaphoreSlim(Math.Min(4, Environment.ProcessorCount));
-                
-                // 分批处理，每批处理一部分行
-                int batchSize = Math.Max(1, maxScanRows / 4);
-                for (int batchStart = 2; batchStart <= maxScanRows; batchStart += batchSize)
-                {
-                    int batchEnd = Math.Min(batchStart + batchSize - 1, maxScanRows);
-                    int startRow = batchStart;
-                    int endRow = batchEnd;
-                    
-                    tasks.Add(System.Threading.Tasks.Task.Run(async () =>
+                // 使用异步任务管理器在后台线程中处理Excel数据
+                _uiTaskManager.StartBackgroundTask(
+                    taskName: "RefreshWritePreview",
+                    taskFactory: async (token, progress) =>
                     {
-                        await semaphore.WaitAsync();
                         try
                         {
-                            var batchIndex = new Dictionary<string, List<ShippingItem>>();
+                            progress?.Report(new TaskProgress(10, "正在解析预览数据..."));
                             
-                            for (int r = startRow; r <= endRow; r++)
+                            Dictionary<string, List<ShippingItem>> previewIndex = new Dictionary<string, List<ShippingItem>>();
+                            // 使用配置的预览行数，默认为20行
+                            int maxScanRows = Math.Min(settings.PreviewParseRows, ws.UsedRange.Rows.Count);
+                            int trackColNum = ExcelHelper.GetColumnNumber(trackCol);
+                            int prodColNum = !string.IsNullOrEmpty(prodCol) && ExcelHelper.IsValidColumnLetter(prodCol) ? ExcelHelper.GetColumnNumber(prodCol) : -1;
+                            int nameColNum = !string.IsNullOrEmpty(nameCol) && ExcelHelper.IsValidColumnLetter(nameCol) ? ExcelHelper.GetColumnNumber(nameCol) : -1;
+
+                            progress?.Report(new TaskProgress(30, "正在并行解析数据..."));
+
+                            // 多线程并行解析预览数据
+                            var tasks = new List<System.Threading.Tasks.Task>();
+                            var semaphore = new System.Threading.SemaphoreSlim(Math.Min(4, Environment.ProcessorCount));
+                            
+                            // 分批处理，每批处理一部分行
+                            int batchSize = Math.Max(1, maxScanRows / 4);
+                            for (int batchStart = 2; batchStart <= maxScanRows; batchStart += batchSize)
                             {
-                                try
+                                int batchEnd = Math.Min(batchStart + batchSize - 1, maxScanRows);
+                                int startRow = batchStart;
+                                int endRow = batchEnd;
+                                
+                                tasks.Add(System.Threading.Tasks.Task.Run(async () =>
                                 {
-                                    string trackNumber = ExcelHelper.GetCellValue(ws.Cells[r, trackColNum]);
-                                    if (string.IsNullOrWhiteSpace(trackNumber)) continue;
-
-                                    if (!batchIndex.ContainsKey(trackNumber))
+                                    await semaphore.WaitAsync();
+                                    try
                                     {
-                                        batchIndex[trackNumber] = new List<ShippingItem>();
+                                        var batchIndex = new Dictionary<string, List<ShippingItem>>();
+                                        
+                                        for (int r = startRow; r <= endRow; r++)
+                                        {
+                                            try
+                                            {
+                                                string trackNumber = ExcelHelper.GetCellValue(ws.Cells[r, trackColNum]);
+                                                if (string.IsNullOrWhiteSpace(trackNumber)) continue;
+
+                                                if (!batchIndex.ContainsKey(trackNumber))
+                                                {
+                                                    batchIndex[trackNumber] = new List<ShippingItem>();
+                                                }
+
+                                                batchIndex[trackNumber].Add(new ShippingItem
+                                                {
+                                                    ProductCode = prodColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, prodColNum]) : "",
+                                                    ProductName = nameColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, nameColNum]) : ""
+                                                });
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                Logger.LogWarning($"预览解析行 {r} 失败: {ex.Message}");
+                                            }
+                                        }
+                                        
+                                        // 线程安全地合并结果
+                                        lock (previewIndex)
+                                        {
+                                            foreach (var kvp in batchIndex)
+                                            {
+                                                if (!previewIndex.ContainsKey(kvp.Key))
+                                                {
+                                                    previewIndex[kvp.Key] = new List<ShippingItem>();
+                                                }
+                                                previewIndex[kvp.Key].AddRange(kvp.Value);
+                                            }
+                                        }
                                     }
-
-                                    batchIndex[trackNumber].Add(new ShippingItem
+                                    finally
                                     {
-                                        ProductCode = prodColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, prodColNum]) : "",
-                                        ProductName = nameColNum > 0 ? ExcelHelper.GetCellValue(ws.Cells[r, nameColNum]) : ""
-                                    });
-                                }
-                                catch (Exception ex)
+                                        semaphore.Release();
+                                    }
+                                }));
+                            }
+
+                            progress?.Report(new TaskProgress(70, "等待解析完成..."));
+
+                            // 等待所有任务完成
+                            await System.Threading.Tasks.Task.WhenAll(tasks);
+                            
+                            progress?.Report(new TaskProgress(90, "正在生成预览..."));
+                            
+                            var exampleEntry = previewIndex.FirstOrDefault(kvp => kvp.Value.Count > 1);
+                            if (exampleEntry.Key == null) exampleEntry = previewIndex.FirstOrDefault();
+                            if (exampleEntry.Key == null)
+                            {
+                                // 在UI线程中更新预览文本
+                                if (IsHandleCreated && !IsDisposed)
                                 {
-                                    Logger.LogWarning($"预览解析行 {r} 失败: {ex.Message}");
+                                    BeginInvoke(new Action(() =>
+                                    {
+                                        txtWritePreview.Text = $"（在前{maxScanRows}行发货明细中未找到可预览的数据）";
+                                    }));
+                                }
+                                return;
+                            }
+
+                            List<string> previewLines = new List<string>();
+                            List<ShippingItem> items = exampleEntry.Value;
+
+                            if (prodColNum > 0)
+                            {
+                                IEnumerable<string> productCodes = items.Select(i => i.ProductCode).Where(pc => !string.IsNullOrWhiteSpace(pc));
+                                if (productCodes.Any())
+                                {
+                                    previewLines.Add(BuildPreviewLine(productCodes, "商品: "));
                                 }
                             }
-                            
-                            // 线程安全地合并结果
-                            lock (previewIndex)
+
+                            if (nameColNum > 0)
                             {
-                                foreach (var kvp in batchIndex)
+                                IEnumerable<string> productNames = items.Select(i => i.ProductName).Where(pn => !string.IsNullOrWhiteSpace(pn));
+                                if (productNames.Any())
                                 {
-                                    if (!previewIndex.ContainsKey(kvp.Key))
-                                    {
-                                        previewIndex[kvp.Key] = new List<ShippingItem>();
-                                    }
-                                    previewIndex[kvp.Key].AddRange(kvp.Value);
+                                    previewLines.Add(BuildPreviewLine(productNames, "品名: "));
                                 }
                             }
+
+                            string previewText = previewLines.Any() ? string.Join(Environment.NewLine, previewLines) : "（无有效数据可供预览）";
+                            
+                            // 在UI线程中更新预览文本和提示
+                            if (IsHandleCreated && !IsDisposed)
+                            {
+                                BeginInvoke(new Action(() =>
+                                {
+                                    txtWritePreview.Text = previewText;
+                                    toolTip1.SetToolTip(txtWritePreview, $"根据\"发货明细\"中的数据和下方选项，模拟匹配成功后将写入的数据效果。预览解析了前{maxScanRows}行数据。");
+                                }));
+                            }
+                            
+                            progress?.Report(new TaskProgress(100, "预览生成完成"));
                         }
-                        finally
+                        catch (Exception ex)
                         {
-                            semaphore.Release();
+                            WriteLog($"[MatchForm] 刷新写入预览失败: {ex.Message}", LogLevel.Warning);
+                            // 在UI线程中显示错误信息
+                            if (IsHandleCreated && !IsDisposed)
+                            {
+                                BeginInvoke(new Action(() =>
+                                {
+                                    txtWritePreview.Text = "生成预览时出错。";
+                                }));
+                            }
                         }
-                    }));
-                }
-
-                // 等待所有任务完成
-                System.Threading.Tasks.Task.WhenAll(tasks).Wait();
-                
-                var exampleEntry = previewIndex.FirstOrDefault(kvp => kvp.Value.Count > 1);
-                if (exampleEntry.Key == null) exampleEntry = previewIndex.FirstOrDefault();
-                if (exampleEntry.Key == null)
-                {
-                    txtWritePreview.Text = $"（在前{maxScanRows}行发货明细中未找到可预览的数据）";
-                    return;
-                }
-
-                List<string> previewLines = new List<string>();
-                List<ShippingItem> items = exampleEntry.Value;
-
-                if (prodColNum > 0)
-                {
-                    IEnumerable<string> productCodes = items.Select(i => i.ProductCode).Where(pc => !string.IsNullOrWhiteSpace(pc));
-                    if (productCodes.Any())
-                    {
-                        previewLines.Add(BuildPreviewLine(productCodes, "商品: "));
-                    }
-                }
-
-                if (nameColNum > 0)
-                {
-                    IEnumerable<string> productNames = items.Select(i => i.ProductName).Where(pn => !string.IsNullOrWhiteSpace(pn));
-                    if (productNames.Any())
-                    {
-                        previewLines.Add(BuildPreviewLine(productNames, "品名: "));
-                    }
-                }
-
-                txtWritePreview.Text = previewLines.Any() ? string.Join(Environment.NewLine, previewLines) : "（无有效数据可供预览）";
-                toolTip1.SetToolTip(txtWritePreview, $"根据\"发货明细\"中的数据和下方选项，模拟匹配成功后将写入的数据效果。预览解析了前{maxScanRows}行数据。");
+                    },
+                    allowMultiple: false
+                );
             }
             catch (Exception ex)
             {

@@ -34,7 +34,7 @@ namespace YYTools
         };
 
         /// <summary>
-        /// 获取工作表的列信息
+        /// 获取工作表的列信息（线程安全版本）
         /// </summary>
         public static List<ColumnInfo> GetColumnInfos(Excel.Worksheet worksheet, int maxRowsForPreview = 10)
         {
@@ -44,46 +44,50 @@ namespace YYTools
             {
                 if (worksheet == null) return columns;
 
-                var usedRange = worksheet.UsedRange;
-                if (usedRange.Rows.Count == 0) return columns;
-
-                int colCount = Math.Min(usedRange.Columns.Count, 100); // 限制最大扫描列数防止卡顿
-                int rowCount = Math.Min(usedRange.Rows.Count, maxRowsForPreview);
-
-                for (int i = 1; i <= colCount; i++)
+                // 使用线程同步锁确保COM对象访问的线程安全
+                lock (worksheet)
                 {
-                    string colLetter = ExcelHelper.GetColumnLetter(i);
-                    string headerText = "";
-                    string previewData = "";
-                    int found = 0;
-                    int maxScan = Math.Min(usedRange.Rows.Count, rowCount);
-                    bool firstFiveAllEmpty = true;
-                    for (int row = 1; row <= maxScan; row++)
-                    {
-                        var cell = worksheet.Cells[row, i] as Excel.Range;
-                        string value = cell?.Value2?.ToString().Trim() ?? "";
-                        if (row <= 5 && !string.IsNullOrWhiteSpace(value)) firstFiveAllEmpty = false;
-                        if (!string.IsNullOrWhiteSpace(value))
-                        {
-                            found++;
-                            if (found == 1) headerText = value;
-                            else if (found == 2) { previewData = value.Length > 50 ? value.Substring(0, 50) + "..." : value; break; }
-                        }
-                        if (row == 5 && firstFiveAllEmpty)
-                        {
-                            break;
-                        }
-                    }
-                    bool isValid = !string.IsNullOrWhiteSpace(headerText) || !string.IsNullOrWhiteSpace(previewData);
+                    var usedRange = worksheet.UsedRange;
+                    if (usedRange.Rows.Count == 0) return columns;
 
-                    columns.Add(new ColumnInfo
+                    int colCount = Math.Min(usedRange.Columns.Count, 100); // 限制最大扫描列数防止卡顿
+                    int rowCount = Math.Min(usedRange.Rows.Count, maxRowsForPreview);
+
+                    for (int i = 1; i <= colCount; i++)
                     {
-                        ColumnLetter = colLetter,
-                        HeaderText = headerText,
-                        PreviewData = previewData,
-                        RowCount = usedRange.Rows.Count,
-                        IsValid = isValid
-                    });
+                        string colLetter = ExcelHelper.GetColumnLetter(i);
+                        string headerText = "";
+                        string previewData = "";
+                        int found = 0;
+                        int maxScan = Math.Min(usedRange.Rows.Count, rowCount);
+                        bool firstFiveAllEmpty = true;
+                        for (int row = 1; row <= maxScan; row++)
+                        {
+                            var cell = worksheet.Cells[row, i] as Excel.Range;
+                            string value = cell?.Value2?.ToString().Trim() ?? "";
+                            if (row <= 5 && !string.IsNullOrWhiteSpace(value)) firstFiveAllEmpty = false;
+                            if (!string.IsNullOrWhiteSpace(value))
+                            {
+                                found++;
+                                if (found == 1) headerText = value;
+                                else if (found == 2) { previewData = value.Length > 50 ? value.Substring(0, 50) + "..." : value; break; }
+                            }
+                            if (row == 5 && firstFiveAllEmpty)
+                            {
+                                break;
+                            }
+                        }
+                        bool isValid = !string.IsNullOrWhiteSpace(headerText) || !string.IsNullOrWhiteSpace(previewData);
+
+                        columns.Add(new ColumnInfo
+                        {
+                            ColumnLetter = colLetter,
+                            HeaderText = headerText,
+                            PreviewData = previewData,
+                            RowCount = usedRange.Rows.Count,
+                            IsValid = isValid
+                        });
+                    }
                 }
             }
             catch (Exception ex)
