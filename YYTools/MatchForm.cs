@@ -329,7 +329,7 @@ namespace YYTools
                 // 使用异步任务管理器，避免阻塞UI
                 _uiTaskManager.StartBackgroundTask(
                     taskName: "ParallelPrefetchColumns",
-                    taskFactory: async (token, progress) =>
+                    taskFactory: (token, progress) =>
                     {
                         try
                         {
@@ -386,6 +386,8 @@ namespace YYTools
                         {
                             Logger.LogWarning($"并行预取初始化失败: {ex.Message}");
                         }
+                        
+                        return System.Threading.Tasks.Task.CompletedTask;
                     },
                     allowMultiple: false
                 );
@@ -428,6 +430,24 @@ namespace YYTools
 
                             string[] keywords = sheetCombo == cmbShippingSheet ? new[] { "发货明细", "发货" } : new[] { "账单明细", "账单" };
                             SetDefaultSheet(sheetCombo, keywords);
+                            
+                            // 重要：在设置默认工作表后，手动触发列信息更新
+                            // 这样可以确保账单明细的列信息能够正确显示
+                            if (sheetCombo == cmbBillSheet && sheetCombo.SelectedIndex >= 0)
+                            {
+                                // 延迟一点执行，确保工作表选择状态已经更新
+                                BeginInvoke(new Action(() =>
+                                {
+                                    try
+                                    {
+                                        PopulateColumnComboBoxes(cmbBillWorkbook, cmbBillSheet, cmbBillTrackColumn, cmbBillProductColumn, cmbBillNameColumn);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Logger.LogError($"手动触发账单明细列信息更新失败: {ex.Message}");
+                                    }
+                                }));
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -444,6 +464,9 @@ namespace YYTools
 
         private void PopulateColumnComboBoxes(ComboBox wbCombo, ComboBox wsCombo, params ComboBox[] columnCombos)
         {
+            // 添加调试日志，帮助诊断问题
+            Logger.LogInfo($"PopulateColumnComboBoxes 开始 - 工作簿索引: {wbCombo.SelectedIndex}, 工作表索引: {wsCombo.SelectedIndex}, 工作表项: {wsCombo.SelectedItem?.ToString() ?? "null"}");
+            
             // 确保在UI线程中执行初始清理操作
             if (IsHandleCreated && !IsDisposed)
             {
@@ -459,13 +482,23 @@ namespace YYTools
                 }));
             }
 
-            if (wbCombo.SelectedIndex < 0 || wsCombo.SelectedIndex < 0 || wsCombo.SelectedItem == null) return;
+            if (wbCombo.SelectedIndex < 0 || wsCombo.SelectedIndex < 0 || wsCombo.SelectedItem == null)
+            {
+                Logger.LogWarning($"PopulateColumnComboBoxes 条件检查失败 - 工作簿索引: {wbCombo.SelectedIndex}, 工作表索引: {wsCombo.SelectedIndex}, 工作表项: {wsCombo.SelectedItem?.ToString() ?? "null"}");
+                return;
+            }
 
             try
             {
                 var wbInfo = workbooks[wbCombo.SelectedIndex];
                 var ws = wbInfo.Workbook.Worksheets[wsCombo.SelectedItem.ToString()] as Excel.Worksheet;
-                if (ws == null) return;
+                if (ws == null)
+                {
+                    Logger.LogWarning($"PopulateColumnComboBoxes 工作表对象为空 - 工作表名称: {wsCombo.SelectedItem}");
+                    return;
+                }
+
+                Logger.LogInfo($"PopulateColumnComboBoxes 开始处理 - 工作簿: {wbInfo.Name}, 工作表: {wsCombo.SelectedItem}");
 
                 // 在UI线程中显示加载状态
                 if (IsHandleCreated && !IsDisposed)
@@ -476,7 +509,7 @@ namespace YYTools
                 // 使用异步任务管理器并行处理列信息
                 _uiTaskManager.StartBackgroundTask(
                     taskName: "PopulateColumns",
-                    taskFactory: async (token, progress) =>
+                    taskFactory: (token, progress) =>
                     {
                         try
                         {
@@ -514,7 +547,7 @@ namespace YYTools
                             if (columns == null || columns.Count == 0)
                             {
                                 Logger.LogWarning("未能获取到列信息");
-                                return;
+                                return System.Threading.Tasks.Task.CompletedTask;
                             }
 
                             progress?.Report(new TaskProgress(50, "正在获取工作表统计信息..."));
@@ -623,6 +656,8 @@ namespace YYTools
                                 BeginInvoke(new Action(() => ShowLoading(false)));
                             }
                         }
+                        
+                        return System.Threading.Tasks.Task.CompletedTask;
                     },
                     allowMultiple: false
                 );
