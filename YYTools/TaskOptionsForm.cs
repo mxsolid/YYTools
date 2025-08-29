@@ -25,6 +25,9 @@ namespace YYTools
         private Label lblMaxPreviewRows;
         private NumericUpDown numMaxPreviewRows;
         private CheckBox chkEnableProgressReporting;
+        private GroupBox gbPreview;
+        private Label lblPreviewRows;
+        private ComboBox cmbPreviewRows;
         private GroupBox gbSmartMatching;
         private CheckBox chkEnableSmartMatching;
         private CheckBox chkEnableExactMatchPriority;
@@ -45,7 +48,7 @@ namespace YYTools
         private void InitializeComponent()
         {
             this.Text = "任务选项配置";
-            this.Size = new Size(500, 600);
+            this.Size = new Size(500, 700);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -142,11 +145,33 @@ namespace YYTools
                 Size = new Size(120, 20)
             };
 
+            // 预览配置组
+            gbPreview = new GroupBox
+            {
+                Text = "预览配置",
+                Location = new Point(20, 320),
+                Size = new Size(440, 100)
+            };
+
+            lblPreviewRows = new Label
+            {
+                Text = "预览解析行数:",
+                Location = new Point(20, 30),
+                Size = new Size(100, 20)
+            };
+
+            cmbPreviewRows = new ComboBox
+            {
+                Location = new Point(130, 28),
+                Size = new Size(100, 20),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+
             // 智能匹配配置组
             gbSmartMatching = new GroupBox
             {
                 Text = "智能匹配配置",
-                Location = new Point(20, 320),
+                Location = new Point(20, 440),
                 Size = new Size(440, 140)
             };
 
@@ -194,7 +219,7 @@ namespace YYTools
             {
                 Text = "确定",
                 DialogResult = DialogResult.OK,
-                Location = new Point(280, 500),
+                Location = new Point(280, 600),
                 Size = new Size(80, 30)
             };
 
@@ -202,14 +227,14 @@ namespace YYTools
             {
                 Text = "取消",
                 DialogResult = DialogResult.Cancel,
-                Location = new Point(370, 500),
+                Location = new Point(370, 600),
                 Size = new Size(80, 30)
             };
 
             btnReset = new Button
             {
                 Text = "重置默认",
-                Location = new Point(20, 500),
+                Location = new Point(20, 600),
                 Size = new Size(80, 30)
             };
 
@@ -224,6 +249,11 @@ namespace YYTools
                 lblBatchSize, numBatchSize, lblMaxPreviewRows, numMaxPreviewRows, chkEnableProgressReporting
             });
 
+            gbPreview.Controls.AddRange(new Control[] 
+            {
+                lblPreviewRows, cmbPreviewRows
+            });
+
             gbSmartMatching.Controls.AddRange(new Control[] 
             {
                 chkEnableSmartMatching, chkEnableExactMatchPriority, lblMinMatchScore, trkMinMatchScore, lblMinMatchScoreValue
@@ -232,7 +262,7 @@ namespace YYTools
             // 添加所有控件到窗体
             this.Controls.AddRange(new Control[] 
             {
-                gbConcatenation, gbPerformance, gbSmartMatching, btnOK, btnCancel, btnReset
+                gbConcatenation, gbPerformance, gbPreview, gbSmartMatching, btnOK, btnCancel, btnReset
             });
 
             // 绑定事件
@@ -262,6 +292,19 @@ namespace YYTools
                 numBatchSize.Value = _settings.BatchSize;
                 numMaxPreviewRows.Value = _settings.MaxRowsForPreview;
                 chkEnableProgressReporting.Checked = _settings.EnableProgressReporting;
+
+                // 加载预览配置
+                cmbPreviewRows.Items.Clear();
+                cmbPreviewRows.Items.AddRange(_settings.GetPreviewRowOptions());
+                // 设置选中的预览行数
+                for (int i = 0; i < cmbPreviewRows.Items.Count; i++)
+                {
+                    if (cmbPreviewRows.Items[i].ToString() == _settings.PreviewParseRows.ToString())
+                    {
+                        cmbPreviewRows.SelectedIndex = i;
+                        break;
+                    }
+                }
 
                 // 加载智能匹配配置
                 chkEnableSmartMatching.Checked = _settings.EnableSmartMatching;
@@ -302,6 +345,16 @@ namespace YYTools
                 _settings.BatchSize = (int)numBatchSize.Value;
                 _settings.MaxRowsForPreview = (int)numMaxPreviewRows.Value;
                 _settings.EnableProgressReporting = chkEnableProgressReporting.Checked;
+
+                // 保存预览配置
+                if (cmbPreviewRows.SelectedItem != null)
+                {
+                    int previewRows;
+                    if (int.TryParse(cmbPreviewRows.SelectedItem.ToString(), out previewRows))
+                    {
+                        _settings.PreviewParseRows = previewRows;
+                    }
+                }
 
                 // 保存智能匹配配置
                 _settings.EnableSmartMatching = chkEnableSmartMatching.Checked;

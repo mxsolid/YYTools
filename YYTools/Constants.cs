@@ -7,7 +7,8 @@ namespace YYTools
     {
         // 应用程序基本信息
         public const string AppName = "YY 运单匹配工具";
-        public const string AppVersion = "v3.1 (性能优化版)";
+        public const string AppVersion = "v3.2 (性能优化版)";
+        public const string AppVersionHash = "2024-12-19-8F7E2D1A"; // 唯一版本哈希值
         public const string AppCompany = "YY Tools";
         
         // 配置文件相关
@@ -66,9 +67,13 @@ namespace YYTools
         
         // 性能配置
         public const int DefaultBatchSize = 1000;
-        public const int DefaultMaxPreviewRows = 100;
+        public const int DefaultMaxPreviewRows = 20; // 默认预览行数改为20
         public const int DefaultMaxThreads = 4;
         public const int DefaultCacheExpirationMinutes = 30;
+        
+        // 写入预览解析行数选项
+        public static readonly int[] PreviewRowOptions = { 5, 10, 20, 50, 100 };
+        public const int DefaultPreviewRows = 20; // 默认选择20行
         
         // 文件大小限制 (MB)
         public const long MaxFileSizeMB = 500;
@@ -127,7 +132,8 @@ namespace YYTools
             "第五步：设置任务选项\n" +
             "• 分隔符：设置多个商品信息之间的分隔符（默认：、）\n" +
             "• 去重：选择是否去除重复的商品信息\n" +
-            "• 排序：选择是否对结果进行排序\n\n" +
+            "• 排序：选择是否对结果进行排序\n" +
+            "• 预览行数：设置写入预览时解析的行数（默认：20行）\n\n" +
             "第六步：预览和开始\n" +
             "• 查看\"写入效果预览\"确认结果\n" +
             "• 点击\"开始任务\"执行匹配\n" +
@@ -242,6 +248,8 @@ namespace YYTools
             "• 详细的日志记录\n" +
             "• 现代化的用户界面\n" +
             "• 完善的错误处理\n" +
-            "• 支持多种Excel格式";
+            "• 支持多种Excel格式\n" +
+            "• 多线程并行处理\n" +
+            "• 写入预览行数可配置";
     }
 }

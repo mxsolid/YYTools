@@ -137,7 +137,8 @@ namespace YYTools
             // toolsToolStripMenuItem
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.settingsToolStripMenuItem});
+            this.settingsToolStripMenuItem,
+            this.taskOptionsToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(59, 21);
             this.toolsToolStripMenuItem.Text = "工具(&T)";
@@ -149,7 +150,12 @@ namespace YYTools
             this.settingsToolStripMenuItem.Text = "设置(&S)";
             this.settingsToolStripMenuItem.Click += new System.EventHandler(this.settingsToolStripMenuItem_Click);
             // 
-            
+            // taskOptionsToolStripMenuItem
+            // 
+            this.taskOptionsToolStripMenuItem.Name = "taskOptionsToolStripMenuItem";
+            this.taskOptionsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.taskOptionsToolStripMenuItem.Text = "任务选项(&T)";
+            this.taskOptionsToolStripMenuItem.Click += new System.EventHandler(this.taskOptionsToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 

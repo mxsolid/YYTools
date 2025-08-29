@@ -51,12 +51,57 @@ namespace YYTools
                 CheckWorksheetSize(shippingSheet, "发货明细", progressCallback);
                 CheckWorksheetSize(billSheet, "账单明细", progressCallback);
 
-                progressCallback?.Invoke(10, "正在构建发货明细索引...");
-                Dictionary<string, List<ShippingItem>> shippingIndex = BuildShippingIndexFast(shippingSheet, config, progressCallback);
+                // 并行处理发货明细和账单明细
+                progressCallback?.Invoke(10, "正在并行构建索引和处理数据...");
+                
+                var shippingIndex = new Dictionary<string, List<ShippingItem>>();
+                var processingTasks = new List<System.Threading.Tasks.Task>();
+                var semaphore = new System.Threading.SemaphoreSlim(Math.Min(4, Environment.ProcessorCount));
+                
+                // 任务1：构建发货明细索引
+                var shippingTask = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        return BuildShippingIndexFast(shippingSheet, config, progressCallback);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                });
+                
+                // 任务2：预处理账单明细数据
+                var billPreprocessTask = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        // 预读取账单明细的关键列数据
+                        var billData = PreprocessBillData(billSheet, config);
+                        return billData;
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                });
+                
+                // 等待两个并行任务完成
+                System.Threading.Tasks.Task.WhenAll(shippingTask, billPreprocessTask).Wait();
+                
                 if (CancellationCheck?.Invoke() == true) { result.ErrorMessage = "任务被用户取消"; return result; }
-
-                progressCallback?.Invoke(50, "正在处理账单明细...");
-                ProcessBillDetailsFast(billSheet, config, shippingIndex, result, progressCallback);
+                
+                // 获取结果
+                shippingIndex = shippingTask.Result;
+                var billData = billPreprocessTask.Result;
+                
+                progressCallback?.Invoke(60, "正在处理账单明细...");
+                
+                // 使用预处理的数据处理账单明细
+                ProcessBillDetailsWithPreprocessedData(billSheet, config, shippingIndex, billData, result, progressCallback);
+                
                 if (CancellationCheck?.Invoke() == true) { result.ErrorMessage = "任务被用户取消"; return result; }
 
                 stopwatch.Stop();
@@ -86,6 +131,155 @@ namespace YYTools
                 catch { }
             }
             return result;
+        }
+        
+        /// <summary>
+        /// 预处理账单明细数据，提高后续处理效率
+        /// </summary>
+        private Dictionary<int, BillRowData> PreprocessBillData(Excel.Worksheet billSheet, MultiWorkbookMatchConfig config)
+        {
+            var billData = new Dictionary<int, BillRowData>();
+            var usedRange = billSheet.UsedRange;
+            int maxRows = usedRange.Rows.Count;
+            
+            // 获取列号
+            int trackColNum = ExcelHelper.GetColumnNumber(config.BillTrackColumn);
+            int productColNum = ExcelHelper.GetColumnNumber(config.BillProductColumn);
+            int nameColNum = ExcelHelper.GetColumnNumber(config.BillNameColumn);
+            
+            // 分批预处理，避免内存溢出
+            int batchSize = Math.Min(1000, maxRows);
+            var tasks = new List<System.Threading.Tasks.Task>();
+            var semaphore = new System.Threading.SemaphoreSlim(Math.Min(4, Environment.ProcessorCount));
+            
+            for (int batchStart = 2; batchStart <= maxRows; batchStart += batchSize)
+            {
+                int batchEnd = Math.Min(batchStart + batchSize - 1, maxRows);
+                int startRow = batchStart;
+                int endRow = batchEnd;
+                
+                tasks.Add(System.Threading.Tasks.Task.Run(async () =>
+                {
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        var batchData = new Dictionary<int, BillRowData>();
+                        
+                        for (int r = startRow; r <= endRow; r++)
+                        {
+                            try
+                            {
+                                string trackNumber = ExcelHelper.GetCellValue(billSheet.Cells[r, trackColNum]);
+                                if (!string.IsNullOrWhiteSpace(trackNumber))
+                                {
+                                    batchData[r] = new BillRowData
+                                    {
+                                        TrackNumber = trackNumber,
+                                        ProductColumn = productColNum,
+                                        NameColumn = nameColNum,
+                                        RowNumber = r
+                                    };
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.LogWarning($"预处理账单行 {r} 失败: {ex.Message}");
+                            }
+                        }
+                        
+                        // 线程安全地合并结果
+                        lock (billData)
+                        {
+                            foreach (var kvp in batchData)
+                            {
+                                billData[kvp.Key] = kvp.Value;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }));
+            }
+            
+            // 等待所有预处理任务完成
+            System.Threading.Tasks.Task.WhenAll(tasks).Wait();
+            
+            return billData;
+        }
+        
+        /// <summary>
+        /// 使用预处理的数据处理账单明细
+        /// </summary>
+        private void ProcessBillDetailsWithPreprocessedData(Excel.Worksheet billSheet, MultiWorkbookMatchConfig config, 
+            Dictionary<string, List<ShippingItem>> shippingIndex, Dictionary<int, BillRowData> billData, 
+            MatchResult result, ProgressReportDelegate progressCallback)
+        {
+            int processedRows = 0;
+            int matchedCount = 0;
+            int updatedCells = 0;
+            
+            // 使用预处理的数据进行处理
+            foreach (var kvp in billData)
+            {
+                try
+                {
+                    var rowData = kvp.Value;
+                    processedRows++;
+                    
+                    if (shippingIndex.ContainsKey(rowData.TrackNumber))
+                    {
+                        matchedCount++;
+                        var shippingItems = shippingIndex[rowData.TrackNumber];
+                        
+                        // 构建要写入的数据
+                        var productCodes = shippingItems.Select(i => i.ProductCode).Where(pc => !string.IsNullOrWhiteSpace(pc));
+                        var productNames = shippingItems.Select(i => i.ProductName).Where(pn => !string.IsNullOrWhiteSpace(pn));
+                        
+                        // 写入商品编码列
+                        if (rowData.ProductColumn > 0 && productCodes.Any())
+                        {
+                            string productCodeText = string.Join(config.ConcatenationDelimiter, productCodes);
+                            if (config.RemoveDuplicateItems)
+                            {
+                                productCodeText = string.Join(config.ConcatenationDelimiter, productCodes.Distinct());
+                            }
+                            billSheet.Cells[rowData.RowNumber, rowData.ProductColumn] = productCodeText;
+                            updatedCells++;
+                        }
+                        
+                        // 写入商品名称列
+                        if (rowData.NameColumn > 0 && productNames.Any())
+                        {
+                            string productNameText = string.Join(config.ConcatenationDelimiter, productNames);
+                            if (config.RemoveDuplicateItems)
+                            {
+                                productNameText = string.Join(config.ConcatenationDelimiter, productNames.Distinct());
+                            }
+                            billSheet.Cells[rowData.RowNumber, rowData.NameColumn] = productNameText;
+                            updatedCells++;
+                        }
+                    }
+                    
+                    // 报告进度
+                    if (processedRows % 100 == 0)
+                    {
+                        int progress = 60 + (processedRows * 40 / billData.Count);
+                        progressCallback?.Invoke(progress, $"正在处理账单明细... 已处理 {processedRows:N0} 行");
+                    }
+                    
+                    if (CancellationCheck?.Invoke() == true) return;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning($"处理账单行 {kvp.Key} 失败: {ex.Message}");
+                }
+            }
+            
+            result.ProcessedRows = processedRows;
+            result.MatchedCount = matchedCount;
+            result.UpdatedCells = updatedCells;
         }
 
         private void CheckWorksheetSize(Excel.Worksheet worksheet, string sheetName, ProgressReportDelegate progressCallback)

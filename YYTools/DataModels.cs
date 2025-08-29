@@ -115,4 +115,30 @@ namespace YYTools
         Warning,
         Error
     }
+
+    /// <summary>
+    /// 账单行数据模型，用于预处理和缓存
+    /// </summary>
+    public class BillRowData
+    {
+        /// <summary>
+        /// 运单号
+        /// </summary>
+        public string TrackNumber { get; set; }
+        
+        /// <summary>
+        /// 商品编码列号
+        /// </summary>
+        public int ProductColumn { get; set; }
+        
+        /// <summary>
+        /// 商品名称列号
+        /// </summary>
+        public int NameColumn { get; set; }
+        
+        /// <summary>
+        /// 行号
+        /// </summary>
+        public int RowNumber { get; set; }
+    }
 }

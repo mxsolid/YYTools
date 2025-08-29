@@ -1,4 +1,0 @@
-D:\Develop\C#\YYTools\Demo\YYTools\obj\Release\YYTools.csprojResolveAssemblyReference.cache
-D:\Develop\C#\YYTools\Demo\YYTools\obj\Release\YYTools.MatchForm.resources
-D:\Develop\C#\YYTools\Demo\YYTools\obj\Release\YYTools.Properties.Resources.resources
-D:\Develop\C#\YYTools\Demo\YYTools\obj\Release\YYTools.csproj.GenerateResource.Cache

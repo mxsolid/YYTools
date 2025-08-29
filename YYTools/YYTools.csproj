@@ -66,7 +66,6 @@
     <Compile Include="AppSettings.cs" />
     <Compile Include="AsyncStartupManager.cs" />
     <Compile Include="AsyncTaskManager.cs" />
-    <Compile Include="CacheManager.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="DataManager.cs" />
     <Compile Include="DataModels.cs" />
@@ -94,7 +93,6 @@
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="SmartColumnService.cs" />
-    <Compile Include="SmartMatchConfigManager.cs" />
     <Compile Include="UIEnhancer.cs" />
     <Compile Include="UserGuideForm.cs">
       <SubType>Form</SubType>

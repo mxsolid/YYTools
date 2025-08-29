@@ -51,6 +51,9 @@ namespace YYTools
         public bool EnableProgressReporting { get; set; }
         public int MaxRowsForPreview { get; set; }
         
+        // 写入预览配置
+        public int PreviewParseRows { get; set; }
+        
         // 缓存设置
         public bool EnableCaching { get; set; }
         public int CacheExpirationMinutes { get; set; }
@@ -113,6 +116,7 @@ namespace YYTools
                 GetValue(settingsDict, "BatchSize", v => BatchSize = int.Parse(v));
                 GetValue(settingsDict, "EnableProgressReporting", v => EnableProgressReporting = bool.Parse(v));
                 GetValue(settingsDict, "MaxRowsForPreview", v => MaxRowsForPreview = int.Parse(v));
+                GetValue(settingsDict, "PreviewParseRows", v => PreviewParseRows = int.Parse(v));
                 
                 // 缓存设置
                 GetValue(settingsDict, "EnableCaching", v => EnableCaching = bool.Parse(v));
@@ -182,6 +186,7 @@ namespace YYTools
                     $"BatchSize={BatchSize}",
                     $"EnableProgressReporting={EnableProgressReporting}",
                     $"MaxRowsForPreview={MaxRowsForPreview}",
+                    $"PreviewParseRows={PreviewParseRows}",
                     "",
                     "# 缓存设置",
                     $"EnableCaching={EnableCaching}",
@@ -231,6 +236,7 @@ namespace YYTools
             BatchSize = Constants.DefaultBatchSize;
             EnableProgressReporting = true;
             MaxRowsForPreview = Constants.DefaultMaxPreviewRows;
+            PreviewParseRows = Constants.DefaultPreviewParseRows;
             
             // 缓存默认值
             EnableCaching = true;
@@ -267,6 +273,14 @@ namespace YYTools
         }
         
         /// <summary>
+        /// 获取预览行数选项
+        /// </summary>
+        public int[] GetPreviewRowOptions()
+        {
+            return Constants.PreviewRowOptions;
+        }
+        
+        /// <summary>
         /// 验证设置有效性
         /// </summary>
         public List<string> ValidateSettings()
@@ -286,6 +300,9 @@ namespace YYTools
                 
                 if (MaxRowsForPreview < 10 || MaxRowsForPreview > 1000)
                     errors.Add("预览最大行数必须在 10-1000 之间");
+                
+                if (PreviewParseRows < 1 || PreviewParseRows > 1000)
+                    errors.Add("预览解析行数必须在 1-1000 之间");
                 
                 if (CacheExpirationMinutes < 1 || CacheExpirationMinutes > 1440)
                     errors.Add("缓存过期时间必须在 1-1440 分钟之间");
