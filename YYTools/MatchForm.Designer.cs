@@ -485,13 +485,13 @@ namespace YYTools
             this.gbOptions.Controls.Add(this.cmbSort);
             // 隐藏“去重”按钮，避免干扰输入预览性能
             this.chkRemoveDuplicates.Visible = false;
-            this.gbOptions.Controls.Add(this.chkRemoveDuplicates);
+            // this.gbOptions.Controls.Add(this.chkRemoveDuplicates);
             this.gbOptions.Controls.Add(this.txtDelimiter);
             this.gbOptions.Controls.Add(this.label13);
             this.gbOptions.Location = new System.Drawing.Point(12, 417);
             this.gbOptions.Name = "gbOptions";
             this.gbOptions.Size = new System.Drawing.Size(460, 65);
-            this.gbOptions.TabIndex = 3;
+            this.gbOptions.TabIndex = 2;
             this.gbOptions.TabStop = false;
             this.gbOptions.Text = "任务配置";
             // 

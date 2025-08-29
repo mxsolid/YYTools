@@ -143,7 +143,7 @@ namespace YYTools
         }
         
         /// <summary>
-        /// 优化Excel应用程序性能 (已增加异常处理)
+        /// 优化Excel应用程序性能，关闭UI刷新、自动计算等。
         /// </summary>
         public static void OptimizeExcelPerformance(Excel.Application excelApp)
         {
@@ -156,16 +156,16 @@ namespace YYTools
         }
 
         /// <summary>
-        /// 恢复Excel应用程序性能设置 (已增加异常处理)
+        /// 恢复Excel应用程序的原始性能设置。
         /// </summary>
-        public static void RestoreExcelPerformance(Excel.Application excelApp, bool originalScreenUpdating, Excel.XlCalculation originalCalculation)
+        public static void RestoreExcelPerformance(Excel.Application excelApp, bool originalScreenUpdating, Excel.XlCalculation originalCalculation, bool originalEnableEvents, bool originalDisplayStatusBar, bool originalDisplayAlerts)
         {
             if (excelApp == null) return;
             try { excelApp.ScreenUpdating = originalScreenUpdating; } catch { }
             try { excelApp.Calculation = originalCalculation; } catch { }
-            try { excelApp.EnableEvents = true; } catch { }
-            try { excelApp.DisplayStatusBar = true; } catch { }
-            try { excelApp.DisplayAlerts = true; } catch { }
+            try { excelApp.EnableEvents = originalEnableEvents; } catch { }
+            try { excelApp.DisplayStatusBar = originalDisplayStatusBar; } catch { }
+            try { excelApp.DisplayAlerts = originalDisplayAlerts; } catch { }
         }
     }
 }
