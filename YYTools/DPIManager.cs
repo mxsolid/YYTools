@@ -189,7 +189,7 @@ namespace YYTools
                 }
 
                 // 枚举所有显示器并获取DPI信息
-                EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, MonitorEnumProc, IntPtr.Zero);
+                EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, MonitorEnumCallback, IntPtr.Zero);
 
                 // 检查是否启用了Per-Monitor V2
                 _isPerMonitorV2Enabled = CheckPerMonitorV2Enabled();
@@ -212,7 +212,7 @@ namespace YYTools
         /// <summary>
         /// 显示器枚举回调
         /// </summary>
-        private static bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData)
+        private static bool MonitorEnumCallback(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData)
         {
             try
             {

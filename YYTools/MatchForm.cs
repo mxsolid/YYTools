@@ -29,15 +29,282 @@ namespace YYTools
         {
             InitializeComponent();
             
-            // 启用DPI感知优化 - 使用新的UIEnhancer
-            UIEnhancer.EnableDpiOptimization(this);
-            
             InitializeCustomComponents();
             InitializeBackgroundWorker();
             InitializeForm();
             
+            // 在窗体显示后修复DPI问题
+            this.Load += (s, e) => FixDpiAfterLoad();
+            
             // 记录窗体创建日志
             Logger.LogUserAction("主窗体创建", "MatchForm已初始化", "成功");
+        }
+
+        /// <summary>
+        /// 在窗体加载完成后修复DPI问题
+        /// </summary>
+        private void FixDpiAfterLoad()
+        {
+            try
+            {
+                Logger.LogInfo("开始修复DPI问题...");
+                
+                // 延迟执行，确保窗体完全加载
+                this.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        // 1. 获取当前DPI信息
+                        float dpiScale = GetCurrentDpiScale();
+                        Logger.LogInfo($"检测到DPI缩放: {dpiScale:F2}");
+                        
+                        // 2. 限制缩放比例，防止过大
+                        float maxScale = 1.25f; // 最大1.25倍
+                        float actualScale = Math.Min(dpiScale, maxScale);
+                        Logger.LogInfo($"应用缩放比例: {actualScale:F2}");
+                        
+                        // 3. 修复字体大小
+                        FixFontSizes(actualScale);
+                        
+                        // 4. 修复控件尺寸
+                        FixControlDimensions(actualScale);
+                        
+                        // 5. 修复窗体尺寸
+                        FixFormDimensions(actualScale);
+                        
+                        // 6. 强制重绘
+                        this.Invalidate();
+                        this.Update();
+                        
+                        Logger.LogInfo("DPI问题修复完成");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError("修复DPI问题时发生异常", ex);
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("设置DPI修复失败", ex);
+            }
+        }
+        
+        /// <summary>
+        /// 获取当前DPI缩放比例
+        /// </summary>
+        private float GetCurrentDpiScale()
+        {
+            try
+            {
+                // 方法1: 使用Graphics.DpiX
+                using (Graphics g = this.CreateGraphics())
+                {
+                    return g.DpiX / 96.0f;
+                }
+            }
+            catch
+            {
+                try
+                {
+                    // 方法2: 使用Screen.PrimaryScreen
+                    var screen = Screen.PrimaryScreen;
+                    if (screen != null)
+                    {
+                        // 根据屏幕分辨率估算DPI
+                        if (screen.Bounds.Width >= 2560) return 1.25f; // 2K
+                        if (screen.Bounds.Width >= 3840) return 1.5f;  // 4K
+                        return 1.0f; // 1080p
+                    }
+                }
+                catch { }
+                
+                return 1.0f; // 默认值
+            }
+        }
+        
+        /// <summary>
+        /// 修复字体大小
+        /// </summary>
+        private void FixFontSizes(float scale)
+        {
+            try
+            {
+                // 修复窗体字体
+                if (this.Font != null)
+                {
+                    float newSize = Math.Max(8.0f, Math.Min(12.0f, this.Font.Size * scale));
+                    this.Font = new Font(this.Font.FontFamily, newSize, this.Font.Style);
+                }
+                
+                // 修复菜单字体
+                if (this.menuStrip1 != null && this.menuStrip1.Font != null)
+                {
+                    float newSize = Math.Max(8.0f, Math.Min(12.0f, this.menuStrip1.Font.Size * scale));
+                    this.menuStrip1.Font = new Font(this.menuStrip1.Font.FontFamily, newSize, this.menuStrip1.Font.Style);
+                }
+                
+                // 修复所有标签字体
+                var labels = this.Controls.Find("label", true).OfType<Label>();
+                foreach (var label in labels)
+                {
+                    if (label.Font != null)
+                    {
+                        float newSize = Math.Max(8.0f, Math.Min(12.0f, label.Font.Size * scale));
+                        label.Font = new Font(label.Font.FontFamily, newSize, label.Font.Style);
+                    }
+                }
+                
+                // 修复所有按钮字体
+                var buttons = this.Controls.Find("btn", true).OfType<Button>();
+                foreach (var button in buttons)
+                {
+                    if (button.Font != null)
+                    {
+                        float newSize = Math.Max(8.0f, Math.Min(12.0f, button.Font.Size * scale));
+                        button.Font = new Font(button.Font.FontFamily, newSize, button.Font.Style);
+                    }
+                }
+                
+                // 修复所有ComboBox字体
+                var comboBoxes = this.Controls.Find("cmb", true).OfType<ComboBox>();
+                foreach (var comboBox in comboBoxes)
+                {
+                    if (comboBox.Font != null)
+                    {
+                        float newSize = Math.Max(8.0f, Math.Min(12.0f, comboBox.Font.Size * scale));
+                        comboBox.Font = new Font(comboBox.Font.FontFamily, newSize, comboBox.Font.Style);
+                    }
+                }
+                
+                // 修复所有TextBox字体
+                var textBoxes = this.Controls.Find("txt", true).OfType<TextBox>();
+                foreach (var textBox in textBoxes)
+                {
+                    if (textBox.Font != null)
+                    {
+                        float newSize = Math.Max(8.0f, Math.Min(12.0f, textBox.Font.Size * scale));
+                        textBox.Font = new Font(textBox.Font.FontFamily, newSize, textBox.Font.Style);
+                    }
+                }
+                
+                // 修复所有CheckBox字体
+                var checkBoxes = this.Controls.Find("chk", true).OfType<CheckBox>();
+                foreach (var checkBox in checkBoxes)
+                {
+                    if (checkBox.Font != null)
+                    {
+                        float newSize = Math.Max(8.0f, Math.Min(12.0f, checkBox.Font.Size * scale));
+                        checkBox.Font = new Font(checkBox.Font.FontFamily, newSize, checkBox.Font.Style);
+                    }
+                }
+                
+                // 修复所有GroupBox字体
+                var groupBoxes = this.Controls.Find("gb", true).OfType<GroupBox>();
+                foreach (var groupBox in groupBoxes)
+                {
+                    if (groupBox.Font != null)
+                    {
+                        float newSize = Math.Max(8.0f, Math.Min(12.0f, groupBox.Font.Size * scale));
+                        groupBox.Font = new Font(groupBox.Font.FontFamily, newSize, groupBox.Font.Style);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"修复字体大小失败: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 修复控件尺寸
+        /// </summary>
+        private void FixControlDimensions(float scale)
+        {
+            try
+            {
+                // 限制最大缩放
+                float maxScale = 1.2f;
+                float actualScale = Math.Min(scale, maxScale);
+                
+                // 修复ComboBox尺寸
+                var comboBoxes = this.Controls.Find("cmb", true).OfType<ComboBox>();
+                foreach (var comboBox in comboBoxes)
+                {
+                    // 调整高度
+                    int newHeight = (int)(comboBox.Height * actualScale);
+                    newHeight = Math.Max(20, Math.Min(newHeight, 40));
+                    comboBox.Height = newHeight;
+                    
+                    // 调整下拉列表宽度
+                    comboBox.DropDownWidth = Math.Max(comboBox.Width + 50, 300);
+                }
+                
+                // 修复TextBox尺寸
+                var textBoxes = this.Controls.Find("txt", true).OfType<TextBox>();
+                foreach (var textBox in textBoxes)
+                {
+                    int newHeight = (int)(textBox.Height * actualScale);
+                    newHeight = Math.Max(20, Math.Min(newHeight, 40));
+                    textBox.Height = newHeight;
+                }
+                
+                // 修复Button尺寸
+                var buttons = this.Controls.Find("btn", true).OfType<Button>();
+                foreach (var button in buttons)
+                {
+                    int newHeight = (int)(button.Height * actualScale);
+                    newHeight = Math.Max(25, Math.Min(newHeight, 45));
+                    button.Height = newHeight;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"修复控件尺寸失败: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 修复窗体尺寸
+        /// </summary>
+        private void FixFormDimensions(float scale)
+        {
+            try
+            {
+                // 限制最大缩放
+                float maxScale = 1.2f;
+                float actualScale = Math.Min(scale, maxScale);
+                
+                // 调整窗体大小
+                if (this.Size.Width > 0 && this.Size.Height > 0)
+                {
+                    Size newSize = new Size(
+                        (int)(this.Size.Width * actualScale),
+                        (int)(this.Size.Height * actualScale)
+                    );
+                    
+                    // 确保窗体不会超出屏幕边界
+                    Rectangle screenBounds = Screen.GetWorkingArea(this);
+                    if (newSize.Width > screenBounds.Width)
+                    {
+                        newSize.Width = screenBounds.Width - 100;
+                    }
+                    if (newSize.Height > screenBounds.Height)
+                    {
+                        newSize.Height = screenBounds.Height - 100;
+                    }
+                    
+                    // 限制最大尺寸
+                    newSize.Width = Math.Min(newSize.Width, 900);
+                    newSize.Height = Math.Min(newSize.Height, 700);
+                    
+                    this.Size = newSize;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"修复窗体尺寸失败: {ex.Message}");
+            }
         }
 
         private void InitializeCustomComponents()
