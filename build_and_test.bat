@@ -14,20 +14,20 @@ if exist "YYTools\obj" rmdir /s /q "YYTools\obj"
 echo 清理完成
 echo.
 
-echo [2/4] 检查.NET Framework版本...
-reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" /v Version
+echo [2/4] 检查 .NET SDK 版本...
+where dotnet >nul 2>nul
 if %errorlevel% neq 0 (
-    echo 错误: 未检测到.NET Framework 4.0或更高版本
-    echo 请安装.NET Framework 4.8或更高版本
+    echo 错误: 未检测到 .NET SDK。请安装 .NET 8 SDK 后重试。
     pause
     exit /b 1
 )
-echo .NET Framework检查通过
+dotnet --info | findstr /i ".NET SDK" | head -n 1
 echo.
 
-echo [3/4] 编译项目...
+echo [3/4] 编译项目 (.NET 8)...
 cd YYTools
-msbuild YYTools.csproj /p:Configuration=Release /p:Platform="Any CPU" /verbosity:minimal
+dotnet restore --nologo --verbosity minimal
+dotnet build YYTools.csproj -c Release --nologo --verbosity minimal
 if %errorlevel% neq 0 (
     echo.
     echo 错误: 编译失败！
@@ -41,9 +41,9 @@ echo 编译成功！
 echo.
 
 echo [4/4] 运行编译测试...
-if exist "YYTools\bin\Release\YYTools.exe" (
+if exist "YYTools\bin\Release\net8.0-windows10.0.19041.0\YYTools.exe" (
     echo 编译测试通过！
-    echo 可执行文件位置: YYTools\bin\Release\YYTools.exe
+    echo 可执行文件位置: YYTools\bin\Release\net8.0-windows10.0.19041.0\YYTools.exe
     echo.
     echo 是否要运行程序进行测试？(Y/N)
     set /p choice=

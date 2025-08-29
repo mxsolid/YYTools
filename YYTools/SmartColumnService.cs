@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using YYTools.Pricing;
 using Excel = Microsoft.Office.Interop.Excel;
 
 namespace YYTools
@@ -29,8 +30,8 @@ namespace YYTools
             
             // 其他通用规则，优先级较低
             new SmartColumnRule(new[] { "产品" }, new[] { "ProductColumn", "NameColumn" }, 5),
-            new SmartColumnRule(new[] { "数量", "件数", "qty", "quantity" }, new[] { "QuantityColumn" }, 9),
-            new SmartColumnRule(new[] { "价格", "单价", "金额", "price", "amount" }, new[] { "PriceColumn" }, 9),
+            new SmartColumnRule(PricingKeywords.QuantityKeywords, new[] { "QuantityColumn" }, 9),
+            new SmartColumnRule(PricingKeywords.PriceKeywords, new[] { "PriceColumn" }, 9),
         };
 
         /// <summary>
