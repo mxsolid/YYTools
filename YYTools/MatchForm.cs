@@ -335,40 +335,50 @@ namespace YYTools
                         {
                             progress?.Report(new TaskProgress(10, "正在并行预取列信息..."));
                             
-                            var tasks = new List<System.Threading.Tasks.Task>();
-                            var semaphore = new System.Threading.SemaphoreSlim(maxThreads);
-                            
-                            // 并行预取两个工作表的列信息
-                            Action<Excel.Workbook, string> prefetch = (wb, sheetName) =>
+                            // 在UI线程中预取列信息，确保Excel COM对象访问的线程安全
+                            if (IsHandleCreated && !IsDisposed)
                             {
-                                tasks.Add(System.Threading.Tasks.Task.Run(async () =>
+                                // 预取发货明细列信息
+                                var shipColumns = (List<ColumnInfo>)Invoke(new Func<List<ColumnInfo>>(() =>
                                 {
-                                    await semaphore.WaitAsync();
                                     try
                                     {
-                                        var ws = wb.Worksheets[sheetName] as Excel.Worksheet;
+                                        var ws = shipWb.Worksheets[shipSheetName] as Excel.Worksheet;
                                         if (ws != null)
                                         {
-                                            // 触发一次列信息解析并写入缓存（如果已缓存则瞬间返回）
                                             var cols = DataManager.GetColumnInfos(ws);
-                                            Logger.LogInfo($"并行预取列信息: {wb.Name}/{sheetName} 列数: {cols?.Count ?? 0}");
+                                            Logger.LogInfo($"并行预取列信息: {shipWb.Name}/{shipSheetName} 列数: {cols?.Count ?? 0}");
+                                            return cols;
                                         }
                                     }
                                     catch (Exception ex)
                                     {
-                                        Logger.LogWarning($"并行预取失败: {wb.Name}/{sheetName} - {ex.Message}");
+                                        Logger.LogWarning($"并行预取失败: {shipWb.Name}/{shipSheetName} - {ex.Message}");
                                     }
-                                    finally { semaphore.Release(); }
+                                    return new List<ColumnInfo>();
                                 }));
-                            };
 
-                            // 对两个目标进行并行预取
-                            prefetch(shipWb, shipSheetName);
-                            prefetch(billWb, billSheetName);
+                                // 预取账单明细列信息
+                                var billColumns = (List<ColumnInfo>)Invoke(new Func<List<ColumnInfo>>(() =>
+                                {
+                                    try
+                                    {
+                                        var ws = billWb.Worksheets[billSheetName] as Excel.Worksheet;
+                                        if (ws != null)
+                                        {
+                                            var cols = DataManager.GetColumnInfos(ws);
+                                            Logger.LogInfo($"并行预取列信息: {billWb.Name}/{billSheetName} 列数: {cols?.Count ?? 0}");
+                                            return cols;
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Logger.LogWarning($"并行预取失败: {billWb.Name}/{billSheetName} - {ex.Message}");
+                                    }
+                                    return new List<ColumnInfo>();
+                                }));
+                            }
 
-                            progress?.Report(new TaskProgress(50, "等待预取完成..."));
-                            await System.Threading.Tasks.Task.WhenAll(tasks);
-                            
                             progress?.Report(new TaskProgress(100, "列信息预取完成"));
                             Logger.LogInfo("并行预取列信息完成");
                         }
@@ -472,54 +482,81 @@ namespace YYTools
                         {
                             progress?.Report(new TaskProgress(10, "正在解析列信息..."));
                             
-                            // 优先从统一的 DataManager 缓存获取列信息
-                            var columns = DataManager.GetColumnInfos(ws);
-                            var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
-                            
-                            // 线程安全地更新缓存
-                            lock (columnCache)
+                            // 在UI线程中获取列信息，确保Excel COM对象访问的线程安全
+                            List<ColumnInfo> columns = null;
+                            if (IsHandleCreated && !IsDisposed)
                             {
-                                columnCache[cacheKey] = columns;
+                                // 使用Invoke确保在UI线程中执行Excel操作
+                                columns = (List<ColumnInfo>)Invoke(new Func<List<ColumnInfo>>(() =>
+                                {
+                                    try
+                                    {
+                                        // 优先从统一的 DataManager 缓存获取列信息
+                                        var cols = DataManager.GetColumnInfos(ws);
+                                        var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
+                                        
+                                        // 线程安全地更新缓存
+                                        lock (columnCache)
+                                        {
+                                            columnCache[cacheKey] = cols;
+                                        }
+                                        
+                                        return cols;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Logger.LogError($"获取列信息失败: {ex.Message}");
+                                        return new List<ColumnInfo>();
+                                    }
+                                }));
+                            }
+                            
+                            if (columns == null || columns.Count == 0)
+                            {
+                                Logger.LogWarning("未能获取到列信息");
+                                return;
                             }
 
                             progress?.Report(new TaskProgress(50, "正在获取工作表统计信息..."));
                             
-                            // 并行获取工作表统计信息
-                            var statsTask = System.Threading.Tasks.Task.Run(() =>
+                            // 在UI线程中获取工作表统计信息
+                            var worksheetStats = new { rows = 0, columns = 0 };
+                            if (IsHandleCreated && !IsDisposed)
                             {
-                                try
+                                worksheetStats = (dynamic)Invoke(new Func<object>(() =>
                                 {
-                                    var stats = ExcelHelper.GetWorksheetStats(ws);
-                                    return new { rows = stats.rows, columns = stats.columns };
-                                }
-                                catch
-                                {
-                                    return new { rows = 0, columns = 0 };
-                                }
-                            });
+                                    try
+                                    {
+                                        var stats = ExcelHelper.GetWorksheetStats(ws);
+                                        return new { rows = stats.rows, columns = stats.columns };
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Logger.LogError($"获取工作表统计信息失败: {ex.Message}");
+                                        return new { rows = 0, columns = 0 };
+                                    }
+                                }));
+                            }
 
-                            // 并行处理智能列匹配
-                            var smartMatchTask = System.Threading.Tasks.Task.Run(() =>
+                            progress?.Report(new TaskProgress(70, "正在处理智能列匹配..."));
+                            
+                            // 在UI线程中处理智能列匹配
+                            Dictionary<string, ColumnInfo> matchedColumns = new Dictionary<string, ColumnInfo>();
+                            if (IsHandleCreated && !IsDisposed && settings.EnableSmartColumnSelection)
                             {
-                                try
+                                matchedColumns = (Dictionary<string, ColumnInfo>)Invoke(new Func<Dictionary<string, ColumnInfo>>(() =>
                                 {
-                                    if (settings.EnableSmartColumnSelection)
+                                    try
                                     {
                                         return SmartColumnService.SmartMatchColumns(columns);
                                     }
-                                    return new Dictionary<string, ColumnInfo>();
-                                }
-                                catch
-                                {
-                                    return new Dictionary<string, ColumnInfo>();
-                                }
-                            });
-
-                            // 等待并行任务完成
-                            await System.Threading.Tasks.Task.WhenAll(statsTask, smartMatchTask);
-                            
-                            var worksheetStats = statsTask.Result;
-                            var matchedColumns = smartMatchTask.Result;
+                                    catch (Exception ex)
+                                    {
+                                        Logger.LogError($"智能列匹配失败: {ex.Message}");
+                                        return new Dictionary<string, ColumnInfo>();
+                                    }
+                                }));
+                            }
 
                             progress?.Report(new TaskProgress(80, "正在更新UI..."));
                             
