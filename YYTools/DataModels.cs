@@ -84,11 +84,12 @@ namespace YYTools
         
         public override string ToString()
         {
+            bool onlyHeader = !AppSettings.Instance.EnableColumnDataPreview; // 当关闭列数据预览时，仅显示列名+标题
             string title = string.IsNullOrWhiteSpace(HeaderText) ? "" : HeaderText;
+            if (string.IsNullOrWhiteSpace(title)) return ColumnLetter;
+            if (onlyHeader) return $"{ColumnLetter} ({title})";
             string preview = string.IsNullOrWhiteSpace(PreviewData) ? "" : $" | 示例: {PreviewData}";
-            return string.IsNullOrWhiteSpace(title)
-                ? ColumnLetter
-                : $"{ColumnLetter} ({title}){preview}";
+            return $"{ColumnLetter} ({title}){preview}";
         }
     }
 

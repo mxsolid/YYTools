@@ -47,6 +47,8 @@ namespace YYTools
                 numBatchSize.Value = Math.Max(numBatchSize.Minimum, Math.Min(numBatchSize.Maximum, _settings.BatchSize));
                 numMaxPreviewRows.Value = Math.Max(numMaxPreviewRows.Minimum, Math.Min(numMaxPreviewRows.Maximum, _settings.MaxRowsForPreview));
                 chkEnableProgressReporting.Checked = _settings.EnableProgressReporting;
+                chkEnableColumnDataPreview.Checked = _settings.EnableColumnDataPreview;
+                chkEnableWritePreview.Checked = _settings.EnableWritePreview;
 
                 // 加载预览行数选项
                 cmbPreviewRows.Items.Clear();
@@ -96,6 +98,8 @@ namespace YYTools
                 _settings.BatchSize = (int)numBatchSize.Value;
                 _settings.MaxRowsForPreview = (int)numMaxPreviewRows.Value;
                 _settings.EnableProgressReporting = chkEnableProgressReporting.Checked;
+                _settings.EnableColumnDataPreview = chkEnableColumnDataPreview.Checked;
+                _settings.EnableWritePreview = chkEnableWritePreview.Checked;
                 if (cmbPreviewRows.SelectedItem != null)
                 {
                     _settings.PreviewParseRows = (int)cmbPreviewRows.SelectedItem;

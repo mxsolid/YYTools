@@ -88,6 +88,15 @@ namespace YYTools
             cmbSort.SelectedIndexChanged += (s, e) => RefreshWritePreview();
             
             cmbSort.SelectedIndex = 0;
+            // 初始化时根据设置标识预览框标题
+            try
+            {
+                if (gbWritePreview != null)
+                {
+                    gbWritePreview.Text = AppSettings.Instance.EnableWritePreview ? "写入效果预览" : "写入效果预览（未开启）";
+                }
+            }
+            catch { }
         }
         
         private void MatchForm_Resize(object sender, EventArgs e)
@@ -97,17 +106,35 @@ namespace YYTools
                 // 确保所有面板能够正确跟随窗体大小变化
                 int margin = 12;
                 int availableWidth = this.ClientSize.Width - (margin * 2);
+                int rightPadding = margin;
                 
                 // 调整发货明细配置面板
                 if (gbShipping != null)
                 {
                     gbShipping.Width = availableWidth;
+                    // 让下拉框自适应宽度
+                    foreach (var ctl in gbShipping.Controls)
+                    {
+                        var combo = ctl as ComboBox;
+                        if (combo != null)
+                        {
+                            combo.Width = availableWidth - 88 - rightPadding; // 左侧标签约88宽
+                        }
+                    }
                 }
                 
                 // 调整账单明细配置面板
                 if (gbBill != null)
                 {
                     gbBill.Width = availableWidth;
+                    foreach (var ctl in gbBill.Controls)
+                    {
+                        var combo = ctl as ComboBox;
+                        if (combo != null)
+                        {
+                            combo.Width = availableWidth - 88 - rightPadding;
+                        }
+                    }
                 }
                 
                 // 调整任务配置面板
@@ -120,6 +147,11 @@ namespace YYTools
                 if (gbWritePreview != null)
                 {
                     gbWritePreview.Width = availableWidth;
+                    // 文本框宽度随之变化
+                    if (txtWritePreview != null)
+                    {
+                        txtWritePreview.Width = availableWidth - 31; // 15 左内边距 + 16 右边距
+                    }
                 }
                 
                 // 调整按钮面板
@@ -147,6 +179,11 @@ namespace YYTools
         {
             try
             {
+                if (!AppSettings.Instance.EnableWritePreview)
+                {
+                    // 未开启预览则不刷新
+                    return;
+                }
                 if (_debounceTimer != null)
                 {
                     _debounceTimer.Stop();
@@ -208,6 +245,11 @@ namespace YYTools
         {
             txtDelimiter.Text = settings.ConcatenationDelimiter;
             chkRemoveDuplicates.Checked = settings.RemoveDuplicateItems;
+            // 当未启用写入预览时，给出提示
+            if (!settings.EnableWritePreview && txtWritePreview != null)
+            {
+                txtWritePreview.Text = "提示：未开启写入预览。可在 菜单-工具-任务选项-性能与预览 中开启。";
+            }
         }
 
         private void RefreshWorkbookList()
@@ -232,6 +274,15 @@ namespace YYTools
 
                 UpdateUIWithWorkbooks();
                 PopulateComboBoxes();
+                // 根据设置更新写入预览分组标题
+                try
+                {
+                    if (gbWritePreview != null)
+                    {
+                        gbWritePreview.Text = AppSettings.Instance.EnableWritePreview ? "写入效果预览" : "写入效果预览（未开启）";
+                    }
+                }
+                catch { }
             }
             catch (Exception ex)
             {
@@ -252,8 +303,25 @@ namespace YYTools
             cmbBillWorkbook.Items.Clear();
             cmbShippingWorkbook.Items.AddRange(displayNames);
             cmbBillWorkbook.Items.AddRange(displayNames);
-            toolTip1.SetToolTip(cmbShippingWorkbook, "选择包含发货明细的工作簿");
-            toolTip1.SetToolTip(cmbBillWorkbook, "选择包含账单明细的工作簿");
+            // 设置悬浮提示显示全路径（鼠标悬浮显示所有已打开工作簿全路径，便于辨识）
+            try
+            {
+                if (workbooks.Count > 0)
+                {
+                    string[] fullPaths = workbooks.Select(wb => wb.Workbook.FullName ?? wb.Workbook.Name).ToArray();
+                    toolTip1.SetToolTip(cmbShippingWorkbook, string.Join("\n", fullPaths));
+                    toolTip1.SetToolTip(cmbBillWorkbook, string.Join("\n", fullPaths));
+                }
+            }
+            catch { }
+            // 工具提示显示全路径
+            try
+            {
+                string[] fullPaths = workbooks.Select(wb => wb.Workbook.FullName ?? wb.Workbook.Name).ToArray();
+                toolTip1.SetToolTip(cmbShippingWorkbook, string.Join("\n", fullPaths));
+                toolTip1.SetToolTip(cmbBillWorkbook, string.Join("\n", fullPaths));
+            }
+            catch { }
 
             if (!string.IsNullOrEmpty(prevShipping) && cmbShippingWorkbook.Items.Contains(prevShipping))
                 cmbShippingWorkbook.SelectedItem = prevShipping;
@@ -426,7 +494,19 @@ namespace YYTools
                         try
                         {
                             sheetCombo.Items.AddRange(sheetNames.ToArray());
-                            toolTip1.SetToolTip(sheetCombo, $"在工作簿 '{selectedWorkbook.Name}' 中选择一个工作表");
+                            // 计算当前文件大小（MB）并显示在提示最前面
+                            string sizePrefix = "";
+                            try
+                            {
+                                var fi = new System.IO.FileInfo(selectedWorkbook.FullName ?? selectedWorkbook.Name);
+                                if (fi.Exists)
+                                {
+                                    double mb = fi.Length / 1024.0 / 1024.0;
+                                    sizePrefix = $"{mb:F2} MB\n";
+                                }
+                            }
+                            catch { }
+                            toolTip1.SetToolTip(sheetCombo, sizePrefix + $"在工作簿 '{selectedWorkbook.Name}' 中选择一个工作表");
 
                             string[] keywords = sheetCombo == cmbShippingSheet ? new[] { "发货明细", "发货" } : new[] { "账单明细", "账单" };
                             SetDefaultSheet(sheetCombo, keywords);
@@ -1130,6 +1210,10 @@ namespace YYTools
         {
             try
             {
+                if (!AppSettings.Instance.EnableWritePreview)
+                {
+                    return;
+                }
                 // 确保在UI线程中执行所有UI操作
                 if (!IsHandleCreated || IsDisposed) return;
                 

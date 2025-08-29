@@ -1,3 +1,34 @@
+@echo off
+chcp 65001 >nul
+setlocal ENABLEDELAYEDEXPANSION
+echo ==^> 开始编译 (UTF-8)
+
+set CONFIG=Release
+set PLATFORM="Any CPU"
+
+set MSBUILD=msbuild
+where %MSBUILD% >nul 2>nul
+if errorlevel 1 (
+  echo 未找到 msbuild。请在“开发者命令提示符 for VS”中运行本脚本。
+  exit /b 1
+)
+
+for %%P in ("YYTools\\YYTools.csproj" "TestApp\\TestApp.csproj") do (
+  if exist %%~fP (
+    echo -- 编译: %%~fP
+    %MSBUILD% %%~fP -t:Rebuild -p:Configuration=%CONFIG% -p:Platform=%PLATFORM% -verbosity:minimal
+    if errorlevel 1 (
+      echo ✗ 编译失败: %%~fP
+      exit /b 2
+    )
+  ) else (
+    echo -- 跳过: %%~fP (未找到)
+  )
+)
+
+echo ==^> 编译完成
+exit /b 0
+
 
 @echo off
 chcp 65001 >nul

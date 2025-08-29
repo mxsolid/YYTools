@@ -50,29 +50,33 @@ namespace YYTools
 
                 int colCount = Math.Min(usedRange.Columns.Count, 100); // 限制最大扫描列数防止卡顿
                 int rowCount = Math.Min(usedRange.Rows.Count, maxRowsForPreview);
+                bool enableDataPreview = AppSettings.Instance.EnableColumnDataPreview;
 
                 for (int i = 1; i <= colCount; i++)
                 {
                     string colLetter = ExcelHelper.GetColumnLetter(i);
                     string headerText = "";
                     string previewData = "";
-                    int found = 0;
-                    int maxScan = Math.Min(usedRange.Rows.Count, rowCount);
-                    bool firstFiveAllEmpty = true;
-                    for (int row = 1; row <= maxScan; row++)
+                    if (enableDataPreview)
                     {
-                        var cell = worksheet.Cells[row, i] as Excel.Range;
-                        string value = cell?.Value2?.ToString().Trim() ?? "";
-                        if (row <= 5 && !string.IsNullOrWhiteSpace(value)) firstFiveAllEmpty = false;
-                        if (!string.IsNullOrWhiteSpace(value))
+                        int found = 0;
+                        int maxScan = Math.Min(usedRange.Rows.Count, rowCount);
+                        bool firstFiveAllEmpty = true;
+                        for (int row = 1; row <= maxScan; row++)
                         {
-                            found++;
-                            if (found == 1) headerText = value;
-                            else if (found == 2) { previewData = value.Length > 50 ? value.Substring(0, 50) + "..." : value; break; }
-                        }
-                        if (row == 5 && firstFiveAllEmpty)
-                        {
-                            break;
+                            var cell = worksheet.Cells[row, i] as Excel.Range;
+                            string value = cell?.Value2?.ToString().Trim() ?? "";
+                            if (row <= 5 && !string.IsNullOrWhiteSpace(value)) firstFiveAllEmpty = false;
+                            if (!string.IsNullOrWhiteSpace(value))
+                            {
+                                found++;
+                                if (found == 1) headerText = value;
+                                else if (found == 2) { previewData = value.Length > 50 ? value.Substring(0, 50) + "..." : value; break; }
+                            }
+                            if (row == 5 && firstFiveAllEmpty)
+                            {
+                                break;
+                            }
                         }
                     }
                     bool isValid = !string.IsNullOrWhiteSpace(headerText) || !string.IsNullOrWhiteSpace(previewData);

@@ -493,7 +493,8 @@ namespace YYTools
             this.gbOptions.Size = new System.Drawing.Size(460, 65);
             this.gbOptions.TabIndex = 2;
             this.gbOptions.TabStop = false;
-            this.gbOptions.Text = "任务配置";
+            this.gbOptions.Text = "任务配置 (已移至 菜单-工具-任务选项)";
+            this.gbOptions.Visible = false;
             // 
             // cmbSort
             // 
@@ -539,10 +540,21 @@ namespace YYTools
             // 
             // gbWritePreview
             // 
-            this.gbWritePreview.Controls.Add(this.txtWritePreview);
+            // 使用Splitter实现可调整高度
+            var previewSplitter = new System.Windows.Forms.SplitContainer();
+            previewSplitter.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            previewSplitter.Dock = System.Windows.Forms.DockStyle.Fill;
+            previewSplitter.SplitterWidth = 5;
+            previewSplitter.IsSplitterFixed = false;
+            var panelTop = new System.Windows.Forms.Panel();
+            panelTop.Height = 1; // 顶部留空占位
+            previewSplitter.Panel1.Controls.Add(panelTop);
+            previewSplitter.Panel2.Controls.Add(this.txtWritePreview);
+            this.txtWritePreview.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gbWritePreview.Controls.Add(previewSplitter);
             this.gbWritePreview.Location = new System.Drawing.Point(12, 488);
             this.gbWritePreview.Name = "gbWritePreview";
-            this.gbWritePreview.Size = new System.Drawing.Size(460, 80);
+            this.gbWritePreview.Size = new System.Drawing.Size(460, 160);
             this.gbWritePreview.TabIndex = 4;
             this.gbWritePreview.TabStop = false;
             this.gbWritePreview.Text = "写入效果预览";
@@ -556,7 +568,7 @@ namespace YYTools
             this.txtWritePreview.Name = "txtWritePreview";
             this.txtWritePreview.ReadOnly = true;
             this.txtWritePreview.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtWritePreview.Size = new System.Drawing.Size(429, 45);
+            this.txtWritePreview.Size = new System.Drawing.Size(429, 120);
             this.txtWritePreview.TabIndex = 0;
             // 
             // MatchForm

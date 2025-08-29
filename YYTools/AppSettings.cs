@@ -45,6 +45,8 @@ namespace YYTools
         public bool EnableSmartColumnSelection { get; set; }
         public bool EnableColumnPreview { get; set; }
         public bool EnableColumnSearch { get; set; }
+        // 列数据预览（控制是否解析列数据与示例预览）
+        public bool EnableColumnDataPreview { get; set; }
         
         // 性能优化设置
         public int BatchSize { get; set; }
@@ -53,6 +55,8 @@ namespace YYTools
         
         // 写入预览配置
         public int PreviewParseRows { get; set; }
+        // 写入效果预览开关（控制是否实时预览）
+        public bool EnableWritePreview { get; set; }
         
         // 缓存设置
         public bool EnableCaching { get; set; }
@@ -111,12 +115,14 @@ namespace YYTools
                 GetValue(settingsDict, "EnableSmartColumnSelection", v => EnableSmartColumnSelection = bool.Parse(v));
                 GetValue(settingsDict, "EnableColumnPreview", v => EnableColumnPreview = bool.Parse(v));
                 GetValue(settingsDict, "EnableColumnSearch", v => EnableColumnSearch = bool.Parse(v));
+                GetValue(settingsDict, "EnableColumnDataPreview", v => EnableColumnDataPreview = bool.Parse(v));
                 
                 // 性能优化设置
                 GetValue(settingsDict, "BatchSize", v => BatchSize = int.Parse(v));
                 GetValue(settingsDict, "EnableProgressReporting", v => EnableProgressReporting = bool.Parse(v));
                 GetValue(settingsDict, "MaxRowsForPreview", v => MaxRowsForPreview = int.Parse(v));
                 GetValue(settingsDict, "PreviewParseRows", v => PreviewParseRows = int.Parse(v));
+                GetValue(settingsDict, "EnableWritePreview", v => EnableWritePreview = bool.Parse(v));
                 
                 // 缓存设置
                 GetValue(settingsDict, "EnableCaching", v => EnableCaching = bool.Parse(v));
@@ -181,12 +187,14 @@ namespace YYTools
                     $"EnableSmartColumnSelection={EnableSmartColumnSelection}",
                     $"EnableColumnPreview={EnableColumnPreview}",
                     $"EnableColumnSearch={EnableColumnSearch}",
+                    $"EnableColumnDataPreview={EnableColumnDataPreview}",
                     "",
                     "# 性能优化设置",
                     $"BatchSize={BatchSize}",
                     $"EnableProgressReporting={EnableProgressReporting}",
                     $"MaxRowsForPreview={MaxRowsForPreview}",
                     $"PreviewParseRows={PreviewParseRows}",
+                    $"EnableWritePreview={EnableWritePreview}",
                     "",
                     "# 缓存设置",
                     $"EnableCaching={EnableCaching}",
@@ -231,12 +239,14 @@ namespace YYTools
             EnableSmartColumnSelection = true;
             EnableColumnPreview = true;
             EnableColumnSearch = true;
+            EnableColumnDataPreview = true;
             
             // 性能优化默认值
             BatchSize = Constants.DefaultBatchSize;
             EnableProgressReporting = true;
             MaxRowsForPreview = Constants.DefaultMaxPreviewRows;
             PreviewParseRows = Constants.DefaultPreviewParseRows;
+            EnableWritePreview = true;
             
             // 缓存默认值
             EnableCaching = true;
