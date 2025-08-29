@@ -72,6 +72,7 @@
     <Compile Include="DPIManager.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="TaskOptionsForm.Designer.cs" />
     <Compile Include="VersionManager.cs" />
     <Compile Include="StartupProgressForm.cs" />
     <Compile Include="TaskOptionsForm.cs" />
