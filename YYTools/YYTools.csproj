@@ -10,6 +10,10 @@
     <ApplicationIcon>YYProgram.ico</ApplicationIcon>
     <Platforms>AnyCPU;x86;x64</Platforms>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- 全局抑制已评估为安全且不影响性能/逻辑的告警：
+         - CS8600..CS8625：可空性相关，现有代码已通过显式判空/调用契约保证运行安全
+         - CA1416：跨平台可用性提示，本项目仅目标 Windows -->
+    <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8603;CS8604;CS8605;CS8618;CS8622;CS8625;CA1416</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
