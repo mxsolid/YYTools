@@ -6,6 +6,7 @@ namespace YYTools
 {
     static class Program
     {
+        private static AsyncTaskManager _taskManager = new AsyncTaskManager();
         /// <summary>
         /// 应用程序的主入口点。
         /// </summary>
@@ -14,21 +15,41 @@ namespace YYTools
         {
             try
             {
+                Logger.LogInfo("开始启动程序");
                 // 基本设置
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
 
                 // 显示启动信息
                 // MessageBox.Show("正在启动YY工具...", "启动中", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                // 直接创建并显示主窗体（跳过所有复杂功能）
+                Logger.LogInfo("new MatchForm begin");
+                // 先显示主窗体，保证快速可见
                 var mainForm = new MatchForm();
-                
-                // 显示启动成功信息
-                // MessageBox.Show("主窗体创建成功，正在显示...", "启动成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                
-                // 运行主窗体
+                Logger.LogInfo("new MatchForm end");
+
+                // // 显示启动进度窗体（轻量：仅抓取已打开文件名）
+                // var progressForm = StartupProgressForm.ShowStartupProgress();
+                // var cts = new System.Threading.CancellationTokenSource();
+                // var progress = new Progress<YYTools.TaskProgress>(p => { try { progressForm?.UpdateProgress(p.Percentage, p.Message); } catch { } });
+                // ((IProgress<YYTools.TaskProgress>)progress)
+                //     .Report(new YYTools.TaskProgress(5, "正在检测已打开的Excel/WPS..."));
+                //
+                //
+                // var namesTask = AsyncStartupManager.FetchOpenWorkbookNamesAsync(cts.Token);
+                // try
+                // {
+                //     var names = namesTask.GetAwaiter().GetResult();
+                //     Logger.LogInfo($"已获取打开的工作簿数量: {names.Names.Count}, 活动: {names.ActiveName}");
+                // }
+                // catch (Exception exFetch)
+                // {
+                //     Logger.LogWarning($"获取打开的工作簿名称失败: {exFetch.Message}");
+                // }
+
+                // try { progressForm?.CompleteStartup(true, ""); } catch { }
+                Logger.LogInfo("Application.Run(mainForm) begin");
                 Application.Run(mainForm);
+                Logger.LogInfo("Application.Run(mainForm) end");
             }
             catch (Exception ex)
             {

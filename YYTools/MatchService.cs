@@ -165,7 +165,13 @@ namespace YYTools
 
                 for (int i = 0; i < trackData.Count; i++)
                 {
+                    // 过滤掉空行（若原文件存在大量空行，防止参与后续处理导致卡顿）
                     string trackNumber = trackData[i];
+                    bool isRowEmpty = string.IsNullOrWhiteSpace(trackNumber)
+                                      && (i >= productData.Count || string.IsNullOrWhiteSpace(productData[i]))
+                                      && (i >= nameData.Count || string.IsNullOrWhiteSpace(nameData[i]));
+                    if (isRowEmpty) continue;
+
                     if (!string.IsNullOrWhiteSpace(trackNumber))
                     {
                         string normalizedTrack = NormalizeTrackNumber(trackNumber);
@@ -217,11 +223,23 @@ namespace YYTools
                 int updatedCells = 0;
                 AppSettings settings = AppSettings.Instance;
 
-                for (int batchStart = 0; batchStart < dataRows; batchStart += batchSize)
+                // 使用并行批处理：外层批次循环并发执行，批次内仍为顺序逻辑，保持写回一致性
+                int maxThreads = Math.Max(1, Math.Min(AppSettings.Instance.MaxThreads, Environment.ProcessorCount));
+                var parallelOptions = new System.Threading.Tasks.ParallelOptions { MaxDegreeOfParallelism = maxThreads, CancellationToken = default };
+
+                object aggregateLock = new object();
+                int processedRows = 0;
+
+                System.Threading.Tasks.Parallel.For(0, (int)Math.Ceiling(dataRows / (double)batchSize), parallelOptions, (batchIndex) =>
                 {
+                    if (CancellationCheck?.Invoke() == true) return;
+
+                    int batchStart = batchIndex * batchSize;
                     int batchEnd = Math.Min(batchStart + batchSize, dataRows);
-                    var batchProductData = new List<string>();
-                    var batchNameData = new List<string>();
+                    var batchProductData = new List<string>(batchEnd - batchStart);
+                    var batchNameData = new List<string>(batchEnd - batchStart);
+
+                    int localMatched = 0;
 
                     for (int i = batchStart; i < batchEnd; i++)
                     {
@@ -231,7 +249,7 @@ namespace YYTools
                             string normalizedTrack = NormalizeTrackNumber(billTrackNumber);
                             if (shippingIndex.ContainsKey(normalizedTrack))
                             {
-                                matchedCount++;
+                                localMatched++;
                                 List<ShippingItem> matchedItems = shippingIndex[normalizedTrack];
 
                                 var productCodes = matchedItems.Select(item => item.ProductCode.Trim()).Where(c => !string.IsNullOrEmpty(c));
@@ -270,16 +288,20 @@ namespace YYTools
                         }
                     }
 
-                    WriteBatchData(billSheet, config.BillProductColumn, batchStart + 2, batchProductData);
-                    WriteBatchData(billSheet, config.BillNameColumn, batchStart + 2, batchNameData);
+                    // 批量写回到Excel（COM对象非线程安全，序列化写入）
+                    lock (aggregateLock)
+                    {
+                        WriteBatchData(billSheet, config.BillProductColumn, batchStart + 2, batchProductData);
+                        WriteBatchData(billSheet, config.BillNameColumn, batchStart + 2, batchNameData);
 
-                    updatedCells += batchProductData.Count(s => !string.IsNullOrEmpty(s)) + batchNameData.Count(s => !string.IsNullOrEmpty(s));
+                        matchedCount += localMatched;
+                        updatedCells += batchProductData.Count(s => !string.IsNullOrEmpty(s)) + batchNameData.Count(s => !string.IsNullOrEmpty(s));
+                        processedRows = Math.Max(processedRows, batchEnd);
 
-                    if (CancellationCheck?.Invoke() == true) return;
-
-                    int progress = 50 + (int)(45.0 * batchEnd / dataRows);
-                    progressCallback?.Invoke(progress, $"处理进度: {batchEnd}/{dataRows} 行");
-                }
+                        int progress = 50 + (int)(45.0 * processedRows / dataRows);
+                        progressCallback?.Invoke(progress, $"处理进度: {processedRows}/{dataRows} 行");
+                    }
+                });
 
                 result.ProcessedRows = dataRows;
                 result.MatchedCount = matchedCount;

@@ -13,7 +13,7 @@ namespace YYTools
         private static readonly List<SmartColumnRule> ColumnRules = new List<SmartColumnRule>
         {
             // 运单号相关列 (新规则，高优先级)
-            new SmartColumnRule(new[] { "快递单号", "运单号", "邮件号", "物流单号", "快递号" }, new[] { "TrackColumn" }, 10),
+            new SmartColumnRule(new[] { "快递单号", "运单号", "邮件号", "物流单号", "快递号" , "物流号" }, new[] { "TrackColumn" }, 10),
             new SmartColumnRule(new[] { "运单", "快递", "物流", "单号", "tracking" }, new[] { "TrackColumn" }, 8),
             
             // 商品名称相关列 (新规则，高优先级)
@@ -23,7 +23,7 @@ namespace YYTools
             // 商品编码相关列 (新规则，高优先级)
             // "商品"作为完全匹配项，优先级适中，避免错误匹配"商品名称"
             new SmartColumnRule(new[] { "商品" }, new[] { "ProductColumn" }, 10),
-            new SmartColumnRule(new[] { "商品编码", "商品编号", "产品编码", "sku" }, new[] { "ProductColumn" }, 8),
+            new SmartColumnRule(new[] { "商品编码", "商品编号", "产品编码", "商品代码", "款号", "sku" }, new[] { "ProductColumn" }, 8),
             new SmartColumnRule(new[] { "编码" }, new[] { "ProductColumn" }, 6),
 
             
@@ -36,7 +36,7 @@ namespace YYTools
         /// <summary>
         /// 获取工作表的列信息
         /// </summary>
-        public static List<ColumnInfo> GetColumnInfos(Excel.Worksheet worksheet, int maxRowsForPreview = 100)
+        public static List<ColumnInfo> GetColumnInfos(Excel.Worksheet worksheet, int maxRowsForPreview = 10)
         {
             var columns = new List<ColumnInfo>();
             
@@ -47,7 +47,7 @@ namespace YYTools
                 var usedRange = worksheet.UsedRange;
                 if (usedRange.Rows.Count == 0) return columns;
 
-                int colCount = Math.Min(usedRange.Columns.Count, 256); // 限制最大扫描列数防止卡顿
+                int colCount = Math.Min(usedRange.Columns.Count, 100); // 限制最大扫描列数防止卡顿
                 int rowCount = Math.Min(usedRange.Rows.Count, maxRowsForPreview);
 
                 for (int i = 1; i <= colCount; i++)

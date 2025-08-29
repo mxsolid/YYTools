@@ -21,6 +21,10 @@ namespace YYTools
 
         private Dictionary<ComboBox, string> comboBoxColumnTypeMap;
 
+        // 统一管理UI侧的异步任务（如启动后的预解析）
+        private AsyncTaskManager _uiTaskManager = new AsyncTaskManager();
+        private System.Windows.Forms.Timer _debounceTimer;
+
         public MatchForm()
         {
             InitializeComponent();
@@ -40,7 +44,20 @@ namespace YYTools
         {
             this.StartPosition = FormStartPosition.CenterScreen;
             this.ShowInTaskbar = true;
-            this.Shown += (s, e) => { this.Activate(); };
+            this.Shown += (s, e) =>
+            {
+                this.Activate();
+                // 将耗时初始化延后到显示之后执行，保障“秒开”
+                try
+                {
+                    this.BeginInvoke(new Action(() =>
+                    {
+                        try { LoadMatcherSettings(); } catch { }
+                        try { StartInitialParsingIfNeeded(); } catch { }
+                    }));
+                }
+                catch { }
+            };
             try
             {
                 this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
@@ -58,11 +75,31 @@ namespace YYTools
                 { cmbBillNameColumn, "NameColumn" }
             };
 
-            txtDelimiter.TextChanged += (s, e) => RefreshWritePreview();
+            // 初始化防抖定时器（避免输入未完成就触发重算造成卡顿）
+            _debounceTimer = new System.Windows.Forms.Timer { Interval = 300 };
+            _debounceTimer.Tick += (s, e) => { _debounceTimer.Stop(); RefreshWritePreview(); };
+            // 为分隔符输入增加防抖
+            txtDelimiter.TextChanged += (s, e) => DebounceRefreshWritePreview();
             chkRemoveDuplicates.CheckedChanged += (s, e) => RefreshWritePreview();
             cmbSort.SelectedIndexChanged += (s, e) => RefreshWritePreview();
             
             cmbSort.SelectedIndex = 0;
+        }
+        private void DebounceRefreshWritePreview()
+        {
+            try
+            {
+                if (_debounceTimer != null)
+                {
+                    _debounceTimer.Stop();
+                    _debounceTimer.Start();
+                }
+                else
+                {
+                    RefreshWritePreview();
+                }
+            }
+            catch { }
         }
 
         private void InitializeBackgroundWorker()
@@ -81,8 +118,9 @@ namespace YYTools
             {
                 settings = AppSettings.Instance;
                 ApplySettings();
-                LoadMatcherSettings();
-                RefreshWorkbookList();
+                // 将耗时初始化延后到 Shown 阶段
+                // 同时更新列解析最大并发
+                try { DataManager.UpdateMaxConcurrency(settings.MaxThreads); } catch { }
                 MatchService.CleanupOldLogs();
             }
             catch (Exception ex)
@@ -200,11 +238,80 @@ namespace YYTools
         private void cmbShippingSheet_SelectedIndexChanged(object sender, EventArgs e)
         {
             PopulateColumnComboBoxes(cmbShippingWorkbook, cmbShippingSheet, cmbShippingTrackColumn, cmbShippingProductColumn, cmbShippingNameColumn);
+            TryPrefetchOtherIfParallelPossible();
         }
 
         private void cmbBillSheet_SelectedIndexChanged(object sender, EventArgs e)
         {
             PopulateColumnComboBoxes(cmbBillWorkbook, cmbBillSheet, cmbBillTrackColumn, cmbBillProductColumn, cmbBillNameColumn);
+            TryPrefetchOtherIfParallelPossible();
+        }
+
+        private void TryPrefetchOtherIfParallelPossible()
+        {
+            try
+            {
+                if (cmbShippingWorkbook.SelectedIndex < 0 || cmbBillWorkbook.SelectedIndex < 0) return;
+                if (cmbShippingSheet.SelectedIndex < 0 || cmbBillSheet.SelectedIndex < 0) return;
+
+                var shipWb = workbooks[cmbShippingWorkbook.SelectedIndex].Workbook;
+                var billWb = workbooks[cmbBillWorkbook.SelectedIndex].Workbook;
+                var shipSheetName = cmbShippingSheet.SelectedItem?.ToString();
+                var billSheetName = cmbBillSheet.SelectedItem?.ToString();
+                if (string.IsNullOrEmpty(shipSheetName) || string.IsNullOrEmpty(billSheetName)) return;
+
+                // 如果是同一工作簿同一工作表，无需并行
+                bool sameTarget = string.Equals((shipWb.FullName ?? shipWb.Name), (billWb.FullName ?? billWb.Name), StringComparison.OrdinalIgnoreCase)
+                                  && string.Equals(shipSheetName, billSheetName, StringComparison.OrdinalIgnoreCase);
+                if (sameTarget) return;
+
+                int maxThreads = Math.Max(1, Math.Min(AppSettings.Instance.MaxThreads, Environment.ProcessorCount));
+                var semaphore = new System.Threading.SemaphoreSlim(maxThreads);
+
+                var tasks = new List<System.Threading.Tasks.Task>();
+                Action<Excel.Workbook, string> prefetch = (wb, sheetName) =>
+                {
+                    tasks.Add(System.Threading.Tasks.Task.Run(async () =>
+                    {
+                        await semaphore.WaitAsync();
+                        try
+                        {
+                            var ws = wb.Worksheets[sheetName] as Excel.Worksheet;
+                            if (ws != null)
+                            {
+                                // 触发一次列信息解析并写入缓存（如果已缓存则瞬间返回）
+                                var cols = DataManager.GetColumnInfos(ws);
+                                Logger.LogInfo($"并行预取列信息: {wb.Name}/{sheetName} 列数: {cols?.Count ?? 0}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogWarning($"并行预取失败: {wb.Name}/{sheetName} - {ex.Message}");
+                        }
+                        finally { semaphore.Release(); }
+                    }));
+                };
+
+                // 对两个目标进行并行预取（如果是同文件不同表或不同文件）
+                prefetch(shipWb, shipSheetName);
+                prefetch(billWb, billSheetName);
+
+                System.Threading.Tasks.Task.WhenAll(tasks).ContinueWith(_ =>
+                {
+                    try
+                    {
+                        if (IsHandleCreated)
+                        {
+                            BeginInvoke(new Action(() =>
+                            {
+                                lblStatus.Text = "列信息预取完成。";
+                            }));
+                        }
+                    }
+                    catch { }
+                });
+            }
+            catch { }
         }
 
         private void LoadSheetsForWorkbook(ComboBox workbookCombo, ComboBox sheetCombo)
@@ -216,7 +323,8 @@ namespace YYTools
             try
             {
                 Excel.Workbook selectedWorkbook = workbooks[workbookCombo.SelectedIndex].Workbook;
-                List<string> sheetNames = ExcelAddin.GetWorksheetNames(selectedWorkbook);
+                // 使用 DataManager 缓存工作表列表
+                List<string> sheetNames = DataManager.GetSheetNames(selectedWorkbook);
                 sheetCombo.Items.AddRange(sheetNames.ToArray());
                 toolTip1.SetToolTip(sheetCombo, $"在工作簿 '{selectedWorkbook.Name}' 中选择一个工作表");
 
@@ -243,7 +351,8 @@ namespace YYTools
                 if (ws == null) return;
 
                 ShowLoading(true);
-                var columns = SmartColumnService.GetColumnInfos(ws, 50);
+                // 优先从统一的 DataManager 缓存获取列信息
+                var columns = DataManager.GetColumnInfos(ws);
                 var cacheKey = $"{wbInfo.Name}_{wsCombo.SelectedItem}";
                 columnCache[cacheKey] = columns;
 
@@ -583,7 +692,22 @@ namespace YYTools
                 }
             }
         }
-        private void refreshListToolStripMenuItem_Click(object sender, EventArgs e) => RefreshWorkbookList();
+        private void refreshListToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Logger.LogUserAction("点击刷新列表", "清空缓存并重新加载工作簿", "开始");
+                DataManager.ClearCache();
+                columnCache.Clear();
+                RefreshWorkbookList();
+                Logger.LogUserAction("刷新列表完成", "", "成功");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("刷新列表失败", ex);
+                MessageBox.Show($"刷新失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) => this.Close();
 
         private void settingsToolStripMenuItem_Click(object sender, EventArgs e)
@@ -604,27 +728,107 @@ namespace YYTools
             }
         }
 
-        private void taskOptionsToolStripMenuItem_Click(object sender, EventArgs e)
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            try { _uiTaskManager?.Dispose(); } catch { }
+            base.OnFormClosed(e);
+        }
+
+        /// <summary>
+        /// 启动后进行轻量预解析：
+        /// 1) 若无打开的工作簿，引导用户选择文件；
+        /// 2) 获取活动工作簿与工作表，预热列信息缓存；
+        /// 3) 全程异步，并在状态栏与进度条显示进度。
+        /// </summary>
+        private void StartInitialParsingIfNeeded()
         {
             try
             {
-                // 显示任务选项配置窗体
-                TaskOptionsForm.ShowTaskOptions(this);
-                
-                // 重新加载任务选项设置
-                LoadMatcherSettings();
-                
-                // 刷新写入预览
-                RefreshWritePreview();
-                
-                Logger.LogUserAction("打开任务选项配置", "任务选项配置已更新", "成功");
+                excelApp = ExcelAddin.GetExcelApplication();
+                if (excelApp == null || !ExcelAddin.HasOpenWorkbooks(excelApp))
+                {
+                    Logger.LogInfo("未检测到打开的Excel/WPS文件，弹出文件选择器");
+                    openFileToolStripMenuItem_Click(this, EventArgs.Empty);
+                }
+
+                // 刷新一次工作簿列表，确保界面先可用
+                RefreshWorkbookList();
+
+                // 后台预解析当前活动工作簿
+                _uiTaskManager.StartBackgroundTask(
+                    taskName: "InitialParseActiveWorkbook",
+                    taskFactory: async (token, progress) =>
+                    {
+                        try
+                        {
+                            await System.Threading.Tasks.Task.Yield();
+                            var app = ExcelAddin.GetExcelApplication();
+                            if (app == null || !ExcelAddin.HasOpenWorkbooks(app)) return;
+
+                            Excel.Workbook activeWb = null;
+                            try { activeWb = app.ActiveWorkbook; } catch { }
+                            if (activeWb == null) return;
+
+                            var wbName = activeWb.Name;
+                            progress?.Report(new TaskProgress(10, $"正在预解析: {wbName}"));
+                            Logger.LogUserAction("启动后预解析", $"活动工作簿: {wbName}", "开始");
+
+                            // 预热工作表列表
+                            var sheetNames = DataManager.GetSheetNames(activeWb);
+
+                            // 获取活动工作表
+                            Excel.Worksheet activeSheet = null;
+                            try { activeSheet = app.ActiveSheet as Excel.Worksheet; } catch { }
+                            if (activeSheet != null)
+                            {
+                                progress?.Report(new TaskProgress(40, $"解析工作表列: {activeSheet.Name}"));
+                                var columns = DataManager.GetColumnInfos(activeSheet);
+                                Logger.LogInfo($"预解析完成: {wbName}/{activeSheet.Name} 列数: {columns?.Count ?? 0}");
+                            }
+
+                            progress?.Report(new TaskProgress(100, "预解析完成"));
+                            Logger.LogUserAction("启动后预解析", $"活动工作簿: {wbName}", "成功");
+                        }
+                        catch (System.OperationCanceledException)
+                        {
+                            Logger.LogUserAction("启动后预解析", "", "已取消");
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError("启动后预解析失败", ex);
+                        }
+                        finally
+                        {
+                            // UI提示
+                            try
+                            {
+                                if (this.IsHandleCreated)
+                                {
+                                    this.BeginInvoke(new Action(() =>
+                                    {
+                                        progressBar.Style = ProgressBarStyle.Blocks;
+                                        lblStatus.Text = "已加载工作簿列表。";
+                                        progressBar.Visible = false;
+                                    }));
+                                }
+                            }
+                            catch { }
+                        }
+                    },
+                    allowMultiple: false
+                );
+
+                // UI层展示加载动画
+                ShowLoading(true);
+                lblStatus.Text = "正在预解析活动工作簿...";
             }
             catch (Exception ex)
             {
-                Logger.LogError("打开任务选项配置失败", ex);
-                MessageBox.Show($"打开任务选项配置失败：{ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Logger.LogError("启动预解析初始化失败", ex);
             }
         }
+
+        // 主界面不再提供“任务选项”入口，统一在菜单 工具->设置 中维护
         private void viewLogsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             try
@@ -646,7 +850,7 @@ namespace YYTools
         }
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string aboutInfo = "YY 运单匹配工具 v2.10 (稳定修复版)\n\n" +
+            string aboutInfo = "YY 运单匹配工具 v2.10\n\n" +
                              "功能特点：\n" +
                              "• 智能运单匹配，支持灵活拼接\n" +
                              "• 优化智能列算法，提高准确率\n" +
@@ -724,7 +928,7 @@ namespace YYTools
                 if (ws == null) return;
 
                 Dictionary<string, List<ShippingItem>> previewIndex = new Dictionary<string, List<ShippingItem>>();
-                int maxScanRows = Math.Min(100, ws.UsedRange.Rows.Count);
+                int maxScanRows = Math.Min(20, ws.UsedRange.Rows.Count);
                 int trackColNum = ExcelHelper.GetColumnNumber(trackCol);
                 int prodColNum = !string.IsNullOrEmpty(prodCol) && ExcelHelper.IsValidColumnLetter(prodCol) ? ExcelHelper.GetColumnNumber(prodCol) : -1;
                 int nameColNum = !string.IsNullOrEmpty(nameCol) && ExcelHelper.IsValidColumnLetter(nameCol) ? ExcelHelper.GetColumnNumber(nameCol) : -1;

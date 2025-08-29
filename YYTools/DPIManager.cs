@@ -16,7 +16,8 @@ namespace YYTools
         [DllImport("user32.dll")]
         private static extern IntPtr GetDC(IntPtr hWnd);
 
-        [DllImport("user32.dll")]
+        // 注意: GetDeviceCaps 位于 gdi32.dll，而不是 user32.dll
+        [DllImport("gdi32.dll")]
         private static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
 
         [DllImport("user32.dll")]
@@ -237,6 +238,18 @@ namespace YYTools
                 // 根据DPI调整窗体大小
                 if (IsHighDpi)
                 {
+                    // 优先尝试按窗口DPI获取缩放
+                    try
+                    {
+                        int dpiForWindow = GetDpiForWindow(form.Handle);
+                        if (dpiForWindow > 0)
+                        {
+                            _currentDpiX = dpiForWindow / 96.0f;
+                            _currentDpiY = _currentDpiX;
+                        }
+                    }
+                    catch { }
+
                     // 调整窗体最小尺寸
                     if (form.MinimumSize != Size.Empty)
                     {

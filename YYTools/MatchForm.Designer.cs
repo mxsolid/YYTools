@@ -65,8 +65,10 @@ namespace YYTools
             this.cmbBillWorkbook = new System.Windows.Forms.ComboBox();
             this.btnStart = new System.Windows.Forms.Button();
             this.btnClose = new System.Windows.Forms.Button();
-            this.progressBar = new System.Windows.Forms.ProgressBar();
+            this.panelButtons = new System.Windows.Forms.Panel();
+            this.panelStatus = new System.Windows.Forms.Panel();
             this.lblStatus = new System.Windows.Forms.Label();
+            this.progressBar = new System.Windows.Forms.ProgressBar();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.gbOptions = new System.Windows.Forms.GroupBox();
             this.cmbSort = new System.Windows.Forms.ComboBox();
@@ -78,6 +80,7 @@ namespace YYTools
             this.menuStrip1.SuspendLayout();
             this.gbShipping.SuspendLayout();
             this.gbBill.SuspendLayout();
+            this.panelStatus.SuspendLayout();
             this.gbOptions.SuspendLayout();
             this.gbWritePreview.SuspendLayout();
             this.SuspendLayout();
@@ -134,8 +137,7 @@ namespace YYTools
             // toolsToolStripMenuItem
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.settingsToolStripMenuItem,
-            this.taskOptionsToolStripMenuItem});
+            this.settingsToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(59, 21);
             this.toolsToolStripMenuItem.Text = "工具(&T)";
@@ -147,12 +149,7 @@ namespace YYTools
             this.settingsToolStripMenuItem.Text = "设置(&S)";
             this.settingsToolStripMenuItem.Click += new System.EventHandler(this.settingsToolStripMenuItem_Click);
             // 
-            // taskOptionsToolStripMenuItem
-            // 
-            this.taskOptionsToolStripMenuItem.Name = "taskOptionsToolStripMenuItem";
-            this.taskOptionsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
-            this.taskOptionsToolStripMenuItem.Text = "任务选项(&T)";
-            this.taskOptionsToolStripMenuItem.Click += new System.EventHandler(this.taskOptionsToolStripMenuItem_Click);
+            
             // 
             // helpToolStripMenuItem
             // 
@@ -413,7 +410,8 @@ namespace YYTools
             // 
             this.btnStart.Font = new System.Drawing.Font("微软雅黑", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnStart.ForeColor = System.Drawing.Color.ForestGreen;
-            this.btnStart.Location = new System.Drawing.Point(259, 582);
+            this.btnStart.Location = new System.Drawing.Point(259, 10);
+            this.btnStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(100, 30);
             this.btnStart.TabIndex = 5;
@@ -423,7 +421,8 @@ namespace YYTools
             // 
             // btnClose
             // 
-            this.btnClose.Location = new System.Drawing.Point(372, 582);
+            this.btnClose.Location = new System.Drawing.Point(372, 10);
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnClose.Name = "btnClose";
             this.btnClose.Size = new System.Drawing.Size(100, 30);
             this.btnClose.TabIndex = 6;
@@ -431,25 +430,55 @@ namespace YYTools
             this.btnClose.UseVisualStyleBackColor = true;
             this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
             // 
-            // progressBar
+            // panelButtons
             // 
-            this.progressBar.Location = new System.Drawing.Point(12, 618);
-            this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(460, 5);
-            this.progressBar.TabIndex = 7;
+            this.panelButtons.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panelButtons.Height = 50;
+            this.panelButtons.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
+            this.panelButtons.BackColor = System.Drawing.Color.Transparent;
+            // 在面板内使用相对定位，按钮靠右排列
+            this.btnClose.Location = new System.Drawing.Point(this.panelButtons.Width - 110, 10);
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnStart.Location = new System.Drawing.Point(this.panelButtons.Width - 220, 10);
+            this.btnStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.panelButtons.Controls.Add(this.btnStart);
+            this.panelButtons.Controls.Add(this.btnClose);
+            // 
+            // panelStatus
+            // 
+            this.panelStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panelStatus.Location = new System.Drawing.Point(0, 604);
+            this.panelStatus.Name = "panelStatus";
+            this.panelStatus.Size = new System.Drawing.Size(484, 40);
+            this.panelStatus.TabIndex = 100;
+            this.panelStatus.BackColor = System.Drawing.Color.FromArgb(248,248,248);
+            this.panelStatus.Padding = new System.Windows.Forms.Padding(10, 6, 10, 6);
+            this.panelStatus.Controls.Add(this.progressBar);
+            this.panelStatus.Controls.Add(this.lblStatus);
             // 
             // lblStatus
             // 
-            this.lblStatus.AutoSize = true;
-            this.lblStatus.Location = new System.Drawing.Point(12, 592);
+            this.lblStatus.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblStatus.AutoSize = false;
+            this.lblStatus.Height = 20;
+            this.lblStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new System.Drawing.Size(123, 17);
+            this.lblStatus.Size = new System.Drawing.Size(464, 20);
             this.lblStatus.TabIndex = 8;
             this.lblStatus.Text = "欢迎使用YY匹配工具";
+            // 
+            // progressBar
+            // 
+            this.progressBar.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.progressBar.Height = 8;
+            this.progressBar.Name = "progressBar";
+            this.progressBar.TabIndex = 7;
             // 
             // gbOptions
             // 
             this.gbOptions.Controls.Add(this.cmbSort);
+            // 隐藏“去重”按钮，避免干扰输入预览性能
+            this.chkRemoveDuplicates.Visible = false;
             this.gbOptions.Controls.Add(this.chkRemoveDuplicates);
             this.gbOptions.Controls.Add(this.txtDelimiter);
             this.gbOptions.Controls.Add(this.label13);
@@ -458,7 +487,7 @@ namespace YYTools
             this.gbOptions.Size = new System.Drawing.Size(460, 65);
             this.gbOptions.TabIndex = 3;
             this.gbOptions.TabStop = false;
-            this.gbOptions.Text = "任务选项";
+            this.gbOptions.Text = "任务配置";
             // 
             // cmbSort
             // 
@@ -531,10 +560,9 @@ namespace YYTools
             this.ClientSize = new System.Drawing.Size(484, 621);
             this.Controls.Add(this.gbWritePreview);
             this.Controls.Add(this.gbOptions);
-            this.Controls.Add(this.lblStatus);
-            this.Controls.Add(this.progressBar);
-            this.Controls.Add(this.btnClose);
-            this.Controls.Add(this.btnStart);
+            // 先添加按钮面板，再添加状态面板，使状态面板处于最底部
+            this.Controls.Add(this.panelButtons);
+            this.Controls.Add(this.panelStatus);
             this.Controls.Add(this.gbBill);
             this.Controls.Add(this.gbShipping);
             this.Controls.Add(this.menuStrip1);
@@ -543,9 +571,9 @@ namespace YYTools
             this.MainMenuStrip = this.menuStrip1;
             this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.MaximizeBox = true;
-            this.MinimumSize = new System.Drawing.Size(500, 650);
+            this.MinimumSize = new System.Drawing.Size(500, 700);
             this.Name = "MatchForm";
-            this.Text = "YY 运单匹配工具 v3.1 (性能优化版)";
+            this.Text = "YY 运单匹配工具";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.gbShipping.ResumeLayout(false);
@@ -554,6 +582,7 @@ namespace YYTools
             this.gbBill.PerformLayout();
             this.gbOptions.ResumeLayout(false);
             this.gbOptions.PerformLayout();
+            this.panelStatus.ResumeLayout(false);
             this.gbWritePreview.ResumeLayout(false);
             this.gbWritePreview.PerformLayout();
             this.ResumeLayout(false);
@@ -567,6 +596,7 @@ namespace YYTools
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem taskOptionsToolStripMenuItem;
         private System.Windows.Forms.GroupBox gbShipping;
         private System.Windows.Forms.ComboBox cmbShippingWorkbook;
         private System.Windows.Forms.Label lblShippingWorkbook;
@@ -594,7 +624,7 @@ namespace YYTools
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem taskOptionsToolStripMenuItem;
+        
         private System.Windows.Forms.ToolStripMenuItem viewLogsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         private System.Windows.Forms.Button btnStart;
@@ -603,11 +633,13 @@ namespace YYTools
         private System.Windows.Forms.Label lblStatus;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.GroupBox gbOptions;
-        private System.Windows.Forms.Label label13;
-        private System.Windows.Forms.TextBox txtDelimiter;
-        private System.Windows.Forms.CheckBox chkRemoveDuplicates;
         private System.Windows.Forms.ComboBox cmbSort;
+        private System.Windows.Forms.CheckBox chkRemoveDuplicates;
+        private System.Windows.Forms.TextBox txtDelimiter;
+        private System.Windows.Forms.Label label13;
         private System.Windows.Forms.GroupBox gbWritePreview;
         private System.Windows.Forms.TextBox txtWritePreview;
+        private System.Windows.Forms.Panel panelStatus;
+        private System.Windows.Forms.Panel panelButtons;
     }
 }
