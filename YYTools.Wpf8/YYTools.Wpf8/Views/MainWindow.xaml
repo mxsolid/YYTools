@@ -5,11 +5,15 @@
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:hc="https://handyorg.github.io/handycontrol"
+                 xmlns:vm="clr-namespace:YYTools.Wpf8.ViewModels"
                  mc:Ignorable="d"
                  Title="YY 运单匹配工具 (WPF)"
                  Width="1024" Height="680"
                  WindowStartupLocation="CenterScreen"
                  GlowBrush="{DynamicResource AccentColorBrush}">
+    <mah:MetroWindow.DataContext>
+        <vm:MainViewModel />
+    </mah:MetroWindow.DataContext>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -27,7 +31,6 @@
         </mah:HamburgerMenu>
 
         <Grid Grid.Row="1" Margin="16">
-            <hc:Growl Info="欢迎使用 YY 运单匹配工具 (WPF/.NET 8)"/>
             <StackPanel>
                 <TextBlock Text="这是新的WPF壳工程，稍后将移植核心逻辑与UI" FontSize="16" Margin="0,0,0,16"/>
                 <Button Content="切换主题 (浅/深)" Width="180" Height="36" Click="OnToggleThemeClick"/>
