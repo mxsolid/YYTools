@@ -41,7 +41,7 @@ namespace YYTools
                 {
                     cmbMaxThreads.Items.Add(i);
                 }
-                cmbMaxThreads.SelectedItem = settings.MaxThreads;
+                cmbMaxThreads.SelectedItem = settings.MaxThreads > 0 ? settings.MaxThreads : Environment.ProcessorCount;
             }
             catch (Exception ex)
             {

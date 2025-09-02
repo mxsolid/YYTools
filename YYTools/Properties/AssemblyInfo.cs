@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 // 程序集的一般信息由以下特性集控制。
 [assembly: AssemblyTitle("YY运单匹配工具")]
-[assembly: AssemblyDescription("YY运单匹配工具 - 极速匹配，WPS/Excel兼容")]
+[assembly: AssemblyDescription("YY运单匹配工具 - 极速匹配，WPS/Excel兼容，智能列选择，高性能处理")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("YY Tools")]
 [assembly: AssemblyProduct("YY运单匹配工具")]
@@ -20,5 +20,5 @@ using System.Runtime.InteropServices;
 [assembly: Guid("12345678-1234-5678-9ABC-123456789ABC")]
 
 // 程序集的版本信息由下面四个值组成:
-[assembly: AssemblyVersion("1.5.0.0")]
-[assembly: AssemblyFileVersion("1.5.0.0")] 
+[assembly: AssemblyVersion("2.6.0.0")]
+[assembly: AssemblyFileVersion("2.6.0.0")] 

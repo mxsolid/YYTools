@@ -158,6 +158,7 @@ namespace YYTools
                 Excel.Workbook activeWorkbook = null;
                 try { activeWorkbook = app.ActiveWorkbook; } catch { }
 
+                // 性能优化：减少锁的使用，提高性能
                 foreach (Excel.Workbook wb in app.Workbooks)
                 {
                     if (wb != null && !string.IsNullOrEmpty(wb.Name))
@@ -185,6 +186,7 @@ namespace YYTools
             {
                 if (workbook?.Worksheets != null)
                 {
+                    // 性能优化：减少锁的使用，提高性能
                     foreach (Excel.Worksheet ws in workbook.Worksheets)
                     {
                         if (ws != null) list.Add(ws.Name);

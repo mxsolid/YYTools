@@ -64,13 +64,24 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppSettings.cs" />
+    <Compile Include="AsyncStartupManager.cs" />
+    <Compile Include="AsyncTaskManager.cs" />
+    <Compile Include="Constants.cs" />
+    <Compile Include="DataManager.cs" />
     <Compile Include="DataModels.cs" />
+    <Compile Include="DPIManager.cs" />
+    <Compile Include="Logger.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="TaskOptionsForm.Designer.cs" />
+    <Compile Include="utils\ExcelAddin.cs" />
+    <Compile Include="utils\ExcelHelper.cs" />
+    <Compile Include="utils\Md5Helper.cs" />
+    <Compile Include="VersionManager.cs" />
+    <Compile Include="StartupProgressForm.cs" />
+    <Compile Include="TaskOptionsForm.cs" />
     <Compile Include="ColumnSelectionForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ExcelAddin.cs" />
-    <Compile Include="ExcelHelper.cs" />
     <Compile Include="MatchForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -83,6 +94,17 @@
     </Compile>
     <Compile Include="SettingsForm.Designer.cs">
       <DependentUpon>SettingsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="AboutForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AboutForm.Designer.cs">
+      <DependentUpon>AboutForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SmartColumnService.cs" />
+    <Compile Include="UIEnhancer.cs" />
+    <Compile Include="UserGuideForm.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="MatchForm.resx">
@@ -111,6 +133,7 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\loading.gif" />
     <Content Include="YYProgram.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
