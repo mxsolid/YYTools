@@ -1,4 +1,5 @@
 using System.Windows;
+using HandyControl.Tools;
 
 namespace YYTools.Wpf8
 {
@@ -10,7 +11,8 @@ namespace YYTools.Wpf8
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            // TODO: 可在此加载配置、初始化日志、设置DPI感知等
+            // 初始化HandyControl语言与主题（中文）
+            ConfigHelper.Instance.SetLang("zh-cn");
         }
     }
 }

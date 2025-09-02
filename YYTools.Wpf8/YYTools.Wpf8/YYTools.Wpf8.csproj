@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <ApplicationIcon>Assets/YYProgram.ico</ApplicationIcon>
     <AssemblyName>YYTools.Wpf8</AssemblyName>
     <RootNamespace>YYTools.Wpf8</RootNamespace>
   </PropertyGroup>
