@@ -1,0 +1,43 @@
+<mah:MetroWindow x:Class="YYTools.Wpf8.Views.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:hc="https://handyorg.github.io/handycontrol"
+                 mc:Ignorable="d"
+                 Title="YY 运单匹配工具 (WPF)"
+                 Width="1024" Height="680"
+                 WindowStartupLocation="CenterScreen"
+                 GlowBrush="{DynamicResource AccentColorBrush}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <mah:HamburgerMenu Grid.Row="0" DisplayMode="CompactInline" PanePlacement="Left" IsPaneOpen="True">
+            <mah:HamburgerMenu.Items>
+                <mah:HamburgerMenuIconItem Icon="Home" Label="首页"/>
+                <mah:HamburgerMenuIconItem Icon="Play" Label="开始匹配"/>
+                <mah:HamburgerMenuIconItem Icon="Cog" Label="设置"/>
+                <mah:HamburgerMenuIconItem Icon="InformationOutline" Label="关于"/>
+            </mah:HamburgerMenu.Items>
+        </mah:HamburgerMenu>
+
+        <Grid Grid.Row="1" Margin="16">
+            <hc:Growl Info="欢迎使用 YY 运单匹配工具 (WPF/.NET 8)"/>
+            <StackPanel>
+                <TextBlock Text="这是新的WPF壳工程，稍后将移植核心逻辑与UI" FontSize="16" Margin="0,0,0,16"/>
+                <Button Content="切换主题 (浅/深)" Width="180" Height="36" Click="OnToggleThemeClick"/>
+            </StackPanel>
+        </Grid>
+
+        <StatusBar Grid.Row="2">
+            <StatusBarItem>
+                <TextBlock Text="就绪"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</mah:MetroWindow>
