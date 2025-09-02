@@ -1,0 +1,51 @@
+<Controls:MetroWindow x:Class="YYTools.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:vm="clr-namespace:YYTools.App.ViewModels"
+        mc:Ignorable="d"
+        Title="YYTools - ExcelMerger" Height="540" Width="900"
+        WindowStartupLocation="CenterScreen"
+        GlowBrush="DodgerBlue">
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Spacing="12">
+            <Button Content="从活动Excel读取" Command="{Binding ReadFromActiveExcelCommand}" />
+            <Button Content="选择文件..." Command="{Binding PickFileCommand}" />
+            <ToggleButton Content="深色模式" IsChecked="{Binding IsDarkTheme, Mode=TwoWay}"/>
+            <TextBlock Text="DPI:" Margin="24,0,4,0"/>
+            <TextBlock Text="{Binding DpiInfo}"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Padding="12" BorderBrush="#333" BorderThickness="1" CornerRadius="6">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="工作表:" VerticalAlignment="Center"/>
+                    <ComboBox Width="220" ItemsSource="{Binding Sheets}" SelectedItem="{Binding SelectedSheet}"/>
+                    <TextBlock Text="列:" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                    <ComboBox Width="220" ItemsSource="{Binding Columns}" SelectedItem="{Binding SelectedColumn}"/>
+                    <Button Content="开始解析与匹配" Command="{Binding StartProcessCommand}" Margin="12,0,0,0"/>
+                </StackPanel>
+
+                <ListBox Margin="0,12,0,0" ItemsSource="{Binding Logs}" />
+            </DockPanel>
+        </Border>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="12">
+            <ProgressBar Width="400" Height="16" Value="{Binding ProgressValue}" Maximum="100"/>
+            <TextBlock Text="{Binding ProgressText}"/>
+        </StackPanel>
+    </Grid>
+</Controls:MetroWindow>
